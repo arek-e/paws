@@ -1,37 +1,38 @@
 # Testing Strategy
 
 ```
-  /\_/\
- ( o.o )  trust, but verify
-  > ^ <
+ /\_/\
+( o.o )  trust, but verify
+ > ^ <
 ```
 
 ## Overview
 
-Three tiers of tests, separated by infrastructure requirements. Each tier runs independently via Turborepo pipelines.
+Three tiers of tests, separated by infrastructure requirements. Each tier runs independently via
+Turborepo pipelines.
 
-| Tier | What | Needs | Runs where | Pipeline |
-|---|---|---|---|---|
-| **Tier 1: Unit** | Pure logic, mocked dependencies | Nothing — runs anywhere | CI + local | `bun test` |
-| **Tier 2: Integration** | Real system calls, real TLS | Linux, may need root | CI (Linux runner) + Hetzner | `bun test:integration` |
-| **Tier 3: VM** | Full Firecracker VM lifecycle | `/dev/kvm`, root, snapshot | Hetzner server only | `bun test:vm` |
+| Tier                    | What                            | Needs                      | Runs where                  | Pipeline               |
+| ----------------------- | ------------------------------- | -------------------------- | --------------------------- | ---------------------- |
+| **Tier 1: Unit**        | Pure logic, mocked dependencies | Nothing — runs anywhere    | CI + local                  | `bun test`             |
+| **Tier 2: Integration** | Real system calls, real TLS     | Linux, may need root       | CI (Linux runner) + Hetzner | `bun test:integration` |
+| **Tier 3: VM**          | Full Firecracker VM lifecycle   | `/dev/kvm`, root, snapshot | Hetzner server only         | `bun test:vm`          |
 
 ## Test-First vs Test-After
 
-| Module | Approach | Why |
-|---|---|---|
-| `packages/types` | Test-first | Pure validation |
-| `packages/scheduler` | Test-first | Pure functions |
-| `packages/firecracker` — ip-pool | Test-first | Pure math |
-| `packages/firecracker` — client | Test-first | Mock injected request function |
-| `apps/worker` — proxy logic (domain matching, header injection) | Test-first | Pure logic, security-critical |
-| `apps/gateway` — route handlers | Test-first | Request/response contracts |
-| `apps/gateway` — trigger engine | Test-first | Cron parsing, webhook validation |
-| `packages/firecracker` — tap/iptables | Test-after | Shell command wrappers |
-| `packages/firecracker` — restore | Test-after | Complex orchestration |
-| `apps/worker` — proxy TLS | Test-after | Real TLS interception |
-| `apps/worker` — SSH | Test-after | Needs real VM |
-| `apps/worker` — executor | Test-after | Full VM lifecycle |
+| Module                                                          | Approach   | Why                              |
+| --------------------------------------------------------------- | ---------- | -------------------------------- |
+| `packages/types`                                                | Test-first | Pure validation                  |
+| `packages/scheduler`                                            | Test-first | Pure functions                   |
+| `packages/firecracker` — ip-pool                                | Test-first | Pure math                        |
+| `packages/firecracker` — client                                 | Test-first | Mock injected request function   |
+| `apps/worker` — proxy logic (domain matching, header injection) | Test-first | Pure logic, security-critical    |
+| `apps/gateway` — route handlers                                 | Test-first | Request/response contracts       |
+| `apps/gateway` — trigger engine                                 | Test-first | Cron parsing, webhook validation |
+| `packages/firecracker` — tap/iptables                           | Test-after | Shell command wrappers           |
+| `packages/firecracker` — restore                                | Test-after | Complex orchestration            |
+| `apps/worker` — proxy TLS                                       | Test-after | Real TLS interception            |
+| `apps/worker` — SSH                                             | Test-after | Needs real VM                    |
+| `apps/worker` — executor                                        | Test-after | Full VM lifecycle                |
 
 ## Runner and Config
 
@@ -54,10 +55,12 @@ packages/firecracker/
 ```
 
 **File naming:**
+
 - `*.test.ts` — unit tests (Tier 1)
 - `*.integration.test.ts` — integration tests (Tier 2 or 3)
 
 **Turbo pipelines:**
+
 ```json
 {
   "test": {},
@@ -70,46 +73,48 @@ packages/firecracker/
 
 Enforced only on pure logic modules:
 
-| Module | Threshold |
-|---|---|
-| `packages/types` | 100% |
-| `packages/scheduler` | 100% |
-| `packages/firecracker` — ip-pool | 100% |
-| `packages/firecracker` — client | 90% |
-| Everything else | Tracked, not enforced |
+| Module                           | Threshold             |
+| -------------------------------- | --------------------- |
+| `packages/types`                 | 100%                  |
+| `packages/scheduler`             | 100%                  |
+| `packages/firecracker` — ip-pool | 100%                  |
+| `packages/firecracker` — client  | 90%                   |
+| Everything else                  | Tracked, not enforced |
 
 ## Mocking Strategy
 
 ### Firecracker client — dependency injection
 
-The client accepts an optional `request` function. Production uses real `http.request` over Unix socket. Tests inject a fake.
+The client accepts an optional `request` function. Production uses real `http.request` over Unix
+socket. Tests inject a fake.
 
 ```typescript
 // Production
-const client = createFirecrackerClient(socketPath)
+const client = createFirecrackerClient(socketPath,)
 
 // Test
 const client = createFirecrackerClient(socketPath, {
-  request: async (method, path, body) => {
+  request: async (method, path, body,) => {
     // Return canned response
-    return { statusCode: 200, body: '{}' }
-  }
-})
+    return { statusCode: 200, body: '{}', }
+  },
+},)
 ```
 
-Same pattern for shell commands in tap/iptables — inject `exec` to verify args without running real commands.
+Same pattern for shell commands in tap/iptables — inject `exec` to verify args without running real
+commands.
 
 ```typescript
 // Production
-createTap(alloc)
+createTap(alloc,)
 
 // Test
 createTap(alloc, {
-  exec: async (cmd, args) => {
+  exec: async (cmd, args,) => {
     // Verify: cmd === 'ip', args === ['tuntap', 'add', ...]
-    return { stdout: '', stderr: '' }
-  }
-})
+    return { stdout: '', stderr: '', }
+  },
+},)
 ```
 
 ### Gateway routes — Hono test client
@@ -126,15 +131,16 @@ test('POST /v1/sessions returns 202', async () => {
     },
     body: JSON.stringify({
       snapshot: 'test',
-      workload: { type: 'script', script: 'echo hi' },
-    }),
-  })
-  expect(res.status).toBe(202)
-  expect(await res.json()).toHaveProperty('sessionId')
+      workload: { type: 'script', script: 'echo hi', },
+    },),
+  },)
+  expect(res.status,).toBe(202,)
+  expect(await res.json(),).toHaveProperty('sessionId',)
 })
 ```
 
-One integration test file per app boots the real server on a random port and hits every endpoint over HTTP to catch wiring issues.
+One integration test file per app boots the real server on a random port and hits every endpoint
+over HTTP to catch wiring issues.
 
 ### TLS proxy — local fake servers
 
@@ -142,27 +148,27 @@ Proxy tests never hit real external services. A local HTTPS server stands in:
 
 ```typescript
 // Test setup
-const fakeServer = createFakeHttpsServer({ port: 9999 })
+const fakeServer = createFakeHttpsServer({ port: 9999, },)
 const proxy = createProxy({
   listenPort: 8443,
   allowlist: {
     'api.anthropic.com': {
       target: 'https://localhost:9999',
-      headers: { 'x-api-key': 'sk-test-123' },
+      headers: { 'x-api-key': 'sk-test-123', },
     },
   },
-})
+},)
 
 // Test: credential injection
 test('injects x-api-key header for anthropic', async () => {
-  const res = await curlThroughProxy('https://api.anthropic.com/v1/messages')
-  expect(fakeServer.lastRequest.headers['x-api-key']).toBe('sk-test-123')
+  const res = await curlThroughProxy('https://api.anthropic.com/v1/messages',)
+  expect(fakeServer.lastRequest.headers['x-api-key'],).toBe('sk-test-123',)
 })
 
 // Test: domain blocking
 test('blocks non-allowlisted domains', async () => {
-  const res = await curlThroughProxy('https://evil.com')
-  expect(res.error).toBe('connection_refused')
+  const res = await curlThroughProxy('https://evil.com',)
+  expect(res.error,).toBe('connection_refused',)
 })
 ```
 
@@ -182,7 +188,8 @@ bun run test:vm:remote
 
 ### Test snapshot
 
-VM tests use a minimal cached snapshot at `/var/lib/paws/snapshots/test-minimal/`. Tiny Ubuntu image (~500 MB disk) that can respond to SSH and run basic commands. No agent tools installed.
+VM tests use a minimal cached snapshot at `/var/lib/paws/snapshots/test-minimal/`. Tiny Ubuntu image
+(~500 MB disk) that can respond to SSH and run basic commands. No agent tools installed.
 
 ```bash
 # Build test snapshot (first time, or to rebuild)
