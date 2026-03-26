@@ -25,6 +25,38 @@ Before beginning any implementation work, orient yourself:
 Do this research using sub-agents to keep your main context clean. Summarize findings briefly before
 proposing work.
 
+## Task Workflow
+
+### Picking work
+
+- `docs/roadmap.md` is the **single source of truth** for what needs doing.
+- Pick any `⬜` (not started) item — tasks can be parallelized across agents when they're
+  independent (e.g. `packages/types` and `packages/firecracker` can run in parallel).
+- Never pick a `🟡` (in progress) item — another agent is on it. Check open PRs to confirm.
+- If your task depends on another (`apps/worker` needs `packages/firecracker`), verify the
+  dependency is merged or at least PR-ready before building on it.
+
+### Before coding
+
+- Update `docs/roadmap.md`: mark your task `🟡` (in progress) and commit that change first.
+- Write a brief implementation plan: what files you'll create, key patterns, decisions. This goes in
+  your PR description.
+
+### While coding
+
+- One roadmap item per PR. Keep scope focused.
+- Follow existing patterns — check merged PRs and existing code for conventions.
+- When adding a new package or app, update `docs/architecture.md` with its role and structure.
+
+### When done
+
+- Update `docs/roadmap.md`: mark your task `✅` (done).
+- Create a PR with a description covering:
+  - **What was built** — files created, key abstractions
+  - **Decisions made** — why you chose an approach, alternatives considered
+  - **Deferred work** — anything intentionally left out, noted for future
+- Tests must pass (`bun test` at minimum, `bun run check` if possible).
+
 ## Commands
 
 ```bash
