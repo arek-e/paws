@@ -1,0 +1,27 @@
+{
+  "name": "@paws/firecracker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Firecracker VM lifecycle — client, networking, snapshot restore",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir dist --target bun",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@paws/types": "workspace:*",
+    "neverthrow": "^8.2.0"
+  },
+  "devDependencies": {
+    "bun-types": "^1.3.11",
+    "vitest": "^3.1.0"
+  }
+}
