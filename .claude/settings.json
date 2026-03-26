@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_response.filePath // .tool_input.file_path' | { read -r f; npx oxfmt --write \"$f\" 2>/dev/null || true; }",
+            "timeout": 15,
+            "statusMessage": "Formatting..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /home/user/paws && npx oxlint . && npx oxfmt --check . 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Checking lint & format..."
+          }
+        ]
+      }
+    ]
+  }
+}
