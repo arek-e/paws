@@ -1,9 +1,9 @@
 # Getting Started
 
 ```
-  /\_/\
- ( o.o )  let's get those paws moving
-  > ^ <
+ /\_/\
+( o.o )  let's get those paws moving
+ > ^ <
 ```
 
 ## Prerequisites
@@ -30,6 +30,7 @@ cp .env.example .env
 ```
 
 Edit `.env`:
+
 ```bash
 # Gateway
 PAWS_API_KEY=your-secret-api-key
@@ -54,6 +55,7 @@ sudo ./scripts/install-firecracker.sh
 ```
 
 This installs:
+
 - `firecracker` binary to `/usr/local/bin/`
 - Default kernel to `$PAWS_DATA_DIR/kernels/vmlinux-default`
 - Base rootfs to `$PAWS_DATA_DIR/rootfs/ubuntu-default.ext4`
@@ -74,7 +76,8 @@ curl -X POST http://localhost:3000/snapshots/build \
   }'
 ```
 
-This boots a fresh VM, runs your setup script, then snapshots the full state (memory + disk + CPU). Takes a few minutes the first time. Future sessions boot from this snapshot in <1 second.
+This boots a fresh VM, runs your setup script, then snapshots the full state (memory + disk + CPU).
+Takes a few minutes the first time. Future sessions boot from this snapshot in <1 second.
 
 ## 5. Start the Services
 
@@ -87,6 +90,7 @@ bun run apps/gateway/src/server.ts
 ```
 
 Or use the combined launcher:
+
 ```bash
 bun run start
 ```
@@ -143,7 +147,8 @@ curl -X POST http://localhost:8080/v1/sessions \
   }'
 ```
 
-The agent runs in a Firecracker VM. It can clone from GitHub and call Claude — but it never sees the API keys. The per-VM TLS proxy injects them at the network layer.
+The agent runs in a Firecracker VM. It can clone from GitHub and call Claude — but it never sees the
+API keys. The per-VM TLS proxy injects them at the network layer.
 
 ## 8. Register a Daemon
 
@@ -180,7 +185,9 @@ curl -X POST http://localhost:8080/v1/daemons \
 
 Then point your GitHub webhook at `https://your-server:8080/v1/webhooks/pr-reviewer`.
 
-Every time a PR is opened, paws spins up an isolated VM, runs your agent, and destroys it when done. The `/state/repo` directory persists between invocations so the repo doesn't need a full clone every time.
+Every time a PR is opened, paws spins up an isolated VM, runs your agent, and destroys it when done.
+The `/state/repo` directory persists between invocations so the repo doesn't need a full clone every
+time.
 
 ## Next Steps
 
