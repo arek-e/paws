@@ -5,4 +5,4 @@ dist/
 *.log
 .turbo/
 .DS_Store
-.dprint/
+.oxfmt-cache/

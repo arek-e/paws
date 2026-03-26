@@ -1,0 +1,8 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "semiColons": false,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "ignorePatterns": ["dist", "node_modules", ".turbo", "bun.lock", "*.snap"]
+}

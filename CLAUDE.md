@@ -12,8 +12,8 @@ bun test                 # tier 1: unit tests (anywhere)
 bun test:integration     # tier 2: needs Linux/root
 bun run test:vm:remote   # tier 3: needs Hetzner /dev/kvm
 bun run lint             # oxlint across all packages
-bun run format           # dprint format all files
-bun run format:check     # dprint check (CI)
+bun run format           # oxfmt format all files
+bun run format:check     # oxfmt check (CI)
 bun run typecheck        # type-check
 bun run check            # lint + typecheck + format check
 bun run knip             # find unused deps/exports
@@ -42,7 +42,7 @@ Read before making changes: @docs/architecture.md, @docs/security.md
 ## Stack
 
 Bun, TypeScript strict, Hono, Zod, neverthrow, vitest (per-package configs), Turborepo, oxlint,
-dprint, knip, syncpack.
+oxfmt, knip, syncpack.
 
 ## Testing
 

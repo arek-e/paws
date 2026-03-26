@@ -90,15 +90,15 @@ socket. Tests inject a fake.
 
 ```typescript
 // Production
-const client = createFirecrackerClient(socketPath,)
+const client = createFirecrackerClient(socketPath);
 
 // Test
 const client = createFirecrackerClient(socketPath, {
-  request: async (method, path, body,) => {
+  request: async (method, path, body) => {
     // Return canned response
-    return { statusCode: 200, body: '{}', }
+    return { statusCode: 200, body: '{}' };
   },
-},)
+});
 ```
 
 Same pattern for shell commands in tap/iptables — inject `exec` to verify args without running real
@@ -106,15 +106,15 @@ commands.
 
 ```typescript
 // Production
-createTap(alloc,)
+createTap(alloc);
 
 // Test
 createTap(alloc, {
-  exec: async (cmd, args,) => {
+  exec: async (cmd, args) => {
     // Verify: cmd === 'ip', args === ['tuntap', 'add', ...]
-    return { stdout: '', stderr: '', }
+    return { stdout: '', stderr: '' };
   },
-},)
+});
 ```
 
 ### Gateway routes — Hono test client
@@ -126,17 +126,17 @@ test('POST /v1/sessions returns 202', async () => {
   const res = await app.request('/v1/sessions', {
     method: 'POST',
     headers: {
-      'Authorization': 'Bearer test-key',
+      Authorization: 'Bearer test-key',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       snapshot: 'test',
-      workload: { type: 'script', script: 'echo hi', },
-    },),
-  },)
-  expect(res.status,).toBe(202,)
-  expect(await res.json(),).toHaveProperty('sessionId',)
-})
+      workload: { type: 'script', script: 'echo hi' },
+    }),
+  });
+  expect(res.status).toBe(202);
+  expect(await res.json()).toHaveProperty('sessionId');
+});
 ```
 
 One integration test file per app boots the real server on a random port and hits every endpoint
@@ -148,28 +148,28 @@ Proxy tests never hit real external services. A local HTTPS server stands in:
 
 ```typescript
 // Test setup
-const fakeServer = createFakeHttpsServer({ port: 9999, },)
+const fakeServer = createFakeHttpsServer({ port: 9999 });
 const proxy = createProxy({
   listenPort: 8443,
   allowlist: {
     'api.anthropic.com': {
       target: 'https://localhost:9999',
-      headers: { 'x-api-key': 'sk-test-123', },
+      headers: { 'x-api-key': 'sk-test-123' },
     },
   },
-},)
+});
 
 // Test: credential injection
 test('injects x-api-key header for anthropic', async () => {
-  const res = await curlThroughProxy('https://api.anthropic.com/v1/messages',)
-  expect(fakeServer.lastRequest.headers['x-api-key'],).toBe('sk-test-123',)
-})
+  const res = await curlThroughProxy('https://api.anthropic.com/v1/messages');
+  expect(fakeServer.lastRequest.headers['x-api-key']).toBe('sk-test-123');
+});
 
 // Test: domain blocking
 test('blocks non-allowlisted domains', async () => {
-  const res = await curlThroughProxy('https://evil.com',)
-  expect(res.error,).toBe('connection_refused',)
-})
+  const res = await curlThroughProxy('https://evil.com');
+  expect(res.error).toBe('connection_refused');
+});
 ```
 
 ## Running VM Tests (Tier 3)
