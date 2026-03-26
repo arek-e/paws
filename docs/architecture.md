@@ -1,21 +1,25 @@
 # Architecture
 
 ```
-  /\_/\
- ( o.o )  paws architecture
-  > ^ <
+ /\_/\
+( o.o )  paws architecture
+ > ^ <
 ```
 
 ## Overview
 
-paws is a self-hosted platform for running background AI agents in Firecracker microVMs. It consists of two core services — a **gateway** (control plane) and **workers** (execution nodes) — connected by a Kubernetes-orchestrated network.
+paws is a self-hosted platform for running background AI agents in Firecracker microVMs. It consists
+of two core services — a **gateway** (control plane) and **workers** (execution nodes) — connected
+by a Kubernetes-orchestrated network.
 
-The design follows Browser Use's "Pattern 2: Agent Isolation" — the entire agent runs in a sandbox with zero secrets, talking to the outside world through a control plane that holds all credentials.
+The design follows Browser Use's "Pattern 2: Agent Isolation" — the entire agent runs in a sandbox
+with zero secrets, talking to the outside world through a control plane that holds all credentials.
 
 ## Core Principles
 
 1. **Zero secrets in the VM** — the agent has nothing worth stealing
-2. **Per-VM isolation** — every session gets its own proxy, its own network namespace, its own credentials
+2. **Per-VM isolation** — every session gets its own proxy, its own network namespace, its own
+   credentials
 3. **Ephemeral execution** — VMs are created per trigger event, destroyed after completion
 4. **Persistent memory** — state survives across invocations via gateway DB + mounted volumes
 5. **Spec-first API** — OpenAPI spec is the source of truth, SDKs generated from it
@@ -103,7 +107,8 @@ POST /v1/sessions
 
 ### Daemons (persistent roles)
 
-A daemon is a *definition* stored in the gateway — not a persistent VM. When a trigger fires, the gateway creates a session for it.
+A daemon is a _definition_ stored in the gateway — not a persistent VM. When a trigger fires, the
+gateway creates a session for it.
 
 ```
 Trigger fires (webhook / cron / watch)
@@ -118,7 +123,9 @@ Trigger fires (webhook / cron / watch)
 ```
 
 A daemon accumulates context not by staying alive, but through:
-1. **LLM history** — gateway stores conversation context (transparent, since it proxies all LLM calls)
+
+1. **LLM history** — gateway stores conversation context (transparent, since it proxies all LLM
+   calls)
 2. **State volume** — `/state` directory persists across invocations (cloned repos, config, cache)
 
 ## Security Model
@@ -128,10 +135,12 @@ See [security.md](security.md) for the full model. Summary:
 ### Zero Secrets in the VM
 
 The VM receives exactly two values at boot:
+
 - `SESSION_TOKEN` — identifies this session to the gateway
 - `GATEWAY_URL` — how to reach the control plane (for status reporting)
 
-All credentials (API keys, GitHub tokens, etc.) are held by the per-VM TLS proxy on the host. The agent makes normal HTTPS requests; the proxy intercepts and injects auth headers.
+All credentials (API keys, GitHub tokens, etc.) are held by the per-VM TLS proxy on the host. The
+agent makes normal HTTPS requests; the proxy intercepts and injects auth headers.
 
 ### Per-VM TLS MITM Proxy
 
@@ -183,31 +192,36 @@ Steps 9-11 always run, even on failure (guaranteed cleanup).
 ## Firecracker Snapshot Boot
 
 Each snapshot contains:
+
 - `vmlinux` — Linux kernel (~40 MB)
 - `disk.ext4` — root filesystem with pre-installed tools (~4 GB)
 - `memory.snap` — full memory state (~4 GB)
 - `vmstate.snap` — CPU register state (~30 KB)
 
 On restore:
+
 1. Copy `disk.ext4` with CoW (`cp --reflink=auto`) — instant on btrfs/xfs, fast copy on ext4
 2. Spawn `firecracker --api-sock /path/to/sock`
 3. `PUT /snapshot/load` with memory + vmstate paths
 4. `PATCH /vm { state: "Resumed" }`
 
-The VM resumes exactly where it was snapshotted — all processes running, memory warm, network up. Boot time: **<1 second** (28ms with userfaultfd lazy loading).
+The VM resumes exactly where it was snapshotted — all processes running, memory warm, network up.
+Boot time: **<1 second** (28ms with userfaultfd lazy loading).
 
 ## Persistent State
 
 ### Layer 1: LLM Conversation History (gateway)
 
-The gateway proxies all LLM calls (since it's the MITM proxy path). It stores the conversation per daemon role:
+The gateway proxies all LLM calls (since it's the MITM proxy path). It stores the conversation per
+daemon role:
 
 ```
 Invocation 1: agent sends messages A, B → gateway stores [A, B, response_A, response_B]
 Invocation 2: agent sends message C → gateway reconstructs [A, B, resp_A, resp_B, C] → sends full context to LLM
 ```
 
-The agent doesn't manage this — it happens transparently. If a VM dies mid-conversation, the history survives.
+The agent doesn't manage this — it happens transparently. If a VM dies mid-conversation, the history
+survives.
 
 ### Layer 2: State Volume (worker node)
 
@@ -220,9 +234,11 @@ Each daemon role gets a persistent directory on the worker node:
   └── cache/         ← any cached data
 ```
 
-Mounted into the VM at `/state`. First invocation: empty. Subsequent invocations: pick up where the last one left off.
+Mounted into the VM at `/state`. First invocation: empty. Subsequent invocations: pick up where the
+last one left off.
 
-**Node affinity (v0.1):** daemon pinned to a specific worker node. The scheduler always routes that daemon's sessions to the same node so the volume is available.
+**Node affinity (v0.1):** daemon pinned to a specific worker node. The scheduler always routes that
+daemon's sessions to the same node so the volume is available.
 
 **Future:** sync state to object storage between invocations for cross-node portability.
 
@@ -231,6 +247,7 @@ Mounted into the VM at `/state`. First invocation: empty. Subsequent invocations
 Spec-first design using `@hono/zod-openapi`. Full reference in [api.md](api.md).
 
 ### Sessions
+
 ```
 POST   /v1/sessions              Submit workload → 202 { sessionId }
 GET    /v1/sessions/:id          Poll status / get result
@@ -238,6 +255,7 @@ DELETE /v1/sessions/:id          Cancel running session
 ```
 
 ### Daemons
+
 ```
 POST   /v1/daemons               Register + activate a daemon
 GET    /v1/daemons                List all active daemons
@@ -247,17 +265,20 @@ DELETE /v1/daemons/:role          Stop daemon
 ```
 
 ### Triggers
+
 ```
 POST   /v1/webhooks/:role         Receive webhook → trigger daemon
 ```
 
 ### Fleet
+
 ```
 GET    /v1/fleet                  Fleet overview
 GET    /v1/fleet/workers          All workers with health
 ```
 
 ### Snapshots
+
 ```
 POST   /v1/snapshots/:id/build    Build a snapshot from config
 GET    /v1/snapshots               List available snapshots
@@ -265,19 +286,19 @@ GET    /v1/snapshots               List available snapshots
 
 ## Technology Stack
 
-| Component | Technology |
-|---|---|
-| Language | TypeScript (Bun runtime) |
-| HTTP framework | Hono + @hono/zod-openapi |
-| VM runtime | Firecracker (KVM) |
-| Error handling | neverthrow (ResultAsync) |
-| Validation | Zod |
-| API spec | OpenAPI 3.1 (auto-generated from code) |
-| SDK generation | openapi-generator (50+ languages) |
-| Orchestration | Kubernetes (kubeadm) — v0.2+ |
-| IaC | Pulumi (TypeScript) — v0.2+ |
-| Build system | Turborepo |
-| Package manager | Bun |
+| Component       | Technology                             |
+| --------------- | -------------------------------------- |
+| Language        | TypeScript (Bun runtime)               |
+| HTTP framework  | Hono + @hono/zod-openapi               |
+| VM runtime      | Firecracker (KVM)                      |
+| Error handling  | neverthrow (ResultAsync)               |
+| Validation      | Zod                                    |
+| API spec        | OpenAPI 3.1 (auto-generated from code) |
+| SDK generation  | openapi-generator (50+ languages)      |
+| Orchestration   | Kubernetes (kubeadm) — v0.2+           |
+| IaC             | Pulumi (TypeScript) — v0.2+            |
+| Build system    | Turborepo                              |
+| Package manager | Bun                                    |
 
 ## Monorepo Structure
 

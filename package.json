@@ -1,0 +1,32 @@
+{
+  "name": "paws",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:integration": "turbo run test:integration",
+    "test:vm": "turbo run test:vm",
+    "test:vm:remote": "scripts/test-vm-remote.sh",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "typecheck": "turbo run typecheck",
+    "check": "oxlint . && turbo run typecheck && oxfmt --check .",
+    "start": "turbo run start",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "knip": "knip"
+  },
+  "devDependencies": {
+    "knip": "^5.44.0",
+    "oxfmt": "^0.42.0",
+    "oxlint": "^1.57.0",
+    "syncpack": "^13.0.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0"
+  }
+}

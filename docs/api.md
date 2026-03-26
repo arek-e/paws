@@ -1,9 +1,9 @@
 # API Reference
 
 ```
-  /\_/\
- ( o.o )  paws API
-  > ^ <
+ /\_/\
+( o.o )  paws API
+ > ^ <
 ```
 
 All endpoints require `Authorization: Bearer <API_KEY>` unless noted.
@@ -23,6 +23,7 @@ POST /v1/sessions
 Submit a workload for execution in an isolated Firecracker VM.
 
 **Request:**
+
 ```json
 {
   "snapshot": "claude-agent",
@@ -53,21 +54,22 @@ Submit a workload for execution in an isolated Firecracker VM.
 }
 ```
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `snapshot` | string | yes | Snapshot ID to boot from |
-| `workload.type` | `"script"` | yes | Workload type (script only for v0.1) |
-| `workload.script` | string | yes | Bash script to execute in the VM |
-| `workload.env` | object | no | Environment variables (non-secret) |
-| `resources.vcpus` | number | no | vCPUs (1-8, default 2) |
-| `resources.memoryMB` | number | no | Memory in MB (256-16384, default 4096) |
-| `timeoutMs` | number | no | Max execution time (default 600000 = 10 min) |
-| `network.allowOut` | string[] | no | Allowed outbound domains (default: none) |
-| `network.credentials` | object | no | Per-domain credential injection (headers) |
-| `callbackUrl` | string | no | URL to POST result when complete |
-| `metadata` | object | no | Opaque metadata, returned in result |
+| Field                 | Type       | Required | Description                                  |
+| --------------------- | ---------- | -------- | -------------------------------------------- |
+| `snapshot`            | string     | yes      | Snapshot ID to boot from                     |
+| `workload.type`       | `"script"` | yes      | Workload type (script only for v0.1)         |
+| `workload.script`     | string     | yes      | Bash script to execute in the VM             |
+| `workload.env`        | object     | no       | Environment variables (non-secret)           |
+| `resources.vcpus`     | number     | no       | vCPUs (1-8, default 2)                       |
+| `resources.memoryMB`  | number     | no       | Memory in MB (256-16384, default 4096)       |
+| `timeoutMs`           | number     | no       | Max execution time (default 600000 = 10 min) |
+| `network.allowOut`    | string[]   | no       | Allowed outbound domains (default: none)     |
+| `network.credentials` | object     | no       | Per-domain credential injection (headers)    |
+| `callbackUrl`         | string     | no       | URL to POST result when complete             |
+| `metadata`            | object     | no       | Opaque metadata, returned in result          |
 
 **Response (202):**
+
 ```json
 {
   "sessionId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -82,6 +84,7 @@ GET /v1/sessions/:id
 ```
 
 **Response (200):**
+
 ```json
 {
   "sessionId": "a1b2c3d4-...",
@@ -98,14 +101,14 @@ GET /v1/sessions/:id
 }
 ```
 
-| Status | Meaning |
-|---|---|
-| `pending` | Queued, waiting for VM slot |
-| `running` | VM active, workload executing |
-| `completed` | Finished successfully |
-| `failed` | Workload error (non-zero exit) |
-| `timeout` | Exceeded timeoutMs |
-| `cancelled` | Cancelled via DELETE |
+| Status      | Meaning                        |
+| ----------- | ------------------------------ |
+| `pending`   | Queued, waiting for VM slot    |
+| `running`   | VM active, workload executing  |
+| `completed` | Finished successfully          |
+| `failed`    | Workload error (non-zero exit) |
+| `timeout`   | Exceeded timeoutMs             |
+| `cancelled` | Cancelled via DELETE           |
 
 ### Cancel Session
 
@@ -114,6 +117,7 @@ DELETE /v1/sessions/:id
 ```
 
 **Response (200):**
+
 ```json
 {
   "sessionId": "a1b2c3d4-...",
@@ -134,6 +138,7 @@ POST /v1/daemons
 Register a daemon role. The daemon activates immediately and begins watching for triggers.
 
 **Request:**
+
 ```json
 {
   "role": "pr-helper",
@@ -185,6 +190,7 @@ Register a daemon role. The daemon activates immediately and begins watching for
 ```
 
 **Response (201):**
+
 ```json
 {
   "role": "pr-helper",
@@ -200,6 +206,7 @@ GET /v1/daemons
 ```
 
 **Response (200):**
+
 ```json
 {
   "daemons": [
@@ -225,6 +232,7 @@ GET /v1/daemons/:role
 ```
 
 **Response (200):**
+
 ```json
 {
   "role": "pr-helper",
@@ -253,6 +261,7 @@ PATCH /v1/daemons/:role
 Partial update of daemon configuration.
 
 **Request:**
+
 ```json
 {
   "governance": { "maxActionsPerHour": 50 }
@@ -279,9 +288,11 @@ POST /v1/webhooks/:role
 
 No auth required (validated via webhook secret configured in daemon).
 
-Gateway receives the webhook payload, validates the signature, checks governance rules, and creates a session for the daemon with `TRIGGER_PAYLOAD` set to the webhook body.
+Gateway receives the webhook payload, validates the signature, checks governance rules, and creates
+a session for the daemon with `TRIGGER_PAYLOAD` set to the webhook body.
 
 **Response (202):**
+
 ```json
 {
   "accepted": true,
@@ -300,6 +311,7 @@ GET /v1/fleet
 ```
 
 **Response (200):**
+
 ```json
 {
   "totalWorkers": 3,
@@ -319,6 +331,7 @@ GET /v1/fleet/workers
 ```
 
 **Response (200):**
+
 ```json
 {
   "workers": [
@@ -353,6 +366,7 @@ POST /v1/snapshots/:id/build
 ```
 
 **Request:**
+
 ```json
 {
   "base": "ubuntu-24.04",
@@ -365,6 +379,7 @@ POST /v1/snapshots/:id/build
 ```
 
 **Response (202):**
+
 ```json
 {
   "snapshotId": "claude-agent",
@@ -380,6 +395,7 @@ GET /v1/snapshots
 ```
 
 **Response (200):**
+
 ```json
 {
   "snapshots": [
@@ -416,14 +432,14 @@ All errors follow a consistent format:
 }
 ```
 
-| Code | HTTP Status | Meaning |
-|---|---|---|
-| `UNAUTHORIZED` | 401 | Invalid or missing API key |
-| `FORBIDDEN` | 403 | API key lacks permission |
-| `SESSION_NOT_FOUND` | 404 | Session ID not found |
-| `DAEMON_NOT_FOUND` | 404 | Daemon role not found |
-| `DAEMON_ALREADY_EXISTS` | 409 | Daemon role already registered |
-| `SNAPSHOT_NOT_FOUND` | 404 | Snapshot ID not found |
-| `CAPACITY_EXHAUSTED` | 503 | All worker nodes are full |
-| `RATE_LIMITED` | 429 | Governance rate limit exceeded |
-| `VALIDATION_ERROR` | 400 | Invalid request body |
+| Code                    | HTTP Status | Meaning                        |
+| ----------------------- | ----------- | ------------------------------ |
+| `UNAUTHORIZED`          | 401         | Invalid or missing API key     |
+| `FORBIDDEN`             | 403         | API key lacks permission       |
+| `SESSION_NOT_FOUND`     | 404         | Session ID not found           |
+| `DAEMON_NOT_FOUND`      | 404         | Daemon role not found          |
+| `DAEMON_ALREADY_EXISTS` | 409         | Daemon role already registered |
+| `SNAPSHOT_NOT_FOUND`    | 404         | Snapshot ID not found          |
+| `CAPACITY_EXHAUSTED`    | 503         | All worker nodes are full      |
+| `RATE_LIMITED`          | 429         | Governance rate limit exceeded |
+| `VALIDATION_ERROR`      | 400         | Invalid request body           |

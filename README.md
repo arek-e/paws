@@ -1,26 +1,31 @@
 ```
-  /\_/\
- ( o.o )  paws
-  > ^ <   background agents at your service
+ /\_/\
+( o.o )  paws
+ > ^ <   background agents at your service
 ```
 
 # paws
 
-Open-source infrastructure for running background AI agents in isolated Firecracker microVMs. Self-hosted, zero-trust, elastic.
+Open-source infrastructure for running background AI agents in isolated Firecracker microVMs.
+Self-hosted, zero-trust, elastic.
 
-**Your agents run in sandboxes with zero secrets.** Credentials are injected at the network layer by a per-VM TLS proxy. The agent never sees an API key — not in env vars, not in memory, not on disk.
+**Your agents run in sandboxes with zero secrets.** Credentials are injected at the network layer by
+a per-VM TLS proxy. The agent never sees an API key — not in env vars, not in memory, not on disk.
 
 ## What is this?
 
-paws is the execution layer for background agents and daemons — persistent roles that watch for triggers and act autonomously. Think "keep PRs mergeable" not "fix this bug."
+paws is the execution layer for background agents and daemons — persistent roles that watch for
+triggers and act autonomously. Think "keep PRs mergeable" not "fix this bug."
 
 You provide:
+
 - A snapshot (pre-built VM image with your agent runtime)
 - A trigger (webhook, cron, or watch condition)
 - A workload script (what to run when triggered)
 - Credentials (injected by the platform, never exposed to the VM)
 
-paws handles: VM lifecycle, snapshot boot (<1s), network isolation, credential proxying, fleet scheduling, audit logging.
+paws handles: VM lifecycle, snapshot boot (<1s), network isolation, credential proxying, fleet
+scheduling, audit logging.
 
 ## Quick Example
 
