@@ -3,6 +3,28 @@
 Self-hosted platform for running AI agents in isolated Firecracker microVMs with zero-trust
 credential injection.
 
+## Before You Start
+
+Before beginning any implementation work, orient yourself:
+
+1. **Check open PRs** — use GitHub tools to list open PRs on `arek-e/paws`. Understand what's
+   currently in-flight so you don't duplicate or conflict with ongoing work.
+2. **Check recently merged PRs** — review the last 5-10 merged PRs to understand what's already
+   been built and the patterns established.
+3. **Read the roadmap** — `@docs/roadmap.md` has the v0.1 task list with status indicators (⬜ not
+   started, 🟡 in progress, ✅ done). Identify what's next.
+4. **Read relevant docs** — before touching any area, read its doc:
+   - New package/app → `@docs/architecture.md`
+   - Security-related (proxy, credentials, networking) → `@docs/security.md`
+   - Adding tests → `@docs/testing.md`
+   - API routes → `@docs/api.md`
+   - Server/infra work → `@docs/fc-staging-server.md`
+5. **Check existing code** — if packages or apps already exist, read their structure before adding
+   to them. Don't reinvent what's already there.
+
+Do this research using sub-agents to keep your main context clean. Summarize findings briefly before
+proposing work.
+
 ## Commands
 
 ```bash
