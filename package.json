@@ -1,0 +1,29 @@
+{
+  "name": "paws",
+  "private": true,
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:integration": "turbo run test:integration",
+    "test:vm": "turbo run test:vm",
+    "test:vm:remote": "scripts/test-vm-remote.sh",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "dprint fmt",
+    "format:check": "dprint check",
+    "typecheck": "turbo run typecheck",
+    "check": "turbo run lint typecheck && dprint check",
+    "start": "turbo run start",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "knip": "knip"
+  },
+  "devDependencies": {
+    "dprint": "^0.49.0",
+    "knip": "^5.44.0",
+    "oxlint": "^1.57.0",
+    "syncpack": "^13.0.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "versionGroups": [
+    {
+      "label": "Use workspace protocol for internal packages",
+      "dependencies": ["@paws/*"],
+      "pinVersion": "workspace:*"
+    }
+  ],
+  "sortFirst": [
+    "name",
+    "version",
+    "private",
+    "description",
+    "author",
+    "license",
+    "type",
+    "main",
+    "module",
+    "types",
+    "exports",
+    "scripts",
+    "dependencies",
+    "devDependencies",
+    "peerDependencies"
+  ]
+}
