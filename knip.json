@@ -1,0 +1,19 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [],
+      "ignoreDependencies": ["turbo"]
+    },
+    "packages/*": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"],
+      "ignore": ["**/*.test.ts", "**/*.integration.test.ts"]
+    },
+    "apps/*": {
+      "entry": ["src/index.ts", "src/server.ts"],
+      "project": ["src/**/*.ts"],
+      "ignore": ["**/*.test.ts", "**/*.integration.test.ts"]
+    }
+  }
+}
