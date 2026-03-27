@@ -44,8 +44,13 @@ export function createHetznerCloudClient(options: HetznerCloudClientOptions) {
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
 
-    const text = await res.text();
-    const data = text.length > 0 ? (JSON.parse(text) as T) : ({} as T);
+    let data: T;
+    try {
+      const text = await res.text();
+      data = text.length > 0 ? (JSON.parse(text) as T) : ({} as T);
+    } catch {
+      data = {} as T;
+    }
 
     return { status: res.status, data };
   }

@@ -37,6 +37,9 @@ function mockFetch(
     if (init?.body) {
       spy.lastBody = JSON.parse(init.body as string);
     }
+    if (body === null || status === 204) {
+      return new Response(null, { status });
+    }
     return new Response(JSON.stringify(body), { status });
   };
 }

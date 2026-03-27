@@ -28,6 +28,9 @@ function mockFetch(responses: Array<{ status: number; body: unknown }>): FetchFn
   let call = 0;
   return async (_input, _init) => {
     const resp = responses[call++] ?? { status: 500, body: {} };
+    if (resp.body === null || resp.status === 204) {
+      return new Response(null, { status: resp.status });
+    }
     return new Response(JSON.stringify(resp.body), { status: resp.status });
   };
 }
