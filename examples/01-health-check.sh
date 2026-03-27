@@ -18,7 +18,7 @@ echo ""
 
 # Check gateway health
 echo -n "Gateway (${PAWS_URL})... "
-if health=$(curl -sf "${PAWS_URL}/v1/health" 2>/dev/null); then
+if health=$(curl -sf "${PAWS_URL}/health" 2>/dev/null); then
   echo -e "${GREEN}OK${NC}"
   echo "  ${health}" | head -1
 else

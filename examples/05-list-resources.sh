@@ -28,8 +28,8 @@ fetch() {
   echo ""
 }
 
+fetch "Health"             "/health"
 fetch "Fleet Overview"     "/v1/fleet"
 fetch "Workers"            "/v1/fleet/workers"
-fetch "Sessions"           "/v1/sessions"
 fetch "Daemons"            "/v1/daemons"
 fetch "Snapshots"          "/v1/snapshots"

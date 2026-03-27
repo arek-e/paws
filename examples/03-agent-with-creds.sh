@@ -15,7 +15,7 @@ PAWS_URL="${PAWS_URL:-http://localhost:4000}"
 PAWS_API_KEY="${PAWS_API_KEY:-paws-dev-key}"
 SNAPSHOT="${PAWS_SNAPSHOT:-agent-latest}"
 
-echo " /\\_/\\"
+echo " /\_/\\"
 echo "( o.o )  paws credential injection demo"
 echo " > ^ <"
 echo ""
@@ -32,49 +32,58 @@ if [[ -z "${ANTHROPIC_API_KEY:-}" ]] && [[ -z "${GITHUB_TOKEN:-}" ]]; then
   echo ""
 fi
 
-ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-sk-ant-demo-placeholder}"
-GITHUB_TOKEN="${GITHUB_TOKEN:-ghp_demo-placeholder}"
-
-# Build the credentials JSON
-credentials='{
-  "api.anthropic.com": {
-    "headers": { "x-api-key": "'"${ANTHROPIC_API_KEY}"'" }
-  },
-  "github.com": {
-    "headers": { "Authorization": "Bearer '"${GITHUB_TOKEN}"'" }
-  },
-  "*.github.com": {
-    "headers": { "Authorization": "Bearer '"${GITHUB_TOKEN}"'" }
-  }
-}'
+ANTHROPIC_KEY="${ANTHROPIC_API_KEY:-sk-ant-demo-placeholder}"
+GITHUB_TOK="${GITHUB_TOKEN:-ghp_demo-placeholder}"
 
 echo "Creating session with credential injection..."
 echo "  Allowlisted domains: api.anthropic.com, github.com, *.github.com"
 echo "  Credentials injected by proxy — agent sees nothing."
 echo ""
 
-response=$(curl -sf -X POST "${PAWS_URL}/v1/sessions" \
+body=$(cat <<JSON
+{
+  "snapshot": "${SNAPSHOT}",
+  "workload": {
+    "type": "script",
+    "script": "echo 'Testing credential injection...' && echo '' && echo '1. Check env for secrets:' && env | grep -iE 'api_key|token|secret|anthropic|github' || echo '   No secrets found in environment (as expected!)' && echo '' && echo '2. Try curl to allowlisted domain:' && curl -sf https://api.anthropic.com/v1/models 2>&1 | head -5 || echo '   (depends on valid credentials)' && echo '' && echo '3. Try curl to blocked domain:' && curl -sf --connect-timeout 3 https://evil.example.com 2>&1 || echo '   Connection blocked (as expected!)' && echo '' && echo 'Zero secrets in the VM.'"
+  },
+  "network": {
+    "allowOut": ["api.anthropic.com", "github.com", "*.github.com"],
+    "credentials": {
+      "api.anthropic.com": {
+        "headers": { "x-api-key": "${ANTHROPIC_KEY}" }
+      },
+      "github.com": {
+        "headers": { "Authorization": "Bearer ${GITHUB_TOK}" }
+      },
+      "*.github.com": {
+        "headers": { "Authorization": "Bearer ${GITHUB_TOK}" }
+      }
+    }
+  },
+  "timeoutMs": 60000
+}
+JSON
+)
+
+response=$(curl -s -w "\n%{http_code}" -X POST "${PAWS_URL}/v1/sessions" \
   -H "Authorization: Bearer ${PAWS_API_KEY}" \
   -H "Content-Type: application/json" \
-  -d "{
-    \"snapshot\": \"${SNAPSHOT}\",
-    \"workload\": {
-      \"type\": \"script\",
-      \"script\": \"echo 'Testing credential injection...' && echo '' && echo '1. Check env for secrets:' && env | grep -i 'api_key\\|token\\|secret\\|anthropic\\|github' || echo '   No secrets found in environment (as expected!)' && echo '' && echo '2. Try curl to allowlisted domain:' && curl -sf https://api.anthropic.com/v1/models 2>&1 | head -5 || echo '   (API call result depends on valid credentials)' && echo '' && echo '3. Try curl to blocked domain:' && curl -sf --connect-timeout 3 https://evil.example.com 2>&1 || echo '   Connection blocked (as expected!)' && echo '' && echo 'Zero secrets in the VM. Credentials injected at network layer.'\"
-    },
-    \"network\": {
-      \"allowOut\": [\"api.anthropic.com\", \"github.com\", \"*.github.com\"],
-      \"credentials\": ${credentials}
-    },
-    \"timeoutMs\": 60000
-  }")
+  -d "${body}")
 
-session_id=$(echo "${response}" | grep -o '"sessionId":"[^"]*"' | cut -d'"' -f4)
+http_code=$(echo "${response}" | tail -1)
+result=$(echo "${response}" | sed '$d')
 
-if [[ -z "${session_id}" ]]; then
-  echo "Failed to create session:"
-  echo "${response}"
+if [[ "${http_code}" != "202" ]]; then
+  echo "Failed to create session (HTTP ${http_code}):"
+  echo "${result}"
   exit 1
+fi
+
+if command -v jq &>/dev/null; then
+  session_id=$(echo "${result}" | jq -r '.sessionId')
+else
+  session_id=$(echo "${result}" | grep -o '"sessionId":"[^"]*"' | cut -d'"' -f4)
 fi
 
 echo "Session created: ${session_id}"
@@ -83,31 +92,36 @@ echo ""
 # Poll for result
 echo "Waiting for result..."
 for i in $(seq 1 60); do
-  result=$(curl -sf "${PAWS_URL}/v1/sessions/${session_id}" \
+  poll=$(curl -s "${PAWS_URL}/v1/sessions/${session_id}" \
     -H "Authorization: Bearer ${PAWS_API_KEY}" 2>/dev/null || echo '{}')
 
-  status=$(echo "${result}" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+  if command -v jq &>/dev/null; then
+    status=$(echo "${poll}" | jq -r '.status // "pending"')
+  else
+    status=$(echo "${poll}" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+    status="${status:-pending}"
+  fi
 
   case "${status}" in
     completed)
       echo ""
       echo "--- Session output ---"
       if command -v jq &>/dev/null; then
-        echo "${result}" | jq -r '.stdout // .result // .'
+        echo "${poll}" | jq -r '.stdout // .result // .'
       else
-        echo "${result}"
+        echo "${poll}"
       fi
       echo "--- End output ---"
       exit 0
       ;;
-    failed)
+    failed|timeout)
       echo ""
-      echo "Session failed:"
-      echo "${result}"
+      echo "Session ${status}:"
+      echo "${poll}"
       exit 1
       ;;
     *)
-      printf "\r  Status: %-20s (%ds)" "${status:-pending}" "${i}"
+      printf "\r  Status: %-20s (%ds)" "${status}" "${i}"
       sleep 1
       ;;
   esac
