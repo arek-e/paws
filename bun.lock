@@ -33,6 +33,7 @@
       "dependencies": {
         "@paws/firecracker": "workspace:*",
         "@paws/proxy": "workspace:*",
+        "@paws/snapshot-store": "workspace:*",
         "@paws/types": "workspace:*",
         "hono": "^4.7.0",
         "neverthrow": "^8.2.0",
