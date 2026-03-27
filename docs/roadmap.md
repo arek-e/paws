@@ -18,7 +18,7 @@ secrets in the sandbox.
 | 3   | `apps/worker`          | Worker service — execute sessions, semaphore concurrency, health endpoint, per-VM TLS proxy, SSH into VM                                                     | ✅     |
 | 4   | `apps/gateway`         | Gateway service — spec-first API (sessions, daemons, webhooks, fleet, snapshots), session tracking, daemon registry, trigger engine, governance, LLM history | ✅     |
 | 5   | Scripts                | `install-firecracker.sh`, `bootstrap-node.sh`                                                                                                                | ⬜     |
-| 6   | Testing                | Tier 1 unit tests (all pure logic modules), Tier 2 integration tests (proxy, TAP), Tier 3 VM test scaffold + test snapshot                                   | ⬜     |
+| 6   | Testing                | Tier 1 unit tests (all pure logic modules), Tier 2 integration tests (proxy, TAP), Tier 3 VM test scaffold + test snapshot                                   | ✅     |
 
 **v0.1 deliverable:** `bun run start` on a Hetzner server. Hit the API, workloads run in isolated
 VMs, credentials never enter the sandbox.
