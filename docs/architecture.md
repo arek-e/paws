@@ -397,9 +397,17 @@ paws/
 │   ├── hetzner-dedicated/  (v0.3+) Hetzner Robot API
 │   └── hetzner-cloud/      (v0.3+) Hetzner Cloud API + cloud-init
 │
-├── infra/                  (v0.2+)
-│   ├── pulumi/             Cluster provisioning
-│   └── k8s/                Manifests
+├── infra/
+│   ├── pulumi/             Cluster provisioning (Pulumi TypeScript)
+│   │   ├── index.ts            Main program — wires everything together
+│   │   ├── Pulumi.yaml         Project metadata
+│   │   ├── Pulumi.dev.yaml     Dev stack config (cx31, 1 worker, fsn1)
+│   │   └── src/
+│   │       ├── network.ts      VPC, private network, cluster firewall
+│   │       ├── control-plane.ts  Gateway / K8s control-plane server
+│   │       ├── worker.ts       Worker node servers + Firecracker install
+│   │       └── k8s.ts          kubeadm init/join + kubectl apply (dynamic resources)
+│   └── k8s/                K8s manifests (applied by Pulumi or kubectl directly)
 │
 ├── scripts/
 │   ├── bootstrap-node.sh
@@ -514,3 +522,56 @@ infra/k8s/
 
 Worker limits are intentionally generous — it spawns KVM-backed VMs that consume host CPU/RAM
 outside of cgroup accounting.
+
+## Pulumi Provisioning (`infra/pulumi/`)
+
+One-command cluster provisioning using Pulumi TypeScript + `@pulumi/hcloud`.
+
+### What `pulumi up` does
+
+```
+1. Create SSH key resource on Hetzner Cloud
+2. Create private network (10.0.0.0/8) + cluster firewall
+3. Provision control-plane server (cx31, Ubuntu 24.04)
+   → cloud-init: containerd + kubeadm (no kubeadm init yet)
+4. Provision N worker servers (cx31 dev, AX41 prod)
+   → cloud-init: containerd + kubeadm + Firecracker v1.6.0
+5. SSH into control-plane → kubeadm init → Flannel CNI
+6. SSH into each worker → kubeadm join
+7. kubectl apply all infra/k8s/ manifests in order
+```
+
+### Stack config
+
+| Key                      | Default             | Description                                    |
+| ------------------------ | ------------------- | ---------------------------------------------- |
+| `paws:workerCount`       | `1`                 | Number of worker nodes                         |
+| `paws:gatewayServerType` | `cx31`              | Hetzner Cloud server type for gateway          |
+| `paws:workerServerType`  | `cx31`              | Hetzner Cloud server type for workers          |
+| `paws:location`          | `fsn1`              | Hetzner datacenter location                    |
+| `paws:sshPublicKey`      | (required)          | SSH public key for node access                 |
+| `paws:sshPrivateKeyPath` | `~/.ssh/id_ed25519` | Private key path on the machine running pulumi |
+| `hcloud:token`           | (required, secret)  | Hetzner Cloud API token                        |
+
+### Quick start
+
+```bash
+cd infra/pulumi
+bun install
+pulumi stack init dev
+pulumi config set --secret hcloud:token <YOUR_TOKEN>
+pulumi config set paws:sshPublicKey "$(cat ~/.ssh/id_ed25519.pub)"
+pulumi up
+
+# Save kubeconfig
+pulumi stack output --show-secrets kubeconfig > ~/.kube/paws.yaml
+export KUBECONFIG=~/.kube/paws.yaml
+kubectl get nodes
+```
+
+### Notes on dedicated servers
+
+There is no official Pulumi provider for Hetzner Robot (dedicated server API). For
+production bare-metal worker nodes (AX41), provision them via the Hetzner Robot web UI or
+`providers/hetzner-dedicated`, then join them to the cluster manually with `kubeadm join`.
+The Pulumi program handles the Hetzner Cloud case for dev and staging.

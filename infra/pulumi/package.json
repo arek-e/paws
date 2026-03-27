@@ -1,0 +1,16 @@
+{
+  "name": "@paws/pulumi",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pulumi/hcloud": "^1.22.0",
+    "@pulumi/pulumi": "^3.159.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

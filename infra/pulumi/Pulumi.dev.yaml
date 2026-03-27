@@ -1,0 +1,22 @@
+config:
+  # Number of worker nodes to provision.
+  paws:workerCount: '1'
+
+  # Hetzner Cloud server types.
+  # cx31 = 2 vCPU / 8 GB RAM — adequate for dev/staging.
+  # In production the gateway stays on cx31 but workers should use
+  # AX41 dedicated servers provisioned via the Hetzner Robot API
+  # (see providers/hetzner-dedicated — no official Pulumi provider).
+  paws:gatewayServerType: cx31
+  paws:workerServerType: cx31
+
+  # Hetzner datacenter location.
+  paws:location: fsn1
+
+  # SSH public key to install on provisioned servers.
+  # Set via: pulumi config set paws:sshPublicKey "$(cat ~/.ssh/id_ed25519.pub)"
+  paws:sshPublicKey: ''
+
+  # hcloud provider token — set via:
+  #   pulumi config set --secret hcloud:token <your-token>
+  # hcloud:token: <set with --secret>
