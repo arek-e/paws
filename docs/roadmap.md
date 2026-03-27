@@ -37,7 +37,7 @@ Test-after for system plumbing. See [testing.md](testing.md).
 | #   | What                                                                 | Status |
 | --- | -------------------------------------------------------------------- | ------ |
 | 6   | `infra/k8s/` — namespace, worker DaemonSet, gateway Deployment, RBAC | ⬜     |
-| 7   | `packages/scheduler` — least-loaded worker selection                 | 🟡     |
+| 7   | `packages/scheduler` — least-loaded worker selection                 | ✅     |
 | 8   | Gateway: K8s service discovery (watch worker pods)                   | ⬜     |
 | 9   | Worker + Gateway Dockerfiles                                         | ✅     |
 | 10  | kubeadm setup on Hetzner (replace K3s)                               | ⬜     |
