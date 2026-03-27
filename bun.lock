@@ -52,6 +52,16 @@
         "vitest": "^4.1.2",
       },
     },
+    "packages/scheduler": {
+      "name": "@paws/scheduler",
+      "version": "0.1.0",
+      "dependencies": {
+        "@paws/types": "workspace:*",
+      },
+      "devDependencies": {
+        "vitest": "^4.1.2",
+      },
+    },
     "packages/types": {
       "name": "@paws/types",
       "version": "0.1.0",
@@ -299,6 +309,8 @@
     "@paws/firecracker": ["@paws/firecracker@workspace:packages/firecracker"],
 
     "@paws/gateway": ["@paws/gateway@workspace:apps/gateway"],
+
+    "@paws/scheduler": ["@paws/scheduler@workspace:packages/scheduler"],
 
     "@paws/types": ["@paws/types@workspace:packages/types"],
 

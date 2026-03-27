@@ -284,6 +284,34 @@ POST   /v1/snapshots/:id/build    Build a snapshot from config
 GET    /v1/snapshots               List available snapshots
 ```
 
+## Scheduler (`packages/scheduler`)
+
+Pure TypeScript package — no I/O, no side effects. Used by the gateway to pick which worker node
+receives a new session.
+
+### API
+
+```typescript
+// Select the least-loaded healthy worker from a fleet snapshot.
+// Returns null if no healthy worker has available capacity.
+selectWorker(workers: Worker[]): Worker | null
+
+// Compute available capacity for a single worker.
+// available = maxConcurrent - running - queued
+workerAvailableCapacity(worker: Worker): number
+```
+
+### Selection algorithm
+
+1. Filter to workers with `status === 'healthy'`
+2. Filter to workers where `availableCapacity > 0`
+3. Pick the worker with the highest available capacity (least loaded)
+4. Tie-break: first in array wins (stable, deterministic)
+
+The gateway passes a fleet snapshot from `GET /v1/fleet/workers` into `selectWorker` when routing a
+new session. Node affinity (pinning a daemon to a specific worker) is enforced before calling the
+scheduler — the scheduler only sees the candidate set.
+
 ## Technology Stack
 
 | Component       | Technology                             |
