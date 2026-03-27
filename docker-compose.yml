@@ -1,0 +1,82 @@
+version: '3.9'
+
+# Local development compose file.
+# Gateway + Worker running together on one machine.
+#
+# Usage:
+#   docker compose up              # start both services
+#   docker compose up gateway      # start gateway only
+#   docker compose logs -f worker  # tail worker logs
+#
+# Prerequisites for the worker:
+#   - /dev/kvm must exist on the host (Linux with KVM enabled)
+#   - A Firecracker binary at ./infra/firecracker (or set FIRECRACKER_BIN)
+#   - A snapshot at SNAPSHOT_DIR (default: /var/lib/paws/snapshots/agent-latest)
+#   - An SSH key at SSH_KEY_PATH (default: /var/lib/paws/ssh/id_ed25519)
+
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: apps/gateway/Dockerfile
+    image: paws-gateway:local
+    container_name: paws-gateway
+    restart: unless-stopped
+    ports:
+      - '${GATEWAY_PORT:-4000}:4000'
+    environment:
+      PORT: '4000'
+      # API key used to authenticate requests to the gateway.
+      API_KEY: '${API_KEY:-paws-dev-key}'
+      # URL the gateway uses to reach the worker service.
+      WORKER_URL: 'http://worker:3000'
+    depends_on:
+      worker:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:4000/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    image: paws-worker:local
+    container_name: paws-worker
+    restart: unless-stopped
+    # Worker needs privileged access for:
+    #   - iptables DNAT rules (per-VM network isolation)
+    #   - TAP device creation (ip tuntap add)
+    #   - /dev/kvm access (Firecracker requires KVM)
+    privileged: true
+    ports:
+      - '${WORKER_PORT:-3000}:3000'
+    environment:
+      PORT: '3000'
+      MAX_CONCURRENT_VMS: '${MAX_CONCURRENT_VMS:-5}'
+      MAX_QUEUE_SIZE: '${MAX_QUEUE_SIZE:-10}'
+      SNAPSHOT_DIR: '${SNAPSHOT_DIR:-/var/lib/paws/snapshots/agent-latest}'
+      VM_BASE_DIR: '${VM_BASE_DIR:-/var/lib/paws/vms}'
+      SSH_KEY_PATH: '${SSH_KEY_PATH:-/var/lib/paws/ssh/id_ed25519}'
+      WORKER_NAME: '${WORKER_NAME:-worker-local}'
+    volumes:
+      # Snapshots: read-only — worker copies disk.ext4 per session (CoW).
+      - '${SNAPSHOT_DIR:-/var/lib/paws/snapshots}:/var/lib/paws/snapshots:ro'
+      # VM scratch space: read-write — per-session CoW disk copies live here.
+      - '${VM_BASE_DIR:-/var/lib/paws/vms}:/var/lib/paws/vms:rw'
+      # SSH key used to connect into VMs.
+      - '${SSH_KEY_DIR:-/var/lib/paws/ssh}:/var/lib/paws/ssh:ro'
+      # Firecracker binary — mount from host so the container stays generic.
+      - '${FIRECRACKER_BIN:-/usr/local/bin/firecracker}:/usr/local/bin/firecracker:ro'
+    devices:
+      # KVM device required by Firecracker.
+      - /dev/kvm:/dev/kvm
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

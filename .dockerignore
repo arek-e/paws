@@ -1,0 +1,37 @@
+# Version control
+.git
+.gitignore
+
+# Node/Bun
+node_modules
+**/node_modules
+
+# Build artifacts
+**/dist
+**/.turbo
+
+# Test files
+**/*.test.ts
+**/*.integration.test.ts
+**/vitest.config.ts
+**/vitest.integration.config.ts
+
+# IDE and OS
+.vscode
+.idea
+.DS_Store
+*.swp
+
+# Docs (not needed at runtime)
+docs/
+*.md
+
+# Infra / scripts (not needed in app images)
+infra/
+scripts/
+providers/
+
+# Docker files themselves
+Dockerfile
+docker-compose.yml
+.dockerignore
