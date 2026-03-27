@@ -17,7 +17,7 @@ COPY apps/gateway/package.json          ./apps/gateway/package.json
 COPY apps/worker/package.json           ./apps/worker/package.json
 
 # Install all dependencies.
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Copy workspace package sources.
 COPY packages/types/       ./packages/types/

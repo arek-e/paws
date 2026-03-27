@@ -18,7 +18,7 @@ COPY apps/gateway/package.json          ./apps/gateway/package.json
 COPY apps/worker/package.json           ./apps/worker/package.json
 
 # Install all dependencies (including workspace symlinks).
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Copy source for workspace packages that gateway depends on.
 COPY packages/types/       ./packages/types/
