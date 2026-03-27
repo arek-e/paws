@@ -7,11 +7,13 @@ FROM oven/bun:1.3.9-alpine AS builder
 WORKDIR /build
 
 # Copy root manifest files first so layer caching works when only source changes.
-COPY package.json bun.lockb* ./
+COPY package.json bun.lock* ./
 
 # Copy workspace package manifests (needed for bun install to resolve workspace deps).
 COPY packages/types/package.json        ./packages/types/package.json
 COPY packages/firecracker/package.json  ./packages/firecracker/package.json
+COPY packages/proxy/package.json        ./packages/proxy/package.json
+COPY packages/scheduler/package.json    ./packages/scheduler/package.json
 COPY apps/gateway/package.json          ./apps/gateway/package.json
 COPY apps/worker/package.json           ./apps/worker/package.json
 
@@ -21,6 +23,8 @@ RUN bun install --frozen-lockfile
 # Copy source for workspace packages that gateway depends on.
 COPY packages/types/       ./packages/types/
 COPY packages/firecracker/ ./packages/firecracker/
+COPY packages/proxy/       ./packages/proxy/
+COPY packages/scheduler/   ./packages/scheduler/
 
 # Copy gateway source.
 COPY apps/gateway/ ./apps/gateway/
@@ -48,6 +52,8 @@ COPY --from=builder /build/node_modules ./node_modules
 # Copy workspace packages (gateway imports @paws/types at runtime via symlink).
 COPY --from=builder /build/packages/types/       ./packages/types/
 COPY --from=builder /build/packages/firecracker/ ./packages/firecracker/
+COPY --from=builder /build/packages/proxy/       ./packages/proxy/
+COPY --from=builder /build/packages/scheduler/   ./packages/scheduler/
 
 # Copy gateway source (we run from source with bun, not from the dist bundle,
 # because bun handles TypeScript natively and the workspace imports resolve
