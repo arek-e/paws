@@ -1,0 +1,100 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests (emergency deploy)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    if: ${{ !inputs.skip_tests }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+      - run: bun test
+
+  build-and-push:
+    needs: [test]
+    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        app: [gateway, worker]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/paws-${{ matrix.app }}:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/paws-${{ matrix.app }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: [build-and-push]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Deploy to server
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          SSH="ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/deploy_key root@100.78.44.23"
+
+          echo "==> Pulling latest code..."
+          $SSH "cd /opt/paws && git fetch origin main && git reset --hard origin/main"
+
+          echo "==> Installing dependencies..."
+          $SSH "cd /opt/paws && bun install --frozen-lockfile"
+
+          echo "==> Restarting services..."
+          $SSH "systemctl restart paws-gateway paws-worker"
+
+          echo "==> Waiting for services to start..."
+          sleep 5
+
+          echo "==> Health check..."
+          $SSH "curl -sf http://127.0.0.1:4000/health && echo '' && curl -sf http://127.0.0.1:3000/health"
+
+          echo "==> Deploy complete!"
