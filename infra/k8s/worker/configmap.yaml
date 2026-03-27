@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: worker-config
+  namespace: paws
+  labels:
+    app.kubernetes.io/name: paws
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/managed-by: kubectl
+data:
+  PORT: '3000'
+  NODE_ENV: 'production'
+  MAX_CONCURRENT_VMS: '5'
+  MAX_QUEUE_SIZE: '10'
+  # Paths on the host — accessed via hostPath volumes mounted into the container.
+  SNAPSHOT_DIR: '/var/lib/paws/snapshots/agent-latest'
+  VM_BASE_DIR: '/var/lib/paws/vms'
+  SSH_KEY_PATH: '/var/lib/paws/ssh/id_ed25519'
+  # WORKER_NAME is set dynamically in the DaemonSet using the node name
+  # via the Downward API.

@@ -1,0 +1,161 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: worker
+  namespace: paws
+  labels:
+    app.kubernetes.io/name: paws
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: paws
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: paws
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: paws
+      # Worker uses the host network so it can manage TAP devices and iptables
+      # rules that are visible to Firecracker VMs. Each worker node manages its
+      # own VMs and their network isolation.
+      hostNetwork: true
+      # Worker needs hostPID to interact with Firecracker processes on the host.
+      hostPID: true
+      # Tolerate all taints so the worker runs on every node, including control-plane.
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
+        - operator: Exists
+          effect: PreferNoSchedule
+      # Termination grace period: allow up to 5 minutes for running VMs to complete
+      # or be cleaned up before the pod is force-killed.
+      terminationGracePeriodSeconds: 300
+      containers:
+        - name: worker
+          image: ghcr.io/arek-e/paws-worker:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-config
+                  key: PORT
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-config
+                  key: NODE_ENV
+            - name: MAX_CONCURRENT_VMS
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-config
+                  key: MAX_CONCURRENT_VMS
+            - name: MAX_QUEUE_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-config
+                  key: MAX_QUEUE_SIZE
+            - name: SNAPSHOT_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-config
+                  key: SNAPSHOT_DIR
+            - name: VM_BASE_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-config
+                  key: VM_BASE_DIR
+            - name: SSH_KEY_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-config
+                  key: SSH_KEY_PATH
+            # Use the Kubernetes node name as the worker name so each node is
+            # uniquely identified in the gateway fleet view.
+            - name: WORKER_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          securityContext:
+            # Worker must run as root for:
+            #   - TAP device creation (ip tuntap add)
+            #   - iptables DNAT rules (per-VM network isolation)
+            #   - /dev/kvm access (Firecracker requires KVM)
+            privileged: true
+            runAsUser: 0
+          resources:
+            requests:
+              cpu: '500m'
+              memory: '512Mi'
+            limits:
+              cpu: '4'
+              memory: '8Gi'
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            # Snapshots: read-only — worker copies disk.ext4 per session (CoW).
+            - name: snapshots
+              mountPath: /var/lib/paws/snapshots
+              readOnly: true
+            # VM scratch space: read-write — per-session CoW disk copies live here.
+            - name: vms
+              mountPath: /var/lib/paws/vms
+            # SSH key used to connect into VMs.
+            - name: ssh
+              mountPath: /var/lib/paws/ssh
+              readOnly: true
+            # Firecracker binary from the host — keeps the container image generic.
+            - name: firecracker-bin
+              mountPath: /usr/local/bin/firecracker
+              readOnly: true
+            # KVM device required by Firecracker.
+            - name: dev-kvm
+              mountPath: /dev/kvm
+      volumes:
+        # Host paths — all data lives on the worker node's disk.
+        - name: snapshots
+          hostPath:
+            path: /var/lib/paws/snapshots
+            type: DirectoryOrCreate
+        - name: vms
+          hostPath:
+            path: /var/lib/paws/vms
+            type: DirectoryOrCreate
+        - name: ssh
+          hostPath:
+            path: /var/lib/paws/ssh
+            type: DirectoryOrCreate
+        # Firecracker binary must be installed on the host by bootstrap-node.sh.
+        - name: firecracker-bin
+          hostPath:
+            path: /usr/local/bin/firecracker
+            type: File
+        # KVM character device for Firecracker.
+        - name: dev-kvm
+          hostPath:
+            path: /dev/kvm
+            type: CharDevice

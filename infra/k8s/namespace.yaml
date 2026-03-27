@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: paws
+  labels:
+    app.kubernetes.io/name: paws
+    app.kubernetes.io/managed-by: kubectl

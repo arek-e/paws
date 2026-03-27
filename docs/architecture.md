@@ -408,3 +408,73 @@ The `docker-compose.yml` at the repo root starts both services. The gateway wait
 pass its health check before starting. All worker paths (snapshots, VMs, SSH key, firecracker
 binary) are configurable via environment variables with sensible defaults pointing to
 `/var/lib/paws/...`.
+
+## Kubernetes Deployment (`infra/k8s/`)
+
+Manifests for deploying paws on Kubernetes (v0.2+). Apply with:
+
+```bash
+kubectl apply -f infra/k8s/namespace.yaml
+kubectl apply -f infra/k8s/rbac/
+kubectl apply -f infra/k8s/gateway/
+kubectl apply -f infra/k8s/worker/
+```
+
+### Structure
+
+```
+infra/k8s/
+├── namespace.yaml          paws namespace
+├── rbac/
+│   ├── serviceaccount.yaml paws ServiceAccount (shared by gateway and worker)
+│   └── clusterrole.yaml    ClusterRole + ClusterRoleBinding (gateway pod/endpoint discovery)
+├── gateway/
+│   ├── configmap.yaml      Non-secret env config (PORT, NODE_ENV)
+│   ├── service.yaml        ClusterIP service on port 4000
+│   └── deployment.yaml     Deployment — replicas: 1, non-root, no special capabilities
+└── worker/
+    ├── configmap.yaml      Non-secret env config (PORT, paths, concurrency limits)
+    ├── service.yaml        ClusterIP service on port 3000
+    └── daemonset.yaml      DaemonSet — one pod per node, privileged, hostNetwork
+```
+
+### Gateway Deployment
+
+- `replicas: 1` for v0.1 (stateless, safe to scale)
+- Runs as non-root (UID 1000)
+- No special Linux capabilities required
+- RBAC: reads `pods` and `endpoints` to discover worker nodes for routing
+- `API_KEY` sourced from Secret `paws-gateway-secret` (must be created before deploy):
+  ```bash
+  kubectl create secret generic paws-gateway-secret \
+    --from-literal=api-key=<value> -n paws
+  ```
+- Connects to workers via `http://worker.paws.svc.cluster.local:3000`
+
+### Worker DaemonSet
+
+- One pod per node — each worker manages that node's Firecracker VMs
+- `hostNetwork: true` — required for TAP device and iptables rule visibility across host and container
+- `hostPID: true` — required to interact with Firecracker processes on the host
+- `privileged: true` — required for `ip tuntap`, `iptables DNAT`, and `/dev/kvm`
+- Tolerates all taints so it runs on control-plane nodes too
+- `WORKER_NAME` set via Downward API to the Kubernetes node name (unique per node)
+- `terminationGracePeriodSeconds: 300` — allows in-flight VMs to complete or clean up
+- hostPath volumes:
+  | Volume | Host path | Mount | Mode |
+  |---|---|---|---|
+  | snapshots | `/var/lib/paws/snapshots` | `/var/lib/paws/snapshots` | ro |
+  | vms | `/var/lib/paws/vms` | `/var/lib/paws/vms` | rw |
+  | ssh | `/var/lib/paws/ssh` | `/var/lib/paws/ssh` | ro |
+  | firecracker-bin | `/usr/local/bin/firecracker` | `/usr/local/bin/firecracker` | ro |
+  | dev-kvm | `/dev/kvm` | `/dev/kvm` | rw |
+
+### Resource Limits (Ryzen 5 3600 / 64 GB)
+
+| Component | CPU request | CPU limit | Memory request | Memory limit |
+| --------- | ----------- | --------- | -------------- | ------------ |
+| Gateway   | 100m        | 500m      | 128Mi          | 512Mi        |
+| Worker    | 500m        | 4         | 512Mi          | 8Gi          |
+
+Worker limits are intentionally generous — it spawns KVM-backed VMs that consume host CPU/RAM
+outside of cgroup accounting.
