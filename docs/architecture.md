@@ -312,6 +312,42 @@ The gateway passes a fleet snapshot from `GET /v1/fleet/workers` into `selectWor
 new session. Node affinity (pinning a daemon to a specific worker) is enforced before calling the
 scheduler — the scheduler only sees the candidate set.
 
+## Provider System (`providers/core`)
+
+Pure TypeScript package — no I/O, no side effects. Defines the contract all host providers must
+implement and a simple registry for looking them up at runtime.
+
+### HostProvider interface
+
+```typescript
+interface HostProvider {
+  readonly name: string; // e.g. "hetzner-dedicated", "hetzner-cloud"
+  createHost(opts: CreateHostOpts): ResultAsync<Host, ProvidersError>;
+  getHost(hostId: string): ResultAsync<Host, ProvidersError>;
+  listHosts(): ResultAsync<Host[], ProvidersError>;
+  deleteHost(hostId: string): ResultAsync<void, ProvidersError>;
+}
+```
+
+### ProviderRegistry
+
+```typescript
+// Create a registry, register providers, look them up by name
+const registry = createProviderRegistry();
+registry.register(hetznerDedicatedProvider);
+const provider = registry.get('hetzner-dedicated'); // HostProvider | null
+registry.list(); // HostProvider[]
+```
+
+Providers are registered at startup. The provisioning layer (Pulumi program) calls
+`registry.get(name)` to resolve the right provider before creating or deleting hosts.
+
+### Error handling
+
+`ProvidersError` carries a typed `ProvidersErrorCode` — `PROVIDER_NOT_FOUND`, `HOST_NOT_FOUND`,
+`PROVISION_FAILED`, `API_ERROR`, `INVALID_CONFIG`. All fallible methods return `ResultAsync` (never
+throw).
+
 ## Technology Stack
 
 | Component       | Technology                             |
@@ -356,10 +392,10 @@ paws/
 │   ├── gateway/            Gateway service (Deployment)
 │   └── snapshot-builder/   Snapshot build jobs
 │
-├── providers/              (v0.2+)
-│   ├── core/               HostProvider interface
-│   ├── hetzner-dedicated/  Pulumi: Hetzner Robot API
-│   └── hetzner-cloud/      Pulumi: Hetzner Cloud API
+├── providers/
+│   ├── core/               @paws/providers  HostProvider interface + registry
+│   ├── hetzner-dedicated/  (v0.3+) Hetzner Robot API
+│   └── hetzner-cloud/      (v0.3+) Hetzner Cloud API + cloud-init
 │
 ├── infra/                  (v0.2+)
 │   ├── pulumi/             Cluster provisioning

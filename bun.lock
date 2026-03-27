@@ -53,6 +53,17 @@
         "vitest": "^4.1.2",
       },
     },
+    "packages/providers": {
+      "name": "@paws/providers",
+      "version": "0.1.0",
+      "dependencies": {
+        "neverthrow": "^8.2.0",
+      },
+      "devDependencies": {
+        "bun-types": "^1.3.11",
+        "vitest": "^4.1.2",
+      },
+    },
     "packages/scheduler": {
       "name": "@paws/scheduler",
       "version": "0.1.0",
@@ -310,6 +321,8 @@
     "@paws/firecracker": ["@paws/firecracker@workspace:packages/firecracker"],
 
     "@paws/gateway": ["@paws/gateway@workspace:apps/gateway"],
+
+    "@paws/providers": ["@paws/providers@workspace:packages/providers"],
 
     "@paws/scheduler": ["@paws/scheduler@workspace:packages/scheduler"],
 
