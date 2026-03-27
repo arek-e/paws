@@ -50,21 +50,29 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
-      - name: Deploy to server
-        env:
-          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      - name: Wait for Tailscale tunnel
         run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
+          echo "==> Waiting for Tailscale tunnel to establish..."
+          for i in $(seq 1 30); do
+            if tailscale ping --c 1 100.78.44.23 2>/dev/null; then
+              echo "==> Tailscale tunnel ready"
+              break
+            fi
+            echo "  Attempt $i/30..."
+            sleep 2
+          done
 
-          SSH="ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/deploy_key root@100.78.44.23"
+      - name: Deploy to server
+        run: |
+          # Tailscale SSH handles auth via ACL (tag:ci -> tag:servers)
+          # No SSH key needed — identity is the Tailscale node
+          SSH="ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 root@100.78.44.23"
 
           echo "==> Pulling latest code..."
           $SSH "cd /opt/paws && git fetch origin main && git reset --hard origin/main"
 
           echo "==> Installing dependencies..."
-          $SSH "cd /opt/paws && bun install --frozen-lockfile"
+          $SSH "cd /opt/paws && bun install"
 
           echo "==> Restarting services..."
           $SSH "systemctl restart paws-gateway paws-worker"
