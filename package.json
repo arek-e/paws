@@ -1,6 +1,7 @@
 {
   "name": "paws",
   "private": true,
+  "description": "Zero-trust credential injection for AI agents — secrets never enter the sandbox",
   "workspaces": [
     "packages/*",
     "apps/*",

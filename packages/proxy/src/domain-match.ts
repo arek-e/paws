@@ -1,3 +1,5 @@
+import type { DomainEntry } from './types.js';
+
 /**
  * Match a hostname against an allowlist of domain patterns.
  * Supports exact matches and wildcard prefixes (e.g. "*.github.com").
@@ -24,30 +26,61 @@ export function matchesDomain(hostname: string, patterns: readonly string[]): bo
 }
 
 /**
- * Find the credential config for a hostname from the credentials map.
+ * Find the credential headers for a hostname from the domains map.
  * Supports exact match and wildcard matching.
  * Returns the headers to inject, or undefined if no credentials match.
  */
 export function findCredentials(
   hostname: string,
-  credentials: Record<string, { headers: Record<string, string> }>,
+  domains: Record<string, DomainEntry>,
 ): Record<string, string> | undefined {
   const lower = hostname.toLowerCase();
 
   // Exact match first
-  for (const [domain, cred] of Object.entries(credentials)) {
-    if (domain.toLowerCase() === lower) {
-      return cred.headers;
+  for (const [domain, entry] of Object.entries(domains)) {
+    if (domain.toLowerCase() === lower && entry.headers) {
+      return entry.headers;
     }
   }
 
   // Wildcard match
-  for (const [domain, cred] of Object.entries(credentials)) {
+  for (const [domain, entry] of Object.entries(domains)) {
+    const d = domain.toLowerCase();
+    if (d.startsWith('*.')) {
+      const suffix = d.slice(1);
+      if (lower.endsWith(suffix) && lower.length > suffix.length && entry.headers) {
+        return entry.headers;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Find the domain entry for a hostname (including target override).
+ * Used to resolve upstream target for testing/proxying.
+ */
+export function findDomainEntry(
+  hostname: string,
+  domains: Record<string, DomainEntry>,
+): DomainEntry | undefined {
+  const lower = hostname.toLowerCase();
+
+  // Exact match first
+  for (const [domain, entry] of Object.entries(domains)) {
+    if (domain.toLowerCase() === lower) {
+      return entry;
+    }
+  }
+
+  // Wildcard match
+  for (const [domain, entry] of Object.entries(domains)) {
     const d = domain.toLowerCase();
     if (d.startsWith('*.')) {
       const suffix = d.slice(1);
       if (lower.endsWith(suffix) && lower.length > suffix.length) {
-        return cred.headers;
+        return entry;
       }
     }
   }

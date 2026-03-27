@@ -1,8 +1,8 @@
 {
-  "name": "@paws/worker",
+  "name": "@paws/proxy",
   "version": "0.1.0",
   "private": true,
-  "description": "Worker service — execute sessions in isolated Firecracker VMs",
+  "description": "TLS MITM credential injection proxy — zero secrets in the sandbox",
   "type": "module",
   "exports": {
     ".": {
@@ -12,16 +12,11 @@
   },
   "scripts": {
     "build": "bun build ./src/index.ts --outdir dist --target bun",
-    "start": "bun run src/server.ts",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@paws/firecracker": "workspace:*",
-    "@paws/proxy": "workspace:*",
-    "@paws/types": "workspace:*",
-    "hono": "^4.7.0",
     "neverthrow": "^8.2.0"
   },
   "devDependencies": {

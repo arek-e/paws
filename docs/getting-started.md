@@ -2,196 +2,129 @@
 
 ```
  /\_/\
-( o.o )  let's get those paws moving
+( o.o )  from zero to paws in five minutes
  > ^ <
 ```
 
 ## Prerequisites
 
-- A Linux server with KVM support (`/dev/kvm` must exist)
-- Root access (Firecracker needs it for TAP devices and iptables)
-- Bun installed (`curl -fsSL https://bun.sh/install | bash`)
-- At least 8 GB RAM and 20 GB disk
+| Tool                                                    | Why                       |
+| ------------------------------------------------------- | ------------------------- |
+| [Hetzner Cloud account](https://console.hetzner.cloud/) | Server provisioning       |
+| [Pulumi CLI](https://www.pulumi.com/docs/install/)      | Infrastructure as code    |
+| [Bun](https://bun.sh)                                   | Runtime + package manager |
+| [Tailscale](https://tailscale.com) (recommended)        | Secure SSH access         |
+| SSH keypair (`~/.ssh/id_ed25519`)                       | Server access             |
 
-Tested on: Ubuntu 24.04, Hetzner Dedicated (AX41-NVMe).
-
-## 1. Clone and Install
+## Quick Start
 
 ```bash
-git clone https://github.com/paws-dev/paws
-cd paws
-bun install
+# Clone and install
+git clone https://github.com/arek-e/paws
+cd paws && bun install
+
+# Configure Pulumi
+cd infra/pulumi
+pulumi stack init dev
+pulumi config set --secret hcloud:token YOUR_HETZNER_API_TOKEN
+pulumi config set paws:sshPublicKey "$(cat ~/.ssh/id_ed25519.pub)"
+
+# Restrict SSH to Tailscale CGNAT range (recommended).
+# If omitted, SSH is blocked entirely by the firewall — deny by default.
+pulumi config set paws:sshAllowCidr "100.64.0.0/10"
+
+# Deploy
+pulumi up
 ```
 
-## 2. Configure
+This provisions:
+
+- A **control-plane** server running the paws gateway + K8s API server
+- One **worker** server with Firecracker, containerd, kubeadm, and KVM ready
+- A private network (10.0.0.0/8) between all nodes
+- A firewall with SSH restricted to your configured CIDR (or blocked entirely)
+- Automatic `kubeadm init` + `kubeadm join` + Flannel CNI + K8s manifest deployment
+
+### Save kubeconfig
 
 ```bash
-cp .env.example .env
+pulumi stack output --show-secrets kubeconfig > ~/.kube/paws.yaml
+export KUBECONFIG=~/.kube/paws.yaml
+kubectl get nodes
 ```
 
-Edit `.env`:
+## First Workload
 
 ```bash
-# Gateway
-PAWS_API_KEY=your-secret-api-key
-GATEWAY_PORT=8080
+# Get the gateway IP
+GATEWAY_IP=$(pulumi stack output gatewayIp)
 
-# Worker
-WORKER_PORT=3000
-MAX_CONCURRENT_VMS=5
-MAX_QUEUE_SIZE=10
-
-# Firecracker
-PAWS_DATA_DIR=/var/lib/paws
-VM_VCPU_COUNT=2
-VM_MEMORY_MB=4096
-VM_TIMEOUT_MS=600000
-```
-
-## 3. Install Firecracker
-
-```bash
-sudo ./scripts/install-firecracker.sh
-```
-
-This installs:
-
-- `firecracker` binary to `/usr/local/bin/`
-- Default kernel to `$PAWS_DATA_DIR/kernels/vmlinux-default`
-- Base rootfs to `$PAWS_DATA_DIR/rootfs/ubuntu-default.ext4`
-- SSH keypair to `$PAWS_DATA_DIR/ssh/`
-
-## 4. Build Your First Snapshot
-
-```bash
-# Start the worker (needed for snapshot building)
-bun run apps/worker/src/server.ts &
-
-# Build a snapshot with your agent tools pre-installed
-curl -X POST http://localhost:3000/snapshots/build \
+# Submit a session — runs in an isolated Firecracker VM
+curl -X POST "http://${GATEWAY_IP}:4000/v1/sessions" \
   -H "Content-Type: application/json" \
   -d '{
-    "id": "my-agent",
-    "setup": "apt-get update && apt-get install -y git nodejs && npm install -g @anthropic-ai/claude-code"
-  }'
-```
-
-This boots a fresh VM, runs your setup script, then snapshots the full state (memory + disk + CPU).
-Takes a few minutes the first time. Future sessions boot from this snapshot in <1 second.
-
-## 5. Start the Services
-
-```bash
-# Terminal 1: Worker
-bun run apps/worker/src/server.ts
-
-# Terminal 2: Gateway
-bun run apps/gateway/src/server.ts
-```
-
-Or use the combined launcher:
-
-```bash
-bun run start
-```
-
-## 6. Run a Session
-
-```bash
-# Simple test — run a script in an isolated VM
-curl -X POST http://localhost:8080/v1/sessions \
-  -H "Authorization: Bearer $PAWS_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "snapshot": "my-agent",
+    "snapshot": "test-minimal",
     "workload": {
       "type": "script",
-      "script": "echo hello from paws && uname -a"
-    },
-    "network": {
-      "allowOut": []
-    }
-  }'
-# → { "sessionId": "abc-123", "status": "pending" }
-
-# Poll for result
-curl http://localhost:8080/v1/sessions/abc-123 \
-  -H "Authorization: Bearer $PAWS_API_KEY"
-# → { "status": "completed", "stdout": "hello from paws\nLinux ...\n" }
-```
-
-## 7. Run an Agent with Credentials
-
-```bash
-curl -X POST http://localhost:8080/v1/sessions \
-  -H "Authorization: Bearer $PAWS_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "snapshot": "my-agent",
-    "workload": {
-      "type": "script",
-      "script": "cd /workspace && git clone https://github.com/myorg/myrepo && cd myrepo && claude-code --prompt \"Fix the failing test in auth.ts\""
-    },
-    "network": {
-      "allowOut": ["api.anthropic.com", "github.com", "*.github.com"],
-      "credentials": {
-        "api.anthropic.com": {
-          "headers": { "x-api-key": "sk-ant-your-key" }
-        },
-        "github.com": {
-          "headers": { "Authorization": "Bearer ghp_your-token" }
-        }
-      }
-    },
-    "timeoutMs": 300000
-  }'
-```
-
-The agent runs in a Firecracker VM. It can clone from GitHub and call Claude — but it never sees the
-API keys. The per-VM TLS proxy injects them at the network layer.
-
-## 8. Register a Daemon
-
-```bash
-# Register a daemon that triggers on GitHub webhooks
-curl -X POST http://localhost:8080/v1/daemons \
-  -H "Authorization: Bearer $PAWS_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "role": "pr-reviewer",
-    "description": "Review new PRs automatically",
-    "snapshot": "my-agent",
-    "trigger": {
-      "type": "webhook",
-      "events": ["pull_request.opened"]
-    },
-    "workload": {
-      "type": "script",
-      "script": "cd /state/repo && git pull && claude-code --prompt \"Review this PR: $TRIGGER_PAYLOAD\""
-    },
-    "network": {
-      "allowOut": ["api.anthropic.com", "github.com", "*.github.com"],
-      "credentials": {
-        "api.anthropic.com": { "headers": { "x-api-key": "sk-ant-..." } },
-        "github.com": { "headers": { "Authorization": "Bearer ghp_..." } }
-      }
-    },
-    "governance": {
-      "maxActionsPerHour": 10,
-      "auditLog": true
+      "script": "echo hello from paws"
     }
   }'
 ```
 
-Then point your GitHub webhook at `https://your-server:8080/v1/webhooks/pr-reviewer`.
+The gateway exposes its OpenAPI spec at `http://<gateway-ip>:4000/openapi.json`.
 
-Every time a PR is opened, paws spins up an isolated VM, runs your agent, and destroys it when done.
-The `/state/repo` directory persists between invocations so the repo doesn't need a full clone every
-time.
+## Adding Worker Nodes
+
+Scale up by increasing the worker count:
+
+```bash
+pulumi config set paws:workerCount 2
+pulumi up
+```
+
+Or bootstrap a bare-metal server manually with the bootstrap script:
+
+```bash
+sudo ./scripts/bootstrap-node.sh \
+  --join "$(pulumi stack output --show-secrets joinCommand)" \
+  --snapshot-url https://your-storage/snapshot.tar.gz
+```
+
+The bootstrap script installs Firecracker, containerd, kubeadm, and joins the cluster. It is
+idempotent (safe to run multiple times).
+
+## Credential Configuration
+
+paws uses a zero-trust architecture: **no secrets enter the VM**. Credentials are injected at the
+network layer by a per-VM TLS MITM proxy. The agent inside the VM never sees API keys, GitHub
+tokens, or any other secret.
+
+See [security.md](security.md) for the full model, including per-VM proxy lifecycle, domain
+allowlisting, Git credential injection, and iptables network isolation.
+
+## Configuration Reference
+
+| Config key               | Default             | Description                                |
+| ------------------------ | ------------------- | ------------------------------------------ |
+| `hcloud:token`           | (required)          | Hetzner Cloud API token (secret)           |
+| `paws:sshPublicKey`      | (required)          | SSH public key for server access           |
+| `paws:sshAllowCidr`      | (none -- deny all)  | CIDR for SSH access (e.g. `100.64.0.0/10`) |
+| `paws:workerCount`       | `1`                 | Number of worker nodes                     |
+| `paws:gatewayServerType` | `cx31`              | Hetzner server type for gateway            |
+| `paws:workerServerType`  | `cx31`              | Hetzner server type for workers            |
+| `paws:location`          | `fsn1`              | Hetzner datacenter location                |
+| `paws:sshPrivateKeyPath` | `~/.ssh/id_ed25519` | Path to SSH private key on your machine    |
+
+## Tearing Down
+
+```bash
+cd infra/pulumi
+pulumi destroy
+```
 
 ## Next Steps
 
-- [Architecture](architecture.md) — understand the full system design
-- [Security Model](security.md) — how the zero-trust model works
-- [API Reference](api.md) — all gateway endpoints
-- [Roadmap](roadmap.md) — what's coming next
+- [Architecture](architecture.md) -- full system design
+- [Security Model](security.md) -- zero-trust credential injection
+- [Testing](testing.md) -- three-tier test strategy
+- [Roadmap](roadmap.md) -- what's next

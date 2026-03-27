@@ -1,7 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 
-import type { ExecFn } from '@paws/firecracker';
-
+import type { ExecFn } from './types.js';
 import { generateSessionCa } from './ca.js';
 
 /**
@@ -14,12 +13,12 @@ vi.stubGlobal('Bun', {
   }),
 });
 
-function createMockExec(): ExecFn & { calls: Array<{ cmd: string; args: string[] }> } {
-  const calls: Array<{ cmd: string; args: string[] }> = [];
-  const exec = (async (cmd: string, args: string[]) => {
+function createMockExec(): ExecFn & { calls: Array<{ cmd: string; args: readonly string[] }> } {
+  const calls: Array<{ cmd: string; args: readonly string[] }> = [];
+  const exec = (async (cmd: string, args: readonly string[]) => {
     calls.push({ cmd, args });
     return { stdout: '', stderr: '' };
-  }) as ExecFn & { calls: Array<{ cmd: string; args: string[] }> };
+  }) as ExecFn & { calls: Array<{ cmd: string; args: readonly string[] }> };
   exec.calls = calls;
   return exec;
 }
@@ -98,7 +97,7 @@ describe('generateSessionCa', () => {
     expect(ca.keyPath).toBe('/tmp/test-ca/ca.key');
   });
 
-  test('returns WorkerError on exec failure', async () => {
+  test('returns ProxyError on exec failure', async () => {
     const exec: ExecFn = async () => {
       throw new Error('openssl not found');
     };
@@ -107,7 +106,7 @@ describe('generateSessionCa', () => {
     expect(result.isErr()).toBe(true);
 
     const err = result._unsafeUnwrapErr();
-    expect(err.code).toBe('PROXY_FAILED');
+    expect(err.code).toBe('CA_FAILED');
     expect(err.message).toContain('Failed to generate session CA');
     expect(err.message).toContain('openssl not found');
   });

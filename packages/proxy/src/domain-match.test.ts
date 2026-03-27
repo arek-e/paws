@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { findCredentials, matchesDomain } from './domain-match.js';
+import { findCredentials, findDomainEntry, matchesDomain } from './domain-match.js';
 
 describe('matchesDomain', () => {
   test('exact match', () => {
@@ -53,21 +53,23 @@ describe('matchesDomain', () => {
 });
 
 describe('findCredentials', () => {
-  const creds = {
+  const domains = {
     'api.anthropic.com': { headers: { 'x-api-key': 'sk-ant-123' } },
     '*.github.com': { headers: { Authorization: 'Bearer ghp_abc' } },
   };
 
   test('exact match returns headers', () => {
-    expect(findCredentials('api.anthropic.com', creds)).toEqual({ 'x-api-key': 'sk-ant-123' });
+    expect(findCredentials('api.anthropic.com', domains)).toEqual({ 'x-api-key': 'sk-ant-123' });
   });
 
   test('wildcard match returns headers', () => {
-    expect(findCredentials('raw.github.com', creds)).toEqual({ Authorization: 'Bearer ghp_abc' });
+    expect(findCredentials('raw.github.com', domains)).toEqual({
+      Authorization: 'Bearer ghp_abc',
+    });
   });
 
   test('no match returns undefined', () => {
-    expect(findCredentials('evil.com', creds)).toBeUndefined();
+    expect(findCredentials('evil.com', domains)).toBeUndefined();
   });
 
   test('exact match takes precedence over wildcard', () => {
@@ -78,11 +80,47 @@ describe('findCredentials', () => {
     expect(findCredentials('api.example.com', mixed)).toEqual({ auth: 'exact' });
   });
 
-  test('empty credentials returns undefined', () => {
+  test('empty domains returns undefined', () => {
     expect(findCredentials('anything.com', {})).toBeUndefined();
   });
 
   test('case-insensitive matching', () => {
-    expect(findCredentials('API.Anthropic.COM', creds)).toEqual({ 'x-api-key': 'sk-ant-123' });
+    expect(findCredentials('API.Anthropic.COM', domains)).toEqual({ 'x-api-key': 'sk-ant-123' });
+  });
+
+  test('domain without headers returns undefined', () => {
+    const noHeaders = {
+      'example.com': { target: 'https://localhost:9999' },
+    };
+    expect(findCredentials('example.com', noHeaders)).toBeUndefined();
+  });
+});
+
+describe('findDomainEntry', () => {
+  const domains = {
+    'api.anthropic.com': { headers: { 'x-api-key': 'sk-123' }, target: 'https://localhost:9999' },
+    '*.github.com': { headers: { Authorization: 'Bearer ghp_abc' } },
+    'registry.npmjs.org': {},
+  };
+
+  test('exact match returns full entry', () => {
+    expect(findDomainEntry('api.anthropic.com', domains)).toEqual({
+      headers: { 'x-api-key': 'sk-123' },
+      target: 'https://localhost:9999',
+    });
+  });
+
+  test('wildcard match returns entry', () => {
+    expect(findDomainEntry('raw.github.com', domains)).toEqual({
+      headers: { Authorization: 'Bearer ghp_abc' },
+    });
+  });
+
+  test('no match returns undefined', () => {
+    expect(findDomainEntry('evil.com', domains)).toBeUndefined();
+  });
+
+  test('entry without headers or target', () => {
+    expect(findDomainEntry('registry.npmjs.org', domains)).toEqual({});
   });
 });
