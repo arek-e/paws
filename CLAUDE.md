@@ -1,7 +1,8 @@
 # paws
 
-Self-hosted platform for running AI agents in isolated Firecracker microVMs with zero-trust
-credential injection.
+Zero-trust credential injection for AI agents. Secrets never enter the sandbox — they're injected at
+the network layer by a per-VM TLS MITM proxy. Agents run in ephemeral Firecracker microVMs with
+nothing worth stealing.
 
 ## Before You Start
 

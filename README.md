@@ -1,16 +1,18 @@
 ```
  /\_/\
 ( o.o )  paws
- > ^ <   background agents at your service
+ > ^ <   a trust architecture that happens to use sandboxes
 ```
 
 # paws
 
-Open-source infrastructure for running background AI agents in isolated Firecracker microVMs.
-Self-hosted, zero-trust, elastic.
+Your AI agent doesn't need your API keys. paws is a zero-trust credential injection layer for
+background AI agents — secrets stay on the host, injected at the network layer by a per-VM TLS MITM
+proxy. The agent never sees an API key. Not in env vars, not in memory, not on disk.
 
-**Your agents run in sandboxes with zero secrets.** Credentials are injected at the network layer by
-a per-VM TLS proxy. The agent never sees an API key — not in env vars, not in memory, not on disk.
+Each agent runs in an ephemeral Firecracker microVM with its own dedicated proxy, its own network
+namespace, and its own ephemeral CA. The VM is disposable. If it's compromised, there's nothing
+worth stealing.
 
 ## What is this?
 
@@ -122,9 +124,10 @@ Full walkthrough: [docs/getting-started.md](docs/getting-started.md)
 
 ## Key Properties
 
-- **Zero secrets in the VM** — credentials injected at the network layer via per-VM TLS MITM proxy
+- **Zero-trust credential injection** — per-VM TLS MITM proxy injects secrets at the network layer; the agent never touches an API key
+- **Per-VM isolation** — every session gets its own proxy, its own network namespace, its own ephemeral CA
+- **Network allowlisting** — only approved domains reachable; everything else dropped at the firewall
 - **Sub-second boot** — Firecracker snapshot restore (~28ms with userfaultfd)
-- **Hardware isolation** — each agent runs in its own KVM-backed microVM
 - **Ephemeral by default** — VMs are created per trigger, destroyed after
 - **Persistent state** — LLM conversation history in gateway DB + mounted volumes for files/repos
 - **Spec-first API** — OpenAPI spec generated from code, SDKs auto-generated for any language
