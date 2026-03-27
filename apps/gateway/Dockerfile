@@ -1,0 +1,67 @@
+# syntax=docker/dockerfile:1
+
+# ─── Stage 1: builder ────────────────────────────────────────────────────────
+# Install all deps and build the workspace packages that gateway depends on.
+FROM oven/bun:1.3.9-alpine AS builder
+
+WORKDIR /build
+
+# Copy root manifest files first so layer caching works when only source changes.
+COPY package.json bun.lockb* ./
+
+# Copy workspace package manifests (needed for bun install to resolve workspace deps).
+COPY packages/types/package.json        ./packages/types/package.json
+COPY packages/firecracker/package.json  ./packages/firecracker/package.json
+COPY apps/gateway/package.json          ./apps/gateway/package.json
+COPY apps/worker/package.json           ./apps/worker/package.json
+
+# Install all dependencies (including workspace symlinks).
+RUN bun install --frozen-lockfile
+
+# Copy source for workspace packages that gateway depends on.
+COPY packages/types/       ./packages/types/
+COPY packages/firecracker/ ./packages/firecracker/
+
+# Copy gateway source.
+COPY apps/gateway/ ./apps/gateway/
+
+# Build gateway (outputs to apps/gateway/dist/).
+WORKDIR /build/apps/gateway
+RUN bun run build
+
+
+# ─── Stage 2: runner ─────────────────────────────────────────────────────────
+# Minimal image — only the built output and production runtime deps.
+FROM oven/bun:1.3.9-alpine AS runner
+
+WORKDIR /app
+
+# Run as non-root.
+RUN addgroup -S paws && adduser -S -G paws paws
+
+# Copy root manifest so bun can resolve the runtime.
+COPY --from=builder /build/package.json ./package.json
+
+# Copy production node_modules (includes workspace symlinks).
+COPY --from=builder /build/node_modules ./node_modules
+
+# Copy workspace packages (gateway imports @paws/types at runtime via symlink).
+COPY --from=builder /build/packages/types/       ./packages/types/
+COPY --from=builder /build/packages/firecracker/ ./packages/firecracker/
+
+# Copy gateway source (we run from source with bun, not from the dist bundle,
+# because bun handles TypeScript natively and the workspace imports resolve
+# correctly without a bundler step that would need to inline them).
+COPY --from=builder /build/apps/gateway/ ./apps/gateway/
+
+USER paws
+
+ENV PORT=4000
+ENV NODE_ENV=production
+
+EXPOSE 4000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
+  CMD wget -qO- http://localhost:4000/health || exit 1
+
+CMD ["bun", "run", "apps/gateway/src/server.ts"]

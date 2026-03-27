@@ -341,5 +341,42 @@ paws/
 │   ├── bootstrap-node.sh
 │   └── install-firecracker.sh
 │
+├── .dockerignore              Shared Docker ignore rules
+├── docker-compose.yml         Local development (gateway + worker)
+│
 └── docs/
 ```
+
+## Docker / Container Deployment
+
+Both services ship as multi-stage Docker images built from the monorepo root context.
+
+### Gateway (`apps/gateway/Dockerfile`)
+
+- Base: `oven/bun:1.3.9-alpine`
+- Runs as non-root user `paws`
+- Port: `4000`
+- No special capabilities required
+- Key env vars: `PORT`, `API_KEY`, `WORKER_URL`
+
+### Worker (`apps/worker/Dockerfile`)
+
+- Builder stage: `oven/bun:1.3.9-alpine`
+- Runner stage: `debian:bookworm-slim` (alpine avoided due to iptables-nft/legacy incompatibility)
+- Runs as root (required for TAP devices, iptables DNAT, KVM access)
+- Port: `3000`
+- Requires: `--privileged` (or `CAP_NET_ADMIN` + `CAP_SYS_ADMIN`) + `/dev/kvm` device
+- The `firecracker` binary must be mounted at `/usr/local/bin/firecracker`
+- Key env vars: `PORT`, `MAX_CONCURRENT_VMS`, `MAX_QUEUE_SIZE`, `SNAPSHOT_DIR`, `VM_BASE_DIR`, `SSH_KEY_PATH`, `WORKER_NAME`
+- Required volumes: snapshots dir (ro), VMs scratch dir (rw), SSH key dir (ro), firecracker binary (ro)
+
+### Local development
+
+```bash
+docker compose up
+```
+
+The `docker-compose.yml` at the repo root starts both services. The gateway waits for the worker to
+pass its health check before starting. All worker paths (snapshots, VMs, SSH key, firecracker
+binary) are configurable via environment variables with sensible defaults pointing to
+`/var/lib/paws/...`.
