@@ -23,4 +23,8 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bun run check
-      - run: bun test
+      - name: Test
+        run: bun test
+        timeout-minutes: 5
+        env:
+          TURBO_NO_DAEMON: '1'
