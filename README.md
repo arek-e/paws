@@ -91,6 +91,35 @@ GitHub webhook → Gateway (control plane)
 
 See [docs/architecture.md](docs/architecture.md) for the full design.
 
+## Getting Started
+
+```bash
+# 1. Clone and install
+git clone https://github.com/arek-e/paws
+cd paws && bun install
+
+# 2. Configure
+cp .env.example .env    # edit with your settings
+
+# 3. Bootstrap the server (installs Firecracker, kernel, rootfs, SSH keys)
+sudo ./scripts/bootstrap-node.sh
+
+# 4. Start gateway + worker
+bun run start
+```
+
+Then try the [examples](examples/):
+
+```bash
+export PAWS_URL=http://localhost:4000
+export PAWS_API_KEY=paws-dev-key
+
+bash examples/01-health-check.sh   # verify services are up
+bash examples/02-hello-world.sh    # run a script in an isolated VM
+```
+
+Full walkthrough: [docs/getting-started.md](docs/getting-started.md)
+
 ## Key Properties
 
 - **Zero secrets in the VM** — credentials injected at the network layer via per-VM TLS MITM proxy
@@ -103,16 +132,17 @@ See [docs/architecture.md](docs/architecture.md) for the full design.
 
 ## Docs
 
+- [Getting Started](docs/getting-started.md) — deploy and run your first agent
 - [Architecture](docs/architecture.md) — full system design
 - [Security Model](docs/security.md) — zero-trust, credential injection, network isolation
 - [API Reference](docs/api.md) — gateway endpoints
-- [Getting Started](docs/getting-started.md) — deploy and run your first agent
+- [Examples](examples/) — runnable demo scripts
 - [Testing](docs/testing.md) — three-tier test strategy, TDD approach
 - [Roadmap](docs/roadmap.md) — what's built, what's next
 
 ## Status
 
-Early development. See [roadmap](docs/roadmap.md) for current progress.
+Early development. v0.1 (single server, core loop) is complete. See [roadmap](docs/roadmap.md).
 
 ## License
 
