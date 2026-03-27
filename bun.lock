@@ -17,7 +17,7 @@
       "name": "@paws/gateway",
       "version": "0.1.0",
       "dependencies": {
-        "@hono/zod-openapi": "^1.2.3",
+        "@hono/zod-openapi": "1.2.3",
         "@paws/types": "workspace:*",
         "hono": "^4.7.0",
       },
