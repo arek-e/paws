@@ -5,11 +5,13 @@ import { CreateSessionRequestSchema } from '@paws/types';
 
 import type { Executor } from './session/executor.js';
 import type { Semaphore } from './semaphore.js';
+import type { SyncLoop } from './sync/sync-loop.js';
 
 export interface AppDeps {
   executor: Executor;
   semaphore: Semaphore;
   workerName: string;
+  syncLoop?: SyncLoop | undefined;
 }
 
 const startTime = Date.now();
@@ -17,7 +19,7 @@ const startTime = Date.now();
 /** Create the Hono app with all worker routes */
 export function createSessionApp(deps: AppDeps) {
   const app = new Hono();
-  const { executor, semaphore, workerName } = deps;
+  const { executor, semaphore, workerName, syncLoop } = deps;
   const sessionResults = new Map<
     string,
     {
@@ -40,6 +42,7 @@ export function createSessionApp(deps: AppDeps) {
           ? 'healthy'
           : 'degraded';
 
+    const syncStatus = syncLoop?.status();
     return c.json({
       status,
       worker: workerName,
@@ -51,6 +54,13 @@ export function createSessionApp(deps: AppDeps) {
         available: semaphore.available,
       },
       pool: executor.poolStats,
+      snapshot: {
+        syncEnabled: !!syncLoop,
+        currentVersion: syncStatus?.currentVersion ?? 0,
+        syncing: syncStatus?.syncing ?? false,
+        lastCheck: syncStatus?.lastCheck?.toISOString() ?? null,
+        lastError: syncStatus?.lastError ?? null,
+      },
     });
   });
 
