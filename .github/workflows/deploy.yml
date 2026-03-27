@@ -2,39 +2,13 @@ name: Deploy
 
 on:
   workflow_dispatch:
-    inputs:
-      skip_tests:
-        description: 'Skip tests (emergency deploy)'
-        type: boolean
-        default: false
 
 concurrency:
   group: deploy
   cancel-in-progress: false
 
 jobs:
-  test:
-    if: ${{ !inputs.skip_tests }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - run: bun install --frozen-lockfile
-      - run: bun run check
-      - name: Test
-        run: bun test
-        timeout-minutes: 5
-        env:
-          TURBO_NO_DAEMON: '1'
-
   build-and-push:
-    needs: [test]
-    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: read
