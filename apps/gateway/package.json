@@ -1,8 +1,8 @@
 {
-  "name": "@paws/firecracker",
+  "name": "@paws/gateway",
   "version": "0.1.0",
   "private": true,
-  "description": "Firecracker VM lifecycle — client, networking, snapshot restore",
+  "description": "Gateway service — spec-first API, session tracking, daemon registry, trigger engine, governance",
   "type": "module",
   "exports": {
     ".": {
@@ -12,13 +12,15 @@
   },
   "scripts": {
     "build": "bun build ./src/index.ts --outdir dist --target bun",
+    "start": "bun run src/server.ts",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@hono/zod-openapi": "1.2.3",
     "@paws/types": "workspace:*",
-    "neverthrow": "^8.2.0"
+    "hono": "^4.7.0"
   },
   "devDependencies": {
     "bun-types": "^1.3.11",

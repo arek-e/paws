@@ -16,7 +16,7 @@ secrets in the sandbox.
 | 1   | `packages/types`       | Shared Zod schemas (session, daemon, worker, fleet, snapshot, network)                                                                                       | ✅     |
 | 2   | `packages/firecracker` | Firecracker VM lifecycle — client, create, restore, stop, list, snapshot, networking (TAP, ip-pool, iptables)                                                | ✅     |
 | 3   | `apps/worker`          | Worker service — execute sessions, semaphore concurrency, health endpoint, per-VM TLS proxy, SSH into VM                                                     | ✅     |
-| 4   | `apps/gateway`         | Gateway service — spec-first API (sessions, daemons, webhooks, fleet, snapshots), session tracking, daemon registry, trigger engine, governance, LLM history | ⬜     |
+| 4   | `apps/gateway`         | Gateway service — spec-first API (sessions, daemons, webhooks, fleet, snapshots), session tracking, daemon registry, trigger engine, governance, LLM history | ✅     |
 | 5   | Scripts                | `install-firecracker.sh`, `bootstrap-node.sh`                                                                                                                | ⬜     |
 | 6   | Testing                | Tier 1 unit tests (all pure logic modules), Tier 2 integration tests (proxy, TAP), Tier 3 VM test scaffold + test snapshot                                   | ⬜     |
 
