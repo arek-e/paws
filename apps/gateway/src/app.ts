@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { OpenAPIHono } from '@hono/zod-openapi';
+import { selectWorker } from '@paws/scheduler';
 
 import { createGovernanceChecker } from './governance.js';
 import { authMiddleware } from './middleware/auth.js';
@@ -18,12 +19,26 @@ import { buildSnapshotRoute, listSnapshotsRoute } from './routes/snapshots.js';
 import { receiveWebhookRoute } from './routes/webhooks.js';
 import { createDaemonStore, type DaemonStore } from './store/daemons.js';
 import { createSessionStore, type SessionStore, type StoredSession } from './store/sessions.js';
+import { createWorkerClient } from './worker-client.js';
+import type { WorkerDiscovery } from './discovery/index.js';
 import type { GovernanceChecker } from './governance.js';
 import type { WorkerClient } from './worker-client.js';
 
 export interface GatewayDeps {
   apiKey: string;
-  workerClient: WorkerClient;
+  /**
+   * Multi-worker discovery — used when running in K8s or multi-node mode.
+   * When provided, sessions are routed to the least-loaded healthy worker.
+   */
+  discovery?: WorkerDiscovery | undefined;
+  /**
+   * Single-worker client — kept for backward compatibility with local dev and
+   * existing tests. If `discovery` is also provided, `workerClient` is ignored
+   * for dispatch but still used as a fallback for the fleet health endpoints.
+   *
+   * @deprecated Prefer `discovery` + `createStaticDiscovery([workerUrl])`.
+   */
+  workerClient?: WorkerClient | undefined;
   sessionStore?: SessionStore | undefined;
   daemonStore?: DaemonStore | undefined;
   governance?: GovernanceChecker | undefined;
@@ -65,7 +80,13 @@ export function createGatewayApp(deps: GatewayDeps) {
   const sessionStore = deps.sessionStore ?? createSessionStore();
   const daemonStore = deps.daemonStore ?? createDaemonStore();
   const governance = deps.governance ?? createGovernanceChecker();
-  const workerClient = deps.workerClient;
+
+  // Resolve effective discovery:
+  // 1. Use explicit discovery if provided.
+  // 2. Wrap the legacy workerClient in a simple adapter so old code paths
+  //    continue to work without changes.
+  const discovery: WorkerDiscovery | null = deps.discovery ?? null;
+  const legacyWorkerClient: WorkerClient | null = deps.workerClient ?? null;
 
   const app = new OpenAPIHono();
 
@@ -92,7 +113,7 @@ export function createGatewayApp(deps: GatewayDeps) {
     sessionStore.create(sessionId, body);
 
     // Dispatch to worker (fire-and-forget)
-    dispatchToWorker(workerClient, sessionStore, sessionId, body);
+    dispatchSession(discovery, legacyWorkerClient, sessionStore, sessionId, body);
 
     return c.json({ sessionId, status: 'pending' as const }, 202);
   });
@@ -108,20 +129,25 @@ export function createGatewayApp(deps: GatewayDeps) {
       );
     }
 
-    // If session is still pending/running, try to get latest status from worker
+    // If session is still pending/running, try to get latest status from the
+    // worker that owns this session (recorded at dispatch time).
     if (session.status === 'pending' || session.status === 'running') {
       try {
-        const workerResult = await workerClient.getSession(id);
-        if (workerResult) {
-          const patch: Partial<StoredSession> = {};
-          if (workerResult.exitCode !== undefined) patch.exitCode = workerResult.exitCode;
-          if (workerResult.stdout !== undefined) patch.stdout = workerResult.stdout;
-          if (workerResult.stderr !== undefined) patch.stderr = workerResult.stderr;
-          if (workerResult.output !== undefined) patch.output = workerResult.output;
-          if (workerResult.durationMs !== undefined) patch.durationMs = workerResult.durationMs;
-          if (workerResult.completedAt !== undefined) patch.completedAt = workerResult.completedAt;
-          if (workerResult.worker !== undefined) patch.worker = workerResult.worker;
-          sessionStore.updateStatus(id, workerResult.status as StoredSession['status'], patch);
+        const workerClient = resolveWorkerClientForSession(session, legacyWorkerClient);
+        if (workerClient) {
+          const workerResult = await workerClient.getSession(id);
+          if (workerResult) {
+            const patch: Partial<StoredSession> = {};
+            if (workerResult.exitCode !== undefined) patch.exitCode = workerResult.exitCode;
+            if (workerResult.stdout !== undefined) patch.stdout = workerResult.stdout;
+            if (workerResult.stderr !== undefined) patch.stderr = workerResult.stderr;
+            if (workerResult.output !== undefined) patch.output = workerResult.output;
+            if (workerResult.durationMs !== undefined) patch.durationMs = workerResult.durationMs;
+            if (workerResult.completedAt !== undefined)
+              patch.completedAt = workerResult.completedAt;
+            if (workerResult.worker !== undefined) patch.worker = workerResult.worker;
+            sessionStore.updateStatus(id, workerResult.status as StoredSession['status'], patch);
+          }
         }
       } catch {
         // Worker unreachable — return stale data
@@ -333,7 +359,7 @@ export function createGatewayApp(deps: GatewayDeps) {
     daemonStore.recordInvocation(role);
 
     // Dispatch to worker
-    dispatchToWorker(workerClient, sessionStore, sessionId, sessionRequest);
+    dispatchSession(discovery, legacyWorkerClient, sessionStore, sessionId, sessionRequest);
 
     return c.json({ accepted: true as const, sessionId }, 202);
   });
@@ -341,20 +367,21 @@ export function createGatewayApp(deps: GatewayDeps) {
   // --- Fleet ---
 
   app.openapi(fleetOverviewRoute, async (c) => {
-    let workerHealth;
-    try {
-      workerHealth = await workerClient.health();
-    } catch {
-      workerHealth = null;
-    }
+    const workers = await resolveAllWorkers(discovery, legacyWorkerClient);
+
+    const totalWorkers = workers.length;
+    const healthyWorkers = workers.filter((w) => w.status === 'healthy').length;
+    const totalCapacity = workers.reduce((sum, w) => sum + w.capacity.maxConcurrent, 0);
+    const usedCapacity = workers.reduce((sum, w) => sum + w.capacity.running, 0);
+    const queuedSessions = workers.reduce((sum, w) => sum + w.capacity.queued, 0);
 
     return c.json(
       {
-        totalWorkers: workerHealth ? 1 : 0,
-        healthyWorkers: workerHealth?.status === 'healthy' ? 1 : 0,
-        totalCapacity: workerHealth ? workerHealth.capacity.maxConcurrent : 0,
-        usedCapacity: workerHealth ? workerHealth.capacity.running : 0,
-        queuedSessions: workerHealth ? workerHealth.capacity.queued : 0,
+        totalWorkers,
+        healthyWorkers,
+        totalCapacity,
+        usedCapacity,
+        queuedSessions,
         activeDaemons: daemonStore.countActive(),
         activeSessions: sessionStore.countActiveSessions(),
       },
@@ -363,27 +390,8 @@ export function createGatewayApp(deps: GatewayDeps) {
   });
 
   app.openapi(listWorkersRoute, async (c) => {
-    let workerHealth;
-    try {
-      workerHealth = await workerClient.health();
-    } catch {
-      return c.json({ workers: [] }, 200);
-    }
-
-    return c.json(
-      {
-        workers: [
-          {
-            name: workerHealth.worker,
-            status: workerHealth.status as 'healthy' | 'degraded' | 'unhealthy',
-            capacity: workerHealth.capacity,
-            snapshot: { id: 'default', version: 1, ageMs: 0 },
-            uptime: workerHealth.uptime,
-          },
-        ],
-      },
-      200,
-    );
+    const workers = await resolveAllWorkers(discovery, legacyWorkerClient);
+    return c.json({ workers }, 200);
   });
 
   // --- Snapshots ---
@@ -429,21 +437,119 @@ export function createGatewayApp(deps: GatewayDeps) {
   return app;
 }
 
-/** Fire-and-forget dispatch to worker, updating session store on completion */
-function dispatchToWorker(
-  workerClient: WorkerClient,
+// ---------------------------------------------------------------------------
+// Dispatch helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Fire-and-forget session dispatch.
+ *
+ * When `discovery` is provided, selects the least-loaded healthy worker via
+ * the scheduler and dispatches there.  Falls back to `legacyWorkerClient`
+ * when discovery is absent (single-node / test mode).
+ *
+ * If no healthy worker is available the session is immediately marked failed.
+ */
+function dispatchSession(
+  discovery: WorkerDiscovery | null,
+  legacyWorkerClient: WorkerClient | null,
   sessionStore: SessionStore,
   sessionId: string,
   request: Parameters<WorkerClient['createSession']>[1],
-) {
+): void {
   sessionStore.updateStatus(sessionId, 'running', {
     startedAt: new Date().toISOString(),
   });
 
-  workerClient.createSession(sessionId, request).catch((err) => {
-    sessionStore.updateStatus(sessionId, 'failed', {
-      stderr: err instanceof Error ? err.message : String(err),
-      completedAt: new Date().toISOString(),
-    });
-  });
+  void (async () => {
+    try {
+      if (discovery) {
+        const workers = await discovery.getWorkers();
+        const selected = selectWorker(workers);
+        if (!selected) {
+          sessionStore.updateStatus(sessionId, 'failed', {
+            stderr: 'No healthy workers available',
+            completedAt: new Date().toISOString(),
+          });
+          return;
+        }
+        // Derive a URL from the worker name. By convention, createStaticDiscovery
+        // stores the base URL as the worker name when querying the health endpoint.
+        // K8s discovery uses http://<podIP>:<port> as the worker name too.
+        const workerUrl = selected.name;
+        const client = createWorkerClient(workerUrl);
+        await client.createSession(sessionId, request);
+        // Record which worker owns this session for later getSession calls
+        sessionStore.updateStatus(sessionId, 'running', { worker: selected.name });
+      } else if (legacyWorkerClient) {
+        await legacyWorkerClient.createSession(sessionId, request);
+      } else {
+        sessionStore.updateStatus(sessionId, 'failed', {
+          stderr: 'No worker configured',
+          completedAt: new Date().toISOString(),
+        });
+      }
+    } catch (err) {
+      sessionStore.updateStatus(sessionId, 'failed', {
+        stderr: err instanceof Error ? err.message : String(err),
+        completedAt: new Date().toISOString(),
+      });
+    }
+  })();
+}
+
+/**
+ * Resolve a WorkerClient for a session's owning worker.
+ *
+ * If the session has a recorded worker URL, create a client for it.
+ * Otherwise fall back to the legacy single-worker client.
+ */
+function resolveWorkerClientForSession(
+  session: StoredSession,
+  legacyWorkerClient: WorkerClient | null,
+): WorkerClient | null {
+  if (session.worker) {
+    // session.worker is the base URL stored at dispatch time
+    return createWorkerClient(session.worker);
+  }
+  return legacyWorkerClient;
+}
+
+/**
+ * Aggregate worker status from discovery or legacy client for fleet routes.
+ */
+async function resolveAllWorkers(
+  discovery: WorkerDiscovery | null,
+  legacyWorkerClient: WorkerClient | null,
+): Promise<
+  Array<{
+    name: string;
+    status: 'healthy' | 'degraded' | 'unhealthy';
+    capacity: { maxConcurrent: number; running: number; queued: number; available: number };
+    snapshot: { id: string; version: number; ageMs: number };
+    uptime: number;
+  }>
+> {
+  if (discovery) {
+    return discovery.getWorkers();
+  }
+
+  if (legacyWorkerClient) {
+    try {
+      const workerHealth = await legacyWorkerClient.health();
+      return [
+        {
+          name: workerHealth.worker,
+          status: workerHealth.status as 'healthy' | 'degraded' | 'unhealthy',
+          capacity: workerHealth.capacity,
+          snapshot: { id: 'default', version: 1, ageMs: 0 },
+          uptime: workerHealth.uptime,
+        },
+      ];
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
 }
