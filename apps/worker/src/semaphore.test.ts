@@ -101,10 +101,14 @@ describe('createSemaphore', () => {
     const p1 = sem.acquire();
     const p2 = sem.acquire();
 
+    // Set up rejection expectations before draining to avoid unhandled rejections
+    const e1 = expect(p1).rejects.toThrow('shutting down');
+    const e2 = expect(p2).rejects.toThrow('shutting down');
+
     sem.drain(new Error('shutting down'));
 
-    await expect(p1).rejects.toThrow('shutting down');
-    await expect(p2).rejects.toThrow('shutting down');
+    await e1;
+    await e2;
     expect(sem.queued).toBe(0);
 
     sem.release();
