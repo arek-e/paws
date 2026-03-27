@@ -1,8 +1,7 @@
 import { ResultAsync } from 'neverthrow';
 
-import { WorkerError, WorkerErrorCode } from '../errors.js';
-
-import type { ExecFn } from '@paws/firecracker';
+import { ProxyError, ProxyErrorCode } from './errors.js';
+import type { ExecFn } from './types.js';
 
 /** Ephemeral per-session CA keypair and certificate */
 export interface SessionCa {
@@ -30,7 +29,7 @@ export interface CaOptions {
  * Creates a self-signed cert valid for the configured duration.
  * Used by the per-VM MITM proxy to generate on-the-fly server certs.
  */
-export function generateSessionCa(opts: CaOptions): ResultAsync<SessionCa, WorkerError> {
+export function generateSessionCa(opts: CaOptions): ResultAsync<SessionCa, ProxyError> {
   const validityDays = Math.max(1, Math.ceil((opts.validityHours ?? 24) / 24));
 
   return ResultAsync.fromPromise(
@@ -76,7 +75,7 @@ export function generateSessionCa(opts: CaOptions): ResultAsync<SessionCa, Worke
 
       return { cert, key, certPath, keyPath };
     })(),
-    (e) => new WorkerError(WorkerErrorCode.PROXY_FAILED, `Failed to generate session CA: ${e}`, e),
+    (e) => new ProxyError(ProxyErrorCode.CA_FAILED, `Failed to generate session CA: ${e}`, e),
   );
 }
 

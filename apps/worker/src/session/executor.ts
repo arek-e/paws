@@ -9,12 +9,10 @@ import {
   teardownIptables,
 } from '@paws/firecracker';
 import type { VmHandle } from '@paws/firecracker';
+import { createProxy, generateSessionCa } from '@paws/proxy';
+import type { ProxyInstance, SessionCa } from '@paws/proxy';
 
 import { WorkerError, WorkerErrorCode } from '../errors.js';
-import { generateSessionCa } from '../proxy/ca.js';
-import type { SessionCa } from '../proxy/ca.js';
-import { createProxy } from '../proxy/server.js';
-import type { ProxyHandle } from '../proxy/server.js';
 import { sshExec, sshReadFile, sshWriteFile, waitForSsh } from '../ssh/client.js';
 import type { Semaphore } from '../semaphore.js';
 
@@ -52,7 +50,7 @@ export interface ActiveSession {
   startedAt: Date;
   allocation?: NetworkAllocation;
   vmHandle?: VmHandle;
-  proxyHandle?: ProxyHandle;
+  proxyHandle?: ProxyInstance;
   ca?: SessionCa;
 }
 
@@ -85,7 +83,7 @@ export function createExecutor(config: ExecutorConfig) {
 
       let allocation: NetworkAllocation | undefined;
       let vmHandle: VmHandle | undefined;
-      let proxyHandle: ProxyHandle | undefined;
+      let proxyHandle: ProxyInstance | undefined;
       let ca: SessionCa | undefined;
 
       try {
@@ -134,10 +132,11 @@ export function createExecutor(config: ExecutorConfig) {
 
         // 6. Spawn TLS proxy
         proxyHandle = createProxy({
-          listenHost: allocation.hostIp,
-          network,
-          ca,
+          listen: { host: allocation.hostIp, port: 8080 },
+          domains: networkConfigToDomains(network),
+          ca: { cert: ca.cert, key: ca.key },
         });
+        await proxyHandle.start();
         session.proxyHandle = proxyHandle;
 
         // 7. Restore VM from snapshot
@@ -248,7 +247,7 @@ export function createExecutor(config: ExecutorConfig) {
         }
 
         if (proxyHandle) {
-          proxyHandle.stop();
+          await proxyHandle.stop();
         }
 
         if (allocation) {
@@ -278,6 +277,27 @@ export function createExecutor(config: ExecutorConfig) {
 }
 
 export type Executor = ReturnType<typeof createExecutor>;
+
+/** Convert NetworkConfig (from @paws/types) to proxy-native domains map */
+function networkConfigToDomains(
+  network: NetworkConfig,
+): Record<string, import('@paws/proxy').DomainEntry> {
+  const domains: Record<string, import('@paws/proxy').DomainEntry> = {};
+
+  // Add credential-bearing domains
+  for (const [domain, cred] of Object.entries(network.credentials)) {
+    domains[domain] = { headers: cred.headers };
+  }
+
+  // Add allowOut domains (no credentials) — skip if already in credentials
+  for (const domain of network.allowOut) {
+    if (!(domain in domains)) {
+      domains[domain] = {};
+    }
+  }
+
+  return domains;
+}
 
 /** Escape a value for safe shell interpolation */
 function shellEscape(s: string): string {

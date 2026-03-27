@@ -1,0 +1,20 @@
+FROM oven/bun:1-alpine
+
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+# Copy proxy package
+COPY packages/proxy/package.json packages/proxy/package.json
+COPY packages/proxy/src/ packages/proxy/src/
+COPY packages/proxy/tsconfig.json packages/proxy/tsconfig.json
+
+# Copy config
+COPY examples/proxy-demo/config.example.yaml /app/config.yaml
+
+WORKDIR /app/packages/proxy
+RUN bun install
+
+EXPOSE 8080 8081
+
+CMD ["bun", "run", "src/standalone.ts", "/app/config.yaml"]

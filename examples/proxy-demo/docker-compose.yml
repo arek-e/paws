@@ -1,0 +1,31 @@
+services:
+  proxy:
+    build:
+      context: ../..
+      dockerfile: examples/proxy-demo/Dockerfile.proxy
+    ports:
+      - '8080:8080'
+      - '8081:8081'
+    networks:
+      - proxynet
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:8080/', '||', 'true']
+      interval: 2s
+      timeout: 5s
+      retries: 3
+
+  agent:
+    image: alpine:latest
+    depends_on:
+      - proxy
+    environment:
+      - HTTP_PROXY=http://proxy:8080
+      - HTTPS_PROXY=http://proxy:8080
+      # No API keys here — the proxy injects them at the network layer
+    networks:
+      - proxynet
+    command: ['sleep', 'infinity']
+
+networks:
+  proxynet:
+    driver: bridge

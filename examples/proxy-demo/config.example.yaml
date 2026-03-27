@@ -1,0 +1,9 @@
+# Copy this file to config.yaml and replace with your real API keys
+listen: '0.0.0.0:8080'
+domains:
+  api.anthropic.com:
+    headers:
+      x-api-key: 'sk-ant-REPLACE-ME-WITH-YOUR-KEY'
+  api.openai.com:
+    headers:
+      Authorization: 'Bearer sk-REPLACE-ME-WITH-YOUR-KEY'
