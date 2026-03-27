@@ -57,7 +57,7 @@ least-loaded.
 | 12  | `providers/core` — HostProvider interface + registry                         | ✅     |
 | 13  | `providers/hetzner-dedicated` — Hetzner Robot API                            | ⬜     |
 | 14  | `providers/hetzner-cloud` — Hetzner Cloud API + cloud-init                   | 🟡     |
-| 15  | `infra/pulumi/` — cluster provisioning program                               | ⬜     |
+| 15  | `infra/pulumi/` — cluster provisioning program                               | 🟡     |
 | 16  | Node bootstrap automation (install firecracker, join cluster, pull snapshot) | ⬜     |
 
 **v0.3 deliverable:** `bun run pulumi up` provisions a full cluster from scratch.
