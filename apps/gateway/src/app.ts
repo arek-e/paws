@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { OpenAPIHono } from '@hono/zod-openapi';
 
 import { createGovernanceChecker } from './governance.js';
@@ -86,7 +88,7 @@ export function createGatewayApp(deps: GatewayDeps) {
 
   app.openapi(createSessionRoute, async (c) => {
     const body = c.req.valid('json');
-    const sessionId = crypto.randomUUID();
+    const sessionId = randomUUID();
     sessionStore.create(sessionId, body);
 
     // Dispatch to worker (fire-and-forget)
@@ -311,7 +313,7 @@ export function createGatewayApp(deps: GatewayDeps) {
       payload = {};
     }
 
-    const sessionId = crypto.randomUUID();
+    const sessionId = randomUUID();
     const sessionRequest = {
       snapshot: daemon.snapshot,
       workload: {
@@ -397,7 +399,7 @@ export function createGatewayApp(deps: GatewayDeps) {
       {
         snapshotId: id,
         status: 'building' as const,
-        jobId: `build-${crypto.randomUUID().slice(0, 8)}`,
+        jobId: `build-${randomUUID().slice(0, 8)}`,
       },
       202,
     );
