@@ -3,6 +3,9 @@
  *
  * Tests the TLS MITM proxy with real HTTP servers.
  * Uses self-signed CA certs generated in-process.
+ *
+ * NOTE: Requires Bun runtime globals (Bun.serve, Bun.spawn).
+ * Skips automatically when running under vitest without Bun globals.
  */
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
@@ -11,97 +14,100 @@ import type { NetworkConfig } from '@paws/types';
 import { createProxy, type ProxyHandle } from './server.js';
 import type { SessionCa } from './ca.js';
 
-let upstreamServer: ReturnType<typeof Bun.serve>;
-let proxy: ProxyHandle;
-let ca: SessionCa;
+// Proxy and upstream use Bun.serve — skip if Bun runtime isn't available
+const hasBun = typeof (globalThis as Record<string, unknown>).Bun !== 'undefined';
 
-// Track requests that hit the upstream
-const receivedRequests: Array<{
-  url: string;
-  method: string;
-  headers: Record<string, string>;
-}> = [];
+describe.skipIf(!hasBun)('Proxy HTTP integration', () => {
+  let upstreamServer: ReturnType<typeof Bun.serve>;
+  let proxy: ProxyHandle;
+  let ca: SessionCa;
 
-beforeAll(async () => {
-  // Generate a real self-signed CA for testing
-  const proc = Bun.spawn(
-    [
-      'openssl',
-      'req',
-      '-x509',
-      '-newkey',
-      'ec',
-      '-pkeyopt',
-      'ec_paramgen_curve:prime256v1',
-      '-nodes',
-      '-keyout',
-      '/dev/stdout',
-      '-out',
-      '/dev/stdout',
-      '-days',
-      '1',
-      '-subj',
-      '/CN=test-ca',
-      '-addext',
-      'basicConstraints=critical,CA:TRUE,pathlen:0',
-    ],
-    { stdout: 'pipe', stderr: 'pipe' },
-  );
-  const output = await new Response(proc.stdout).text();
-  await proc.exited;
+  // Track requests that hit the upstream
+  const receivedRequests: Array<{
+    url: string;
+    method: string;
+    headers: Record<string, string>;
+  }> = [];
 
-  // Split PEM output into key and cert
-  const keyMatch = output.match(/-----BEGIN PRIVATE KEY-----[\s\S]+?-----END PRIVATE KEY-----/);
-  const certMatch = output.match(/-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/);
+  beforeAll(async () => {
+    // Generate a real self-signed CA for testing
+    const proc = Bun.spawn(
+      [
+        'openssl',
+        'req',
+        '-x509',
+        '-newkey',
+        'ec',
+        '-pkeyopt',
+        'ec_paramgen_curve:prime256v1',
+        '-nodes',
+        '-keyout',
+        '/dev/stdout',
+        '-out',
+        '/dev/stdout',
+        '-days',
+        '1',
+        '-subj',
+        '/CN=test-ca',
+        '-addext',
+        'basicConstraints=critical,CA:TRUE,pathlen:0',
+      ],
+      { stdout: 'pipe', stderr: 'pipe' },
+    );
+    const output = await new Response(proc.stdout).text();
+    await proc.exited;
 
-  if (!keyMatch || !certMatch) {
-    throw new Error('Failed to generate test CA');
-  }
+    // Split PEM output into key and cert
+    const keyMatch = output.match(/-----BEGIN PRIVATE KEY-----[\s\S]+?-----END PRIVATE KEY-----/);
+    const certMatch = output.match(/-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/);
 
-  ca = {
-    key: keyMatch[0],
-    cert: certMatch[0],
-    keyPath: '/tmp/test-ca.key',
-    certPath: '/tmp/test-ca.crt',
-  };
+    if (!keyMatch || !certMatch) {
+      throw new Error('Failed to generate test CA');
+    }
 
-  // Start a fake upstream server
-  upstreamServer = Bun.serve({
-    port: 0,
-    async fetch(req) {
-      const url = new URL(req.url);
-      const headers: Record<string, string> = {};
-      req.headers.forEach((v, k) => {
-        headers[k] = v;
-      });
-      receivedRequests.push({ url: url.pathname, method: req.method, headers });
-      return Response.json({ ok: true, path: url.pathname });
-    },
+    ca = {
+      key: keyMatch[0],
+      cert: certMatch[0],
+      keyPath: '/tmp/test-ca.key',
+      certPath: '/tmp/test-ca.crt',
+    };
+
+    // Start a fake upstream server
+    upstreamServer = Bun.serve({
+      port: 0,
+      async fetch(req) {
+        const url = new URL(req.url);
+        const headers: Record<string, string> = {};
+        req.headers.forEach((v, k) => {
+          headers[k] = v;
+        });
+        receivedRequests.push({ url: url.pathname, method: req.method, headers });
+        return Response.json({ ok: true, path: url.pathname });
+      },
+    });
+
+    const network: NetworkConfig = {
+      allowOut: ['allowed.example.com'],
+      credentials: {
+        'api.example.com': { headers: { 'x-api-key': 'test-secret-key' } },
+        'git.example.com': { headers: { authorization: 'Bearer ghp_test123' } },
+      },
+    };
+
+    proxy = createProxy({
+      listenHost: '127.0.0.1',
+      httpPort: 0,
+      httpsPort: 0,
+      network,
+      ca,
+    });
   });
 
-  const network: NetworkConfig = {
-    allowOut: ['allowed.example.com'],
-    credentials: {
-      'api.example.com': { headers: { 'x-api-key': 'test-secret-key' } },
-      'git.example.com': { headers: { authorization: 'Bearer ghp_test123' } },
-    },
-  };
-
-  proxy = createProxy({
-    listenHost: '127.0.0.1',
-    httpPort: 0,
-    httpsPort: 0,
-    network,
-    ca,
+  afterAll(() => {
+    proxy?.stop();
+    upstreamServer?.stop();
   });
-});
 
-afterAll(() => {
-  proxy?.stop();
-  upstreamServer?.stop();
-});
-
-describe('Proxy HTTP integration', () => {
   test('proxy starts and returns ports', () => {
     expect(proxy.httpPort).toBeGreaterThan(0);
     expect(proxy.httpsPort).toBeGreaterThan(0);

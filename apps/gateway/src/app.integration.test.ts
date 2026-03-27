@@ -3,15 +3,17 @@
  *
  * Boots the real Hono server on a random port and exercises every endpoint
  * over HTTP to catch wiring issues beyond unit-test mocking.
+ *
+ * NOTE: Uses Bun.serve to start the server — skips automatically when
+ * running under vitest without Bun runtime globals.
  */
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
 import { createGatewayApp } from './app.js';
 import type { WorkerClient, WorkerHealth, WorkerSessionResult } from './worker-client.js';
 
-let server: ReturnType<typeof Bun.serve>;
-let baseUrl: string;
-const API_KEY = 'test-integration-key';
+// Bun.serve is used to boot the server — skip if Bun runtime isn't available
+const hasBun = typeof (globalThis as Record<string, unknown>).Bun !== 'undefined';
 
 function createMockWorkerClient(): WorkerClient {
   const sessions = new Map<string, WorkerSessionResult>();
@@ -34,35 +36,39 @@ function createMockWorkerClient(): WorkerClient {
   };
 }
 
-beforeAll(() => {
-  const app = createGatewayApp({
-    apiKey: API_KEY,
-    workerClient: createMockWorkerClient(),
+describe.skipIf(!hasBun)('Gateway integration — real HTTP', () => {
+  let server: ReturnType<typeof Bun.serve>;
+  let baseUrl: string;
+  const API_KEY = 'test-integration-key';
+
+  beforeAll(() => {
+    const app = createGatewayApp({
+      apiKey: API_KEY,
+      workerClient: createMockWorkerClient(),
+    });
+
+    server = Bun.serve({
+      port: 0,
+      fetch: app.fetch,
+    });
+    baseUrl = `http://localhost:${server.port}`;
   });
 
-  server = Bun.serve({
-    port: 0,
-    fetch: app.fetch,
+  afterAll(() => {
+    server?.stop();
   });
-  baseUrl = `http://localhost:${server.port}`;
-});
 
-afterAll(() => {
-  server?.stop();
-});
+  const AUTH = { Authorization: `Bearer ${API_KEY}` };
+  const JSON_HEADERS = { ...AUTH, 'Content-Type': 'application/json' };
 
-const AUTH = { Authorization: `Bearer ${API_KEY}` };
-const JSON_HEADERS = { ...AUTH, 'Content-Type': 'application/json' };
+  const DAEMON_BODY = {
+    role: 'test-daemon',
+    description: 'A test daemon',
+    snapshot: 'test-snapshot',
+    trigger: { type: 'webhook' as const, events: ['push'] },
+    workload: { type: 'script' as const, script: 'echo hello' },
+  };
 
-const DAEMON_BODY = {
-  role: 'test-daemon',
-  description: 'A test daemon',
-  snapshot: 'test-snapshot',
-  trigger: { type: 'webhook' as const, events: ['push'] },
-  workload: { type: 'script' as const, script: 'echo hello' },
-};
-
-describe('Gateway integration — real HTTP', () => {
   test('GET /health returns 200 with healthy status', async () => {
     const res = await fetch(`${baseUrl}/health`);
     expect(res.status).toBe(200);

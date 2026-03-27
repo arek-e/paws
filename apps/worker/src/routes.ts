@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { Hono } from 'hono';
 import { CreateSessionRequestSchema } from '@paws/types';
 
@@ -74,7 +76,7 @@ export function createSessionApp(deps: AppDeps) {
       );
     }
 
-    const sessionId = crypto.randomUUID();
+    const sessionId = randomUUID();
 
     // Fire-and-forget — execute in background, track results
     executor.execute(sessionId, parsed.data).then(
