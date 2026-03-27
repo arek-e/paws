@@ -393,8 +393,8 @@ paws/
 │   └── snapshot-builder/   Snapshot build jobs
 │
 ├── providers/
-│   ├── core/               @paws/providers  HostProvider interface + registry
-│   ├── hetzner-dedicated/  (v0.3+) Hetzner Robot API
+│   ├── core/               @paws/providers                   HostProvider interface + registry
+│   ├── hetzner-dedicated/  @paws/provider-hetzner-dedicated  Hetzner Robot API (bare metal)
 │   └── hetzner-cloud/      (v0.3+) Hetzner Cloud API + cloud-init
 │
 ├── infra/
