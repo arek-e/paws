@@ -40,7 +40,7 @@ Test-after for system plumbing. See [testing.md](testing.md).
 | 7   | `packages/scheduler` — least-loaded worker selection                 | ✅     |
 | 8   | Gateway: K8s service discovery (watch worker pods)                   | ✅     |
 | 9   | Worker + Gateway Dockerfiles                                         | ✅     |
-| 10  | kubeadm setup on Hetzner (replace K3s)                               | ⬜     |
+| 10  | kubeadm setup on Hetzner (replace K3s)                               | 🟡     |
 | 11  | Add second Hetzner server as worker node                             | ⬜     |
 
 **v0.2 deliverable:** `kubectl apply` deploys paws. Two worker nodes, gateway routes sessions to
