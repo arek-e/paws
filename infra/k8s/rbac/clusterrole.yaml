@@ -1,0 +1,31 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: paws-gateway
+  labels:
+    app.kubernetes.io/name: paws
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/managed-by: kubectl
+rules:
+  # Gateway needs to list/watch pods and endpoints to discover worker nodes
+  # for session routing and fleet health queries.
+  - apiGroups: ['']
+    resources: ['pods', 'endpoints']
+    verbs: ['get', 'list', 'watch']
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: paws-gateway
+  labels:
+    app.kubernetes.io/name: paws
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/managed-by: kubectl
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: paws-gateway
+subjects:
+  - kind: ServiceAccount
+    name: paws
+    namespace: paws
