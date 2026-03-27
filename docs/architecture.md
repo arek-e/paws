@@ -8,8 +8,13 @@
 
 ## Overview
 
-paws is a self-hosted platform for running background AI agents in Firecracker microVMs. It consists
-of two core services — a **gateway** (control plane) and **workers** (execution nodes) — connected
+paws is a zero-trust credential injection layer for AI agents. The core idea: your agent never sees
+an API key. Credentials are held on the host and injected at the network layer by a per-VM TLS MITM
+proxy — the agent makes normal HTTPS requests and auth headers appear transparently.
+
+This trust architecture is enforced by running each agent in an ephemeral Firecracker microVM with
+its own dedicated proxy, its own network namespace, and its own ephemeral CA. Two core services — a
+**gateway** (control plane) and **workers** (execution nodes) — coordinate the lifecycle, connected
 by a Kubernetes-orchestrated network.
 
 The design follows Browser Use's "Pattern 2: Agent Isolation" — the entire agent runs in a sandbox

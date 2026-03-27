@@ -9,18 +9,17 @@
  */
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
-import type { NetworkConfig } from '@paws/types';
-
-import { createProxy, type ProxyHandle } from './server.js';
-import type { SessionCa } from './ca.js';
+import { createProxy } from './server.js';
+import type { ProxyInstance } from './types.js';
 
 // Proxy and upstream use Bun.serve — skip if Bun runtime isn't available
 const hasBun = typeof (globalThis as Record<string, unknown>).Bun !== 'undefined';
 
 describe.skipIf(!hasBun)('Proxy HTTP integration', () => {
   let upstreamServer: ReturnType<typeof Bun.serve>;
-  let proxy: ProxyHandle;
-  let ca: SessionCa;
+  let proxy: ProxyInstance;
+  let caCert: string;
+  let caKey: string;
 
   // Track requests that hit the upstream
   const receivedRequests: Array<{
@@ -65,12 +64,8 @@ describe.skipIf(!hasBun)('Proxy HTTP integration', () => {
       throw new Error('Failed to generate test CA');
     }
 
-    ca = {
-      key: keyMatch[0],
-      cert: certMatch[0],
-      keyPath: '/tmp/test-ca.key',
-      certPath: '/tmp/test-ca.crt',
-    };
+    caCert = certMatch[0];
+    caKey = keyMatch[0];
 
     // Start a fake upstream server
     upstreamServer = Bun.serve({
@@ -86,35 +81,32 @@ describe.skipIf(!hasBun)('Proxy HTTP integration', () => {
       },
     });
 
-    const network: NetworkConfig = {
-      allowOut: ['allowed.example.com'],
-      credentials: {
+    proxy = createProxy({
+      listen: { host: '127.0.0.1', port: 0 },
+      domains: {
         'api.example.com': { headers: { 'x-api-key': 'test-secret-key' } },
         'git.example.com': { headers: { authorization: 'Bearer ghp_test123' } },
+        'allowed.example.com': {},
       },
-    };
-
-    proxy = createProxy({
-      listenHost: '127.0.0.1',
-      httpPort: 0,
-      httpsPort: 0,
-      network,
-      ca,
+      ca: { cert: caCert, key: caKey },
     });
+
+    await proxy.start();
   });
 
-  afterAll(() => {
-    proxy?.stop();
+  afterAll(async () => {
+    await proxy?.stop();
     upstreamServer?.stop();
   });
 
-  test('proxy starts and returns ports', () => {
-    expect(proxy.httpPort).toBeGreaterThan(0);
-    expect(proxy.httpsPort).toBeGreaterThan(0);
+  test('proxy starts and returns address', () => {
+    const addr = proxy.address();
+    expect(addr.port).toBeGreaterThan(0);
   });
 
   test('proxy blocks non-allowlisted domain on HTTP', async () => {
-    const res = await fetch(`http://127.0.0.1:${proxy.httpPort}/test`, {
+    const addr = proxy.address();
+    const res = await fetch(`http://127.0.0.1:${addr.port}/test`, {
       headers: { host: 'evil.example.com' },
     });
     expect(res.status).toBe(403);
@@ -123,34 +115,38 @@ describe.skipIf(!hasBun)('Proxy HTTP integration', () => {
   });
 
   test('proxy allows allowlisted domain on HTTP', async () => {
-    // allowed.example.com is in allowOut — should be forwarded
+    const addr = proxy.address();
+    // allowed.example.com is in domains — should be forwarded
     // But since we can't actually resolve it, this tests the domain check logic
-    // In real usage, iptables DNAT handles routing
-    const res = await fetch(`http://127.0.0.1:${proxy.httpPort}/test`, {
+    const res = await fetch(`http://127.0.0.1:${addr.port}/test`, {
       headers: { host: 'allowed.example.com' },
     });
     // May fail to connect upstream (no real server), but should NOT be 403
-    // The proxy will attempt to forward — failure is a network error, not a block
     expect(res.status).not.toBe(403);
   });
 
   test('proxy allows credential-configured domain on HTTP', async () => {
-    const res = await fetch(`http://127.0.0.1:${proxy.httpPort}/v1/messages`, {
+    const addr = proxy.address();
+    const res = await fetch(`http://127.0.0.1:${addr.port}/v1/messages`, {
       headers: { host: 'api.example.com' },
     });
-    // Domain is in credentials map — should be allowed (not 403)
+    // Domain is in domains map — should be allowed (not 403)
     expect(res.status).not.toBe(403);
   });
 
-  test('proxy can be stopped', () => {
-    // This just verifies stop() doesn't throw
+  test('proxy can be stopped and restarted', async () => {
     const tempProxy = createProxy({
-      listenHost: '127.0.0.1',
-      httpPort: 0,
-      httpsPort: 0,
-      network: { allowOut: [], credentials: {} },
-      ca,
+      listen: { host: '127.0.0.1', port: 0 },
+      domains: {},
+      ca: { cert: caCert, key: caKey },
     });
-    expect(() => tempProxy.stop()).not.toThrow();
+    await tempProxy.start();
+    await expect(tempProxy.stop()).resolves.not.toThrow();
+  });
+
+  test('proxy returns CA cert and key', () => {
+    const ca = proxy.ca();
+    expect(ca.cert).toContain('BEGIN CERTIFICATE');
+    expect(ca.key).toContain('BEGIN PRIVATE KEY');
   });
 });

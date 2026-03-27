@@ -32,6 +32,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@paws/firecracker": "workspace:*",
+        "@paws/proxy": "workspace:*",
         "@paws/types": "workspace:*",
         "hono": "^4.7.0",
         "neverthrow": "^8.2.0",
@@ -55,6 +56,17 @@
     },
     "packages/providers": {
       "name": "@paws/providers",
+      "version": "0.1.0",
+      "dependencies": {
+        "neverthrow": "^8.2.0",
+      },
+      "devDependencies": {
+        "bun-types": "^1.3.11",
+        "vitest": "^4.1.2",
+      },
+    },
+    "packages/proxy": {
+      "name": "@paws/proxy",
       "version": "0.1.0",
       "dependencies": {
         "neverthrow": "^8.2.0",
@@ -350,6 +362,8 @@
     "@paws/provider-hetzner-dedicated": ["@paws/provider-hetzner-dedicated@workspace:providers/hetzner-dedicated"],
 
     "@paws/providers": ["@paws/providers@workspace:packages/providers"],
+
+    "@paws/proxy": ["@paws/proxy@workspace:packages/proxy"],
 
     "@paws/scheduler": ["@paws/scheduler@workspace:packages/scheduler"],
 
