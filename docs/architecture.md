@@ -310,7 +310,21 @@ paws/
 │   └── scheduler/          @paws/scheduler    Fleet scheduling (pure functions)
 │
 ├── apps/
-│   ├── worker/             Worker service (DaemonSet)
+│   ├── worker/             @paws/worker       Worker service (DaemonSet)
+│   │   ├── src/
+│   │   │   ├── server.ts          Bun entrypoint + config
+│   │   │   ├── routes.ts          Hono routes (health, sessions)
+│   │   │   ├── semaphore.ts       Counting semaphore with FIFO queue
+│   │   │   ├── errors.ts          Typed WorkerError with error codes
+│   │   │   ├── session/
+│   │   │   │   └── executor.ts    Full VM lifecycle orchestration
+│   │   │   ├── ssh/
+│   │   │   │   └── client.ts      SSH wait/exec/read/write via guest IP
+│   │   │   └── proxy/
+│   │   │       ├── domain-match.ts  Domain allowlist matching (wildcard)
+│   │   │       ├── ca.ts            Per-session ECDSA CA generation
+│   │   │       └── server.ts        TLS MITM proxy (Bun.serve)
+│   │   └── vitest.config.ts
 │   ├── gateway/            Gateway service (Deployment)
 │   └── snapshot-builder/   Snapshot build jobs
 │
