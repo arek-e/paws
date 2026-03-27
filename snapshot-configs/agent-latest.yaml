@@ -1,0 +1,14 @@
+id: agent-latest
+base:
+  kernel: /var/lib/paws/kernels/vmlinux-default
+  rootfs: /var/lib/paws/rootfs/ubuntu-default.ext4
+vcpu: 2
+memory_mb: 4096
+setup: |
+  #!/bin/bash
+  set -euo pipefail
+  apt-get update
+  apt-get install -y --no-install-recommends curl git ca-certificates openssh-server
+  curl -fsSL https://bun.sh/install | bash
+  echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+  systemctl enable ssh
