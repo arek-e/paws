@@ -46,15 +46,13 @@ jobs:
     steps:
       - uses: tailscale/github-action@v3
         with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
+          authkey: ${{ secrets.TS_AUTHKEY }}
 
       - name: Wait for Tailscale tunnel
         run: |
           echo "==> Waiting for Tailscale tunnel to establish..."
           for i in $(seq 1 30); do
-            if tailscale ping --c 1 100.78.44.23 2>/dev/null; then
+            if sudo tailscale ping -c 1 100.78.44.23 2>/dev/null; then
               echo "==> Tailscale tunnel ready"
               break
             fi
