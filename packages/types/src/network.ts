@@ -24,9 +24,9 @@ export const NetworkAllocationSchema = z.object({
   /** Subnet index (0-based, used to compute IPs) */
   subnetIndex: z.number().int().nonnegative(),
   /** Host-side IP (where proxy listens) */
-  hostIp: z.string().ip({ version: 'v4' }),
+  hostIp: z.ipv4(),
   /** Guest-side IP (VM's address) */
-  guestIp: z.string().ip({ version: 'v4' }),
+  guestIp: z.ipv4(),
   /** CIDR notation for the /30 subnet */
   subnet: z.string(),
 });
