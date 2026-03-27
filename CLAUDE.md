@@ -126,3 +126,20 @@ v0.1 — single server, no K8s. See @docs/roadmap.md
 ## Test Server
 
 `ssh root@teampitch-fc-staging` (Tailscale). Ryzen 5 3600, 64GB RAM. See @docs/fc-staging-server.md
+
+## Deploy Configuration (configured by /setup-deploy)
+
+- Platform: Kubernetes on Hetzner (manual/Pulumi)
+- Production URL: none (self-hosted, no public web UI yet)
+- Deploy workflow: none (Argo CD + GH Actions tag-based deploy planned, not yet implemented)
+- Deploy status command: none
+- Merge method: squash
+- Project type: infrastructure platform (not a web app)
+- Post-deploy health check: none
+
+### Custom deploy hooks
+
+- Pre-merge: `bun test` (unit tests)
+- Deploy trigger: manual (`pulumi up` from infra/pulumi/ or `kubectl apply` from infra/k8s/)
+- Deploy status: SSH to teampitch-fc-staging, check `kubectl get pods`
+- Health check: `curl http://100.78.44.23:4000/health` (gateway via Tailscale)
