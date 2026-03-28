@@ -1,21 +1,14 @@
 import { Hono } from 'hono';
-import { deleteCookie, setCookie } from 'hono/cookie';
+import { deleteCookie } from 'hono/cookie';
 import { getAuth, oidcAuthMiddleware, processOAuthCallback, revokeSession } from '@hono/oidc-auth';
 
 /** Auth routes for OIDC login flow (browser-based, not OpenAPI) */
 export function createAuthRoutes() {
   const app = new Hono();
 
-  // Login: use oidcAuthMiddleware which handles the full redirect-to-provider flow.
-  // Prefix middleware clears stale cookies to prevent "Invalid session" errors.
+  // Login: clear stale cookies, then oidcAuthMiddleware redirects to Dex
   app.use('/auth/login', async (c, next) => {
     deleteCookie(c, 'oidc-auth', { path: '/' });
-    // Set continue to dashboard root so callback redirects there
-    setCookie(c, 'continue', 'https://fleet.tpops.dev/', {
-      path: '/auth/callback',
-      httpOnly: true,
-      secure: true,
-    });
     await next();
   });
 
@@ -23,10 +16,16 @@ export function createAuthRoutes() {
     return c.redirect('/');
   });
 
-  // OIDC callback: oidcAuthMiddleware auto-handles this path
-  // (it checks if the URL matches OIDC_REDIRECT_URI and calls processOAuthCallback)
-  app.get('/auth/callback', oidcAuthMiddleware(), (c) => {
-    return c.redirect('/');
+  // Callback: process the code exchange directly (don't use oidcAuthMiddleware
+  // here — behind a reverse proxy, the origin mismatch causes it to start a
+  // new auth flow instead of processing the callback)
+  app.get('/auth/callback', async (c) => {
+    try {
+      return await processOAuthCallback(c);
+    } catch (err) {
+      console.error('[auth] Callback error:', err);
+      return c.redirect('/auth/login');
+    }
   });
 
   // Logout
