@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router';
 
 import { CredentialsStep } from '../components/setup/CredentialsStep.js';
 import { FirstRunStep } from '../components/setup/FirstRunStep.js';
+import { GitHubStep } from '../components/setup/GitHubStep.js';
 import { ServerStep } from '../components/setup/ServerStep.js';
 
-type Step = 'server' | 'credentials' | 'first-run';
+type Step = 'server' | 'credentials' | 'github' | 'first-run';
 
 const STEPS: { id: Step; label: string }[] = [
   { id: 'server', label: 'Server' },
   { id: 'credentials', label: 'Credentials' },
+  { id: 'github', label: 'GitHub' },
   { id: 'first-run', label: 'First Run' },
 ];
 
@@ -59,11 +61,31 @@ export function Setup() {
       )}
 
       {step === 'credentials' && (
-        <CredentialsStep onComplete={() => setStep('first-run')} onBack={() => setStep('server')} />
+        <CredentialsStep onComplete={() => setStep('github')} onBack={() => setStep('server')} />
+      )}
+
+      {step === 'github' && (
+        <div>
+          <GitHubStep />
+          <div className="flex justify-between mt-6">
+            <button
+              onClick={() => setStep('credentials')}
+              className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+            >
+              ← Back
+            </button>
+            <button
+              onClick={() => setStep('first-run')}
+              className="px-5 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-500 transition-colors"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
       )}
 
       {step === 'first-run' && (
-        <FirstRunStep onComplete={() => navigate('/')} onBack={() => setStep('credentials')} />
+        <FirstRunStep onComplete={() => navigate('/')} onBack={() => setStep('github')} />
       )}
     </div>
   );
