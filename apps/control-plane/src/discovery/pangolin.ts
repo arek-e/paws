@@ -18,12 +18,17 @@ import type { WorkerDiscovery } from './index.js';
  */
 
 export interface PangolinDiscoveryOptions {
-  /** Pangolin internal API URL (e.g., http://pangolin:3001/api/v1). */
+  /** Pangolin API URL (e.g., http://pangolin:3000/api/v1). */
   apiUrl: string;
-  /** Pangolin API key for authentication. */
-  apiKey: string;
   /** Pangolin organization ID. */
   orgId: string;
+  /**
+   * Auth: either an API key (Bearer token) or session credentials (email+password).
+   * Session auth logs in on first request and refreshes on 401.
+   */
+  apiKey?: string;
+  email?: string;
+  password?: string;
   /** Worker port. Defaults to 3000. */
   workerPort?: number;
   /** Poll interval in milliseconds. Defaults to 10_000 (10 seconds). */
@@ -42,18 +47,23 @@ interface PangolinSite {
 }
 
 interface PangolinSitesResponse {
-  data: PangolinSite[];
+  data: { sites: PangolinSite[] };
 }
 
-export function createPangolinDiscovery(opts: PangolinDiscoveryOptions): WorkerDiscovery {
+export function createPangolinDiscovery(opts: PangolinDiscoveryOptions) {
   const {
     apiUrl,
     apiKey,
+    email,
+    password,
     orgId,
     workerPort = 3000,
     pollIntervalMs = 10_000,
     disconnectGraceMs = 30_000,
   } = opts;
+
+  // Session cookie for login-based auth
+  let sessionCookie = '';
 
   // Cache: last known workers (kept on API failure for graceful degradation)
   let cachedWorkers: Worker[] = [];
@@ -142,16 +152,60 @@ export function createPangolinDiscovery(opts: PangolinDiscoveryOptions): WorkerD
     cachedWorkers = [...freshWorkers, ...graceWorkers];
   }
 
+  async function login(): Promise<void> {
+    if (!email || !password) return;
+    try {
+      const res = await fetch(`${apiUrl}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-csrf-token': 'x-csrf-protection',
+        },
+        body: JSON.stringify({ email, password }),
+        signal: AbortSignal.timeout(5_000),
+      });
+      const cookies = res.headers.getSetCookie?.() ?? [];
+      sessionCookie = cookies.map((c) => c.split(';')[0]).join('; ');
+      if (res.ok) {
+        console.log('pangolin: session login successful');
+      } else {
+        console.error(`pangolin: login failed with status ${res.status}`);
+      }
+    } catch (err) {
+      console.error('pangolin: login request failed', err);
+    }
+  }
+
+  function buildHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { 'x-csrf-token': 'x-csrf-protection' };
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    } else if (sessionCookie) {
+      headers['Cookie'] = sessionCookie;
+    }
+    return headers;
+  }
+
   async function fetchSites(): Promise<PangolinSite[]> {
     const url = `${apiUrl}/org/${orgId}/sites`;
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${apiKey}` },
+    let res = await fetch(url, {
+      headers: buildHeaders(),
       signal: AbortSignal.timeout(5_000),
     });
 
+    // On 401, try re-login (session expired) and retry once
+    if (res.status === 401 && email && password) {
+      console.log('pangolin: session expired, re-authenticating...');
+      await login();
+      res = await fetch(url, {
+        headers: buildHeaders(),
+        signal: AbortSignal.timeout(5_000),
+      });
+    }
+
     if (res.status === 401) {
       console.error(
-        'pangolin: API returned 401 — check PANGOLIN_API_KEY is valid and has not expired',
+        'pangolin: API returned 401 — check credentials (PANGOLIN_API_KEY or PANGOLIN_EMAIL/PASSWORD)',
       );
       throw new Error('Pangolin API authentication failed');
     }
@@ -169,12 +223,12 @@ export function createPangolinDiscovery(opts: PangolinDiscoveryOptions): WorkerD
       throw new Error('Pangolin API returned malformed JSON');
     }
 
-    if (!Array.isArray(body.data)) {
-      console.error('pangolin: API response missing data array, keeping cached fleet state');
-      throw new Error('Pangolin API response missing data array');
+    if (!Array.isArray(body.data?.sites)) {
+      console.error('pangolin: API response missing data.sites array, keeping cached fleet state');
+      throw new Error('Pangolin API response missing data.sites array');
     }
 
-    return body.data;
+    return body.data.sites;
   }
 
   async function healthCheckSite(site: PangolinSite): Promise<Worker | null> {
@@ -242,8 +296,12 @@ export function createPangolinDiscovery(opts: PangolinDiscoveryOptions): WorkerD
     }
   }
 
-  // Auto-start polling on creation
-  startPolling();
+  // Login then start polling
+  if (email && password) {
+    login().then(() => startPolling());
+  } else {
+    startPolling();
+  }
 
   return {
     async getWorkers(): Promise<Worker[]> {

@@ -11,10 +11,12 @@ const PORT = parseInt(process.env['PORT'] ?? '4000', 10);
 const API_KEY = process.env['API_KEY'] ?? 'paws-dev-key';
 const WORKER_URL = process.env['WORKER_URL'] ?? '';
 
-// Pangolin discovery config (optional — set all 3 to enable)
+// Pangolin discovery config (optional — set URL + orgId + either apiKey or email/password)
 const PANGOLIN_API_URL = process.env['PANGOLIN_API_URL'] ?? '';
 const PANGOLIN_API_KEY = process.env['PANGOLIN_API_KEY'] ?? '';
 const PANGOLIN_ORG_ID = process.env['PANGOLIN_ORG_ID'] ?? '';
+const PANGOLIN_EMAIL = process.env['PANGOLIN_EMAIL'] ?? '';
+const PANGOLIN_PASSWORD = process.env['PANGOLIN_PASSWORD'] ?? '';
 
 // OIDC config (optional — set all 4 to enable)
 const OIDC_ISSUER = process.env['OIDC_ISSUER'] ?? '';
@@ -42,12 +44,15 @@ const oidc =
 // 2. Call-home registry (workers connect via WebSocket — legacy)
 // 3. K8s pod-watching (in-cluster)
 // 4. Static URLs (manual WORKER_URL)
+const hasPangolinAuth = PANGOLIN_API_KEY || (PANGOLIN_EMAIL && PANGOLIN_PASSWORD);
 const pangolinDiscovery =
-  PANGOLIN_API_URL && PANGOLIN_API_KEY && PANGOLIN_ORG_ID
+  PANGOLIN_API_URL && PANGOLIN_ORG_ID && hasPangolinAuth
     ? createPangolinDiscovery({
         apiUrl: PANGOLIN_API_URL,
-        apiKey: PANGOLIN_API_KEY,
         orgId: PANGOLIN_ORG_ID,
+        ...(PANGOLIN_API_KEY && { apiKey: PANGOLIN_API_KEY }),
+        ...(PANGOLIN_EMAIL && { email: PANGOLIN_EMAIL }),
+        ...(PANGOLIN_PASSWORD && { password: PANGOLIN_PASSWORD }),
       })
     : null;
 const workerRegistry = createWorkerRegistry();

@@ -20,7 +20,7 @@ function makePangolinApi(opts: { sites: FakeSite[]; statusCode?: number; malform
         res.end('not json{{{');
         return;
       }
-      res.end(JSON.stringify({ data: opts.sites }));
+      res.end(JSON.stringify({ data: { sites: opts.sites } }));
     } else {
       res.writeHead(404);
       res.end();
