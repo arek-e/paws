@@ -60,6 +60,7 @@ export interface GatewayDeps {
         clientSecret: string;
         redirectUri: string;
         authSecret: string;
+        externalUrl?: string;
       }
     | undefined;
   /** Worker registry for call-home discovery. */
@@ -142,6 +143,7 @@ export async function createGatewayApp(deps: GatewayDeps) {
         OIDC_CLIENT_SECRET: deps.oidc.clientSecret,
         OIDC_REDIRECT_URI: deps.oidc.redirectUri,
         OIDC_AUTH_SECRET: deps.oidc.authSecret,
+        OIDC_AUTH_EXTERNAL_URL: deps.oidc.externalUrl,
       }),
     );
   }
