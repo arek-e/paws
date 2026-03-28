@@ -407,3 +407,4 @@ Quick reference for every domain term used in paws documentation.
 - [Security](security.md) — threat model, zero-trust design, proxy details
 - [Testing](testing.md) — test tiers, mocking strategy, VM test scaffold
 - [API](api.md) — REST endpoint reference
+- [Brand Language](brand.md) — voice, terminology, CLI personality, ASCII art rules

@@ -9,6 +9,7 @@ import { daemonsCommand } from './commands/daemons.js';
 import { fleetCommand } from './commands/fleet.js';
 import { sessionsCommand } from './commands/sessions.js';
 import { snapshotsCommand } from './commands/snapshots.js';
+import { statusCommand } from './commands/status.js';
 import { printError } from './output.js';
 
 const VERSION = '0.1.0';
@@ -21,6 +22,7 @@ const HELP = `
 Usage: paws [options] <resource> <action> [args]
 
 Resources:
+  status      fleet overview with trees, boxes, and active kittens
   sessions    create, get, cancel, wait
   daemons     list, create, get, delete
   fleet       status, workers
@@ -71,6 +73,7 @@ async function main(): Promise<number> {
 
   type CommandHandler = (client: PawsClient, args: ParsedArgs, pretty: boolean) => Promise<number>;
   const dispatch: Record<string, CommandHandler> = {
+    status: statusCommand,
     sessions: sessionsCommand,
     daemons: daemonsCommand,
     fleet: fleetCommand,
