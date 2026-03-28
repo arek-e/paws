@@ -173,7 +173,7 @@ export const clusterInfo = pulumi
       '  kubectl get pods -n paws',
       '',
       'Create the gateway API key secret before deploying:',
-      '  kubectl create secret generic paws-gateway-secret --from-literal=api-key=<VALUE> -n paws',
+      '  kubectl create secret generic paws-control-plane-secret --from-literal=api-key=<VALUE> -n paws',
       '========================',
     ].join('\n'),
   );

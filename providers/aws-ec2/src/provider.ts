@@ -6,12 +6,12 @@
  * that run Firecracker VMs.
  */
 
-import { ResultAsync, okAsync } from 'neverthrow';
+import { ResultAsync, errAsync, okAsync } from 'neverthrow';
 
 import { createAwsEc2Client } from './client.js';
 import type { AwsEc2ClientOptions, Ec2ClientDep } from './client.js';
 import type { CreateHostOptions, Host, HostProvider, HostStatus } from './provider-interface.js';
-import { ProviderError } from './provider-interface.js';
+import { ProviderError, ProviderErrorCode } from './provider-interface.js';
 import type { Ec2Instance, Ec2InstanceState } from './types.js';
 
 export interface AwsEc2Config {
@@ -65,20 +65,41 @@ function mapInstance(instance: Ec2Instance): Host {
   };
 }
 
+/** Extended provider with AWS-specific methods beyond the HostProvider interface */
+export interface AwsEc2Provider extends HostProvider {
+  /** Poll getHost until instance is ready with an IP, or timeout. */
+  waitForReady(
+    instanceId: string,
+    timeoutMs?: number,
+    pollIntervalMs?: number,
+  ): ResultAsync<{ ip: string }, ProviderError>;
+
+  /** Create a security group with SSH (22) and worker API (3000) ingress + all egress. */
+  createSecurityGroup(name: string, description: string): ResultAsync<string, ProviderError>;
+
+  /** Create an EC2 key pair. Returns the key pair ID and private key material (PEM). */
+  createKeyPair(
+    name: string,
+  ): ResultAsync<{ keyPairId: string; privateKey: string }, ProviderError>;
+}
+
+const DEFAULT_WAIT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const POLL_INTERVAL_MS = 5_000; // 5 seconds
+
 /**
- * Create an AWS EC2 HostProvider.
+ * Create an AWS EC2 HostProvider with AWS-specific extensions.
  *
  * @param config - Provider configuration including region and default AMI.
- * @returns A HostProvider implementation backed by the AWS EC2 API.
+ * @returns An AwsEc2Provider implementation backed by the AWS EC2 API.
  */
-export function createAwsEc2Provider(config: AwsEc2Config): HostProvider {
+export function createAwsEc2Provider(config: AwsEc2Config): AwsEc2Provider {
   const client = createAwsEc2Client({
     region: config.region,
     ...(config.credentials ? { credentials: config.credentials } : {}),
     ...(config.ec2Client ? { ec2Client: config.ec2Client } : {}),
   });
 
-  return {
+  const provider: AwsEc2Provider = {
     listHosts() {
       return client.listInstances().map((instances) => instances.map(mapInstance));
     },
@@ -103,5 +124,65 @@ export function createAwsEc2Provider(config: AwsEc2Config): HostProvider {
     deleteHost(id: string): ResultAsync<void, ProviderError> {
       return client.terminateInstance(id).andThen(() => okAsync(undefined));
     },
+
+    waitForReady(
+      instanceId: string,
+      timeoutMs: number = DEFAULT_WAIT_TIMEOUT_MS,
+      pollIntervalMs: number = POLL_INTERVAL_MS,
+    ): ResultAsync<{ ip: string }, ProviderError> {
+      return ResultAsync.fromPromise(
+        (async () => {
+          const deadline = Date.now() + timeoutMs;
+
+          while (Date.now() < deadline) {
+            const result = await provider.getHost(instanceId);
+
+            if (result.isErr()) {
+              throw result.error;
+            }
+
+            const host = result.value;
+
+            if (host.status === 'deleting' || host.status === 'error') {
+              throw new ProviderError(
+                ProviderErrorCode.API_ERROR,
+                `Instance ${instanceId} entered terminal state: ${host.status}`,
+              );
+            }
+
+            if (host.status === 'ready' && host.ipv4) {
+              return { ip: host.ipv4 };
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+          }
+
+          throw new ProviderError(
+            ProviderErrorCode.TIMEOUT,
+            `Instance ${instanceId} did not become ready within ${timeoutMs}ms`,
+          );
+        })(),
+        (e) => {
+          if (e instanceof ProviderError) return e;
+          return new ProviderError(
+            ProviderErrorCode.API_ERROR,
+            `waitForReady(${instanceId}) failed: ${e}`,
+            e,
+          );
+        },
+      );
+    },
+
+    createSecurityGroup(name: string, description: string): ResultAsync<string, ProviderError> {
+      return client.createSecurityGroup(name, description);
+    },
+
+    createKeyPair(
+      name: string,
+    ): ResultAsync<{ keyPairId: string; privateKey: string }, ProviderError> {
+      return client.createKeyPair(name);
+    },
   };
+
+  return provider;
 }

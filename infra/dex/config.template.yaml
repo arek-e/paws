@@ -15,7 +15,7 @@ web:
   http: 0.0.0.0:5556
 
 staticClients:
-  - id: paws-gateway
+  - id: paws-control-plane
     name: paws
     redirectURIs:
       - https://${DOMAIN}/auth/callback

@@ -82,8 +82,8 @@ touch /var/lib/paws/.bootstrap-done
 `;
 
 export function createControlPlane(args: ControlPlaneArgs): ControlPlaneOutputs {
-  const server = new hcloud.Server('paws-gateway', {
-    name: 'paws-gateway',
+  const server = new hcloud.Server('paws-control-plane', {
+    name: 'paws-control-plane',
     serverType: args.serverType,
     image: 'ubuntu-24.04',
     location: args.location,

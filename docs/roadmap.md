@@ -119,7 +119,7 @@ secret management, and the UX details that make self-hosted software delightful.
 | #   | What                                                                         | Status |
 | --- | ---------------------------------------------------------------------------- | ------ |
 | 39  | GitHub App integration — daemons triggered by GitHub events (PR, push, etc.) | ⬜     |
-| 40  | Onboarding wizard — stepped setup flow in dashboard with validation          | ⬜     |
+| 40  | Onboarding wizard — stepped setup flow in dashboard with validation          | 🟡     |
 | 41  | Real-time setup streaming — stream worker bootstrap logs to dashboard via WS | ⬜     |
 | 42  | Secret adapter pattern — resolve secrets from 1Password/Vault/Infisical/env  | ⬜     |
 | 43  | SSH key management — first-class entities in dashboard, encrypted storage    | ⬜     |
@@ -128,6 +128,9 @@ secret management, and the UX details that make self-hosted software delightful.
 | 46  | One-click worker provisioning — provision cloud servers from dashboard       | ⬜     |
 | 47  | Daemon templates — pre-built agent configurations (PR reviewer, etc.)        | ⬜     |
 | 48  | Audit log UI — searchable event history in dashboard                         | ⬜     |
+
+**Note:** `apps/gateway` has been renamed to `apps/control-plane` to better reflect its role as
+the control plane in the control-plane/worker architecture split (v1.0 #37).
 
 **Inspired by:** Coolify (onboarding wizard, GitHub App), Dokploy (git provider abstraction,
 real-time streaming), Kamal (secret adapters, zero-agent philosophy).

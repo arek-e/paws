@@ -6,7 +6,7 @@ import { selectWorker } from '@paws/scheduler';
 import type { WorkerRegistry } from './discovery/registry.js';
 import { createBuildStore } from './store/builds.js';
 import { createGovernanceChecker } from './governance.js';
-import { createGatewayMetrics, type GatewayMetrics } from './metrics.js';
+import { createControlPlaneMetrics, type ControlPlaneMetrics } from './metrics.js';
 import { authMiddleware, type AuthConfig } from './middleware/auth.js';
 import { createAuthRoutes } from './routes/auth.js';
 import { registerWorkerWebSocket } from './routes/worker-ws.js';
@@ -29,12 +29,15 @@ import { buildSnapshotRoute, listSnapshotsRoute } from './routes/snapshots.js';
 import { receiveWebhookRoute } from './routes/webhooks.js';
 import { createDaemonStore, type DaemonStore } from './store/daemons.js';
 import { createSessionStore, type SessionStore, type StoredSession } from './store/sessions.js';
+import { createSetupRoutes } from './routes/setup.js';
+import { createServerStore, type ServerStore } from './store/servers.js';
 import { createWorkerClient } from './worker-client.js';
+import type { CredentialStore } from '@paws/credentials';
 import type { WorkerDiscovery } from './discovery/index.js';
 import type { GovernanceChecker } from './governance.js';
 import type { WorkerClient } from './worker-client.js';
 
-export interface GatewayDeps {
+export interface ControlPlaneDeps {
   apiKey: string;
   /**
    * Multi-worker discovery — used when running in K8s or multi-node mode.
@@ -65,6 +68,10 @@ export interface GatewayDeps {
         externalUrl?: string;
       }
     | undefined;
+  /** Server store for setup wizard. */
+  serverStore?: ServerStore | undefined;
+  /** Credential store for setup wizard. */
+  credentialStore?: CredentialStore | undefined;
   /** Worker registry for call-home discovery. */
   workerRegistry?: WorkerRegistry | undefined;
   /** Bun WebSocket upgrader — needed for worker WS and session streaming. */
@@ -103,7 +110,7 @@ function sessionToJson(s: StoredSession) {
 }
 
 /** Create the gateway Hono OpenAPI app with all routes */
-export async function createGatewayApp(deps: GatewayDeps) {
+export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   const rawSessionStore = deps.sessionStore ?? createSessionStore();
   const daemonStore = deps.daemonStore ?? createDaemonStore();
   const governance = deps.governance ?? createGovernanceChecker();
@@ -111,7 +118,7 @@ export async function createGatewayApp(deps: GatewayDeps) {
   const sessionEvents = createSessionEvents();
 
   // Metrics
-  const metrics = createGatewayMetrics({
+  const metrics = createControlPlaneMetrics({
     sessionStore: rawSessionStore,
     daemonStore,
     registry: deps.workerRegistry,
@@ -227,6 +234,8 @@ export async function createGatewayApp(deps: GatewayDeps) {
   app.use('/v1/fleet', authMiddleware(authConfig));
   app.use('/v1/snapshots/*', authMiddleware(authConfig));
   app.use('/v1/snapshots', authMiddleware(authConfig));
+  app.use('/v1/setup/*', authMiddleware(authConfig));
+  app.use('/v1/setup', authMiddleware(authConfig));
 
   // --- Sessions ---
 
@@ -564,6 +573,35 @@ export async function createGatewayApp(deps: GatewayDeps) {
     return c.json({ snapshotId: id, status: 'building' as const, jobId }, 202);
   });
 
+  // --- Setup wizard ---
+
+  {
+    const { createCredentialStore } = await import('@paws/credentials');
+    const setupRoutes = createSetupRoutes({
+      serverStore: deps.serverStore ?? createServerStore(),
+      credentialStore: deps.credentialStore ?? createCredentialStore(deps.apiKey),
+      provisioner: {
+        start: async () => {
+          /* no-op until provisioner deps are wired */
+        },
+      },
+      upgradeWebSocket: deps.upgradeWebSocket,
+      createSession: async (prompt) => {
+        const sessionId = randomUUID();
+        sessionStore.create(sessionId, {
+          snapshot: 'default',
+          workload: { type: 'script', script: prompt },
+        });
+        dispatchSession(discovery, legacyWorkerClient, sessionStore, sessionId, {
+          snapshot: 'default',
+          workload: { type: 'script', script: prompt },
+        });
+        return { sessionId };
+      },
+    });
+    app.route('/', setupRoutes);
+  }
+
   // --- WebSocket routes (require Bun runtime) ---
 
   if (deps.upgradeWebSocket) {
@@ -589,7 +627,7 @@ export async function createGatewayApp(deps: GatewayDeps) {
   app.doc('/openapi.json', {
     openapi: '3.1.0',
     info: {
-      title: 'paws Gateway API',
+      title: 'paws Control Plane API',
       version: '0.1.0',
       description: 'Self-hosted platform for running AI agents in isolated Firecracker microVMs',
     },

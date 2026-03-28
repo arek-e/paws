@@ -2,7 +2,7 @@
 # VictoriaMetrics uses this to collect metrics from the gateway.
 
 scrape_configs:
-  - job_name: paws-gateway
+  - job_name: paws-control-plane
     scrape_interval: 15s
     static_configs:
       - targets:

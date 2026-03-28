@@ -31,6 +31,9 @@ function mockEc2Client(handlers: {
   DescribeInstances?: () => unknown;
   RunInstances?: () => unknown;
   TerminateInstances?: () => unknown;
+  CreateSecurityGroup?: () => unknown;
+  AuthorizeSecurityGroupIngress?: () => unknown;
+  CreateKeyPair?: () => unknown;
 }): Ec2ClientDep & { sendSpy: ReturnType<typeof vi.fn> } {
   const sendSpy = vi.fn(async (command: { constructor: { name: string } }) => {
     const name = command.constructor.name.replace('Command', '');
@@ -318,6 +321,167 @@ describe('createAwsEc2Provider', () => {
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error.code).toBe(ProviderErrorCode.DELETE_FAILED);
+      }
+    });
+  });
+
+  describe('waitForReady', () => {
+    it('returns IP when instance becomes running', async () => {
+      let callCount = 0;
+      const ec2 = mockEc2Client({
+        DescribeInstances: () => {
+          callCount++;
+          // First call: pending (no IP), second call: running with IP
+          if (callCount === 1) {
+            return {
+              Reservations: [
+                {
+                  Instances: [
+                    makeAwsInstance({
+                      InstanceId: 'i-wait',
+                      State: { Name: 'pending' },
+                      PublicIpAddress: undefined,
+                    }),
+                  ],
+                },
+              ],
+            };
+          }
+          return {
+            Reservations: [
+              {
+                Instances: [
+                  makeAwsInstance({
+                    InstanceId: 'i-wait',
+                    State: { Name: 'running' },
+                    PublicIpAddress: '54.10.20.30',
+                  }),
+                ],
+              },
+            ],
+          };
+        },
+      });
+      const provider = createAwsEc2Provider({
+        region: REGION,
+        defaultImageId: DEFAULT_IMAGE_ID,
+        ec2Client: ec2,
+      });
+
+      const result = await provider.waitForReady('i-wait', 30_000, 10);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.ip).toBe('54.10.20.30');
+      }
+      expect(callCount).toBe(2);
+    });
+
+    it('returns TIMEOUT error when instance does not become ready in time', async () => {
+      const ec2 = mockEc2Client({
+        DescribeInstances: () => ({
+          Reservations: [
+            {
+              Instances: [
+                makeAwsInstance({
+                  InstanceId: 'i-slow',
+                  State: { Name: 'pending' },
+                  PublicIpAddress: undefined,
+                }),
+              ],
+            },
+          ],
+        }),
+      });
+      const provider = createAwsEc2Provider({
+        region: REGION,
+        defaultImageId: DEFAULT_IMAGE_ID,
+        ec2Client: ec2,
+      });
+
+      // Use a very short timeout and poll interval so the test doesn't wait
+      const result = await provider.waitForReady('i-slow', 1, 1);
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe(ProviderErrorCode.TIMEOUT);
+      }
+    });
+
+    it('returns error when instance enters terminated state', async () => {
+      const ec2 = mockEc2Client({
+        DescribeInstances: () => ({
+          Reservations: [
+            {
+              Instances: [
+                makeAwsInstance({
+                  InstanceId: 'i-dead',
+                  State: { Name: 'terminated' },
+                }),
+              ],
+            },
+          ],
+        }),
+      });
+      const provider = createAwsEc2Provider({
+        region: REGION,
+        defaultImageId: DEFAULT_IMAGE_ID,
+        ec2Client: ec2,
+      });
+
+      const result = await provider.waitForReady('i-dead', 30_000, 10);
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe(ProviderErrorCode.API_ERROR);
+        expect(result.error.message).toContain('terminal state');
+      }
+    });
+  });
+
+  describe('createSecurityGroup', () => {
+    it('returns security group ID on success', async () => {
+      const ec2 = mockEc2Client({
+        CreateSecurityGroup: () => ({ GroupId: 'sg-abc123' }),
+        AuthorizeSecurityGroupIngress: () => ({}),
+      });
+      const provider = createAwsEc2Provider({
+        region: REGION,
+        defaultImageId: DEFAULT_IMAGE_ID,
+        ec2Client: ec2,
+      });
+
+      const result = await provider.createSecurityGroup('paws-worker-sg', 'Paws worker SG');
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value).toBe('sg-abc123');
+      }
+      // Should have called send twice: CreateSecurityGroup + AuthorizeSecurityGroupIngress
+      expect(ec2.sendSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('createKeyPair', () => {
+    it('returns key pair ID and private key on success', async () => {
+      const ec2 = mockEc2Client({
+        CreateKeyPair: () => ({
+          KeyPairId: 'key-abc123',
+          KeyMaterial: '-----BEGIN PRIVATE KEY-----\nfake\n-----END PRIVATE KEY-----',
+        }),
+      });
+      const provider = createAwsEc2Provider({
+        region: REGION,
+        defaultImageId: DEFAULT_IMAGE_ID,
+        ec2Client: ec2,
+      });
+
+      const result = await provider.createKeyPair('paws-worker-key');
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.keyPairId).toBe('key-abc123');
+        expect(result.value.privateKey).toContain('BEGIN PRIVATE KEY');
       }
     });
   });

@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: paws-gateway
+  name: paws-control-plane
   labels:
     app.kubernetes.io/name: paws
     app.kubernetes.io/component: gateway
@@ -16,7 +16,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: paws-gateway
+  name: paws-control-plane
   labels:
     app.kubernetes.io/name: paws
     app.kubernetes.io/component: gateway
@@ -24,7 +24,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: paws-gateway
+  name: paws-control-plane
 subjects:
   - kind: ServiceAccount
     name: paws

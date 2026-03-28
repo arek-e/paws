@@ -1,6 +1,6 @@
 import { createBunWebSocket } from 'hono/bun';
 
-import { createGatewayApp } from './app.js';
+import { createControlPlaneApp } from './app.js';
 import { createK8sDiscovery } from './discovery/k8s.js';
 import { createWorkerRegistry } from './discovery/registry.js';
 import { createPersistentDaemonStore } from './store/persistent.js';
@@ -61,7 +61,7 @@ const { upgradeWebSocket, websocket } = createBunWebSocket();
 const DATA_DIR = process.env['DATA_DIR'] ?? '/var/lib/paws/data';
 const daemonStore = createPersistentDaemonStore(`${DATA_DIR}/daemons.json`);
 
-const app = await createGatewayApp({
+const app = await createControlPlaneApp({
   apiKey: API_KEY,
   discovery,
   workerRegistry,
@@ -141,7 +141,7 @@ discoveryMode.push('k8s');
 
 console.log(`
  /\\_/\\
-( o.o )  paws gateway
+( o.o )  paws control-plane
  > ^ <
 
 Listening on :${PORT}

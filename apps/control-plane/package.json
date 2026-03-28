@@ -1,8 +1,8 @@
 {
-  "name": "@paws/gateway",
+  "name": "@paws/control-plane",
   "version": "0.1.0",
   "private": true,
-  "description": "Gateway service — spec-first API, session tracking, daemon registry, trigger engine, governance",
+  "description": "Control plane — spec-first API, session tracking, daemon registry, trigger engine, governance, setup wizard",
   "type": "module",
   "exports": {
     ".": {
@@ -20,6 +20,8 @@
   "dependencies": {
     "@hono/oidc-auth": "^1.8.1",
     "@hono/zod-openapi": "1.2.3",
+    "@paws/credentials": "workspace:*",
+    "@paws/provisioner": "workspace:*",
     "@paws/scheduler": "workspace:*",
     "@paws/types": "workspace:*",
     "hono": "^4.7.0",

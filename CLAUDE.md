@@ -72,18 +72,18 @@ bun run format:check     # oxfmt check (CI)
 bun run typecheck        # type-check
 bun run check            # lint + typecheck + format check
 bun run knip             # find unused deps/exports
-bun run start            # start gateway + worker
+bun run start            # start control-plane + worker
 ```
 
 ## Architecture
 
 Read before making changes: @docs/architecture.md, @docs/security.md
 
-- Gateway (control plane) receives requests, holds all credentials, proxies LLM calls
+- Control plane (`apps/control-plane/`) receives requests, holds all credentials, proxies LLM calls
 - Worker (execution node) manages Firecracker VMs, each with its own TLS MITM proxy
 - Zero secrets enter the VM — credentials injected at network layer by per-VM proxy
-- Daemons are ephemeral — each trigger spins up a fresh VM, state persists via gateway DB + mounted
-  volumes
+- Daemons are ephemeral — each trigger spins up a fresh VM, state persists via control plane DB +
+  mounted volumes
 
 ## Non-Negotiable Decisions
 
@@ -116,13 +116,13 @@ See @docs/testing.md for full strategy.
 - Factory functions over classes (`createFirecrackerClient()`, not `new FirecrackerClient()`)
 - Typed errors: `DaemonsError` with error codes, not generic `Error`
 - Zod for all external data (API requests, config, env via `@t3-oss/env-core`)
-- Commit prefix with scope: `firecracker: add snapshot restore`, `gateway: add sessions`
+- Commit prefix with scope: `firecracker: add snapshot restore`, `control-plane: add sessions`
 - Each commit independently valid (bisect-friendly)
 
 ## Gotchas
 
 - **Dockerfiles must list ALL workspace packages.** When adding a new `packages/*` directory,
-  update BOTH `apps/gateway/Dockerfile` AND `apps/worker/Dockerfile` with: the package.json
+  update BOTH `apps/control-plane/Dockerfile` AND `apps/worker/Dockerfile` with: the package.json
   COPY (manifest stage), the source COPY (builder stage), and the runner COPY (final stage).
   Missing a package causes `bun install` to fail in CI with "Workspace dependency not found."
 - **Turbo daemon hangs on GH runners.** Always set `TURBO_NO_DAEMON=1` in CI workflows.

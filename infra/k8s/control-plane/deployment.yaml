@@ -29,7 +29,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: gateway
-          image: ghcr.io/arek-e/paws-gateway:latest
+          image: ghcr.io/arek-e/paws-control-plane:latest
           imagePullPolicy: Always
           ports:
             - name: http
@@ -49,13 +49,13 @@ spec:
             # Worker service DNS within the cluster.
             - name: WORKER_URL
               value: 'http://worker.paws.svc.cluster.local:3000'
-            # API_KEY must be provisioned as a Secret named "paws-gateway-secret"
+            # API_KEY must be provisioned as a Secret named "paws-control-plane-secret"
             # with key "api-key" before deploying.
-            # kubectl create secret generic paws-gateway-secret --from-literal=api-key=<value> -n paws
+            # kubectl create secret generic paws-control-plane-secret --from-literal=api-key=<value> -n paws
             - name: API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: paws-gateway-secret
+                  name: paws-control-plane-secret
                   key: api-key
           resources:
             requests:

@@ -1,4 +1,7 @@
 import {
+  AuthorizeSecurityGroupIngressCommand,
+  CreateKeyPairCommand,
+  CreateSecurityGroupCommand,
   DescribeInstancesCommand,
   EC2Client,
   RunInstancesCommand,
@@ -171,6 +174,74 @@ export function createAwsEc2Client(options: AwsEc2ClientOptions) {
           }
         })(),
         (e) => wrapError(ProviderErrorCode.DELETE_FAILED, `terminateInstance(${id}) failed`, e),
+      );
+    },
+
+    /** Create a security group with the given name and description. Returns the group ID. */
+    createSecurityGroup(name: string, description: string): ResultAsync<string, ProviderError> {
+      return ResultAsync.fromPromise(
+        (async () => {
+          const createCommand = new CreateSecurityGroupCommand({
+            GroupName: name,
+            Description: description,
+          });
+          const createResponse = await ec2.send(createCommand);
+          const groupId = createResponse.GroupId;
+          if (!groupId) {
+            throw new ProviderError(
+              ProviderErrorCode.CREATE_FAILED,
+              'CreateSecurityGroup returned no GroupId',
+            );
+          }
+
+          const ingressCommand = new AuthorizeSecurityGroupIngressCommand({
+            GroupId: groupId,
+            IpPermissions: [
+              {
+                IpProtocol: 'tcp',
+                FromPort: 22,
+                ToPort: 22,
+                IpRanges: [{ CidrIp: '0.0.0.0/0', Description: 'SSH' }],
+              },
+              {
+                IpProtocol: 'tcp',
+                FromPort: 3000,
+                ToPort: 3000,
+                IpRanges: [{ CidrIp: '0.0.0.0/0', Description: 'Worker API' }],
+              },
+            ],
+          });
+          await ec2.send(ingressCommand);
+
+          return groupId;
+        })(),
+        (e) => wrapError(ProviderErrorCode.CREATE_FAILED, `createSecurityGroup(${name}) failed`, e),
+      );
+    },
+
+    /** Create an EC2 key pair. Returns the key pair ID and private key material (PEM). */
+    createKeyPair(
+      name: string,
+    ): ResultAsync<{ keyPairId: string; privateKey: string }, ProviderError> {
+      return ResultAsync.fromPromise(
+        (async () => {
+          const command = new CreateKeyPairCommand({
+            KeyName: name,
+            KeyType: 'ed25519',
+            KeyFormat: 'pem',
+          });
+          const response = await ec2.send(command);
+          const keyPairId = response.KeyPairId;
+          const privateKey = response.KeyMaterial;
+          if (!keyPairId || !privateKey) {
+            throw new ProviderError(
+              ProviderErrorCode.CREATE_FAILED,
+              'CreateKeyPair returned incomplete response',
+            );
+          }
+          return { keyPairId, privateKey };
+        })(),
+        (e) => wrapError(ProviderErrorCode.CREATE_FAILED, `createKeyPair(${name}) failed`, e),
       );
     },
   };

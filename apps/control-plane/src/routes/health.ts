@@ -6,7 +6,7 @@ export const healthRoute = createRoute({
   tags: ['Health'],
   responses: {
     200: {
-      description: 'Gateway health status',
+      description: 'Control plane health status',
       content: {
         'application/json': {
           schema: z.object({

@@ -6,7 +6,7 @@
 #
 # Then configure the gateway:
 #   OIDC_ISSUER=http://localhost:5556/dex
-#   OIDC_CLIENT_ID=paws-gateway
+#   OIDC_CLIENT_ID=paws-control-plane
 #   OIDC_CLIENT_SECRET=paws-dex-secret-changeme
 #   AUTH_SECRET=$(openssl rand -hex 16)
 

@@ -396,7 +396,7 @@ WantedBy=multi-user.target
 UNIT
 
   # Gateway service
-  cat > /etc/systemd/system/paws-gateway.service <<UNIT
+  cat > /etc/systemd/system/paws-control-plane.service <<UNIT
 [Unit]
 Description=paws gateway — API control plane
 After=network.target
@@ -404,7 +404,7 @@ Requires=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/bun run apps/gateway/src/server.ts
+ExecStart=/usr/local/bin/bun run apps/control-plane/src/server.ts
 WorkingDirectory=${PAWS_REPO_DIR:-/opt/paws}
 Restart=on-failure
 RestartSec=5
@@ -419,8 +419,8 @@ UNIT
 
   systemctl daemon-reload
   info "Created paws-worker.service"
-  info "Created paws-gateway.service"
-  info "Start with: systemctl start paws-worker paws-gateway"
+  info "Created paws-control-plane.service"
+  info "Start with: systemctl start paws-worker paws-control-plane"
 }
 
 # --- Join kubeadm cluster -----------------------------------------------------
@@ -680,7 +680,7 @@ main() {
   info "  1. Clone paws:       git clone https://github.com/arek-e/paws ${PAWS_REPO_DIR:-/opt/paws}"
   info "  2. Install deps:     cd ${PAWS_REPO_DIR:-/opt/paws} && bun install"
   info "  3. Start services:   bun run start"
-  info "  4. Or use systemd:   systemctl start paws-worker paws-gateway"
+  info "  4. Or use systemd:   systemctl start paws-worker paws-control-plane"
   echo ""
   info "To join a cluster:"
   info "  sudo $0 --join 'kubeadm join 10.0.1.10:6443 --token <TOKEN> --discovery-token-ca-cert-hash sha256:<HASH>'"

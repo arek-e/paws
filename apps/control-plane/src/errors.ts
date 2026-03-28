@@ -1,14 +1,14 @@
 import type { ErrorCode } from '@paws/types';
 
 /** Typed error for gateway operations */
-export class GatewayError extends Error {
+export class ControlPlaneError extends Error {
   readonly code: ErrorCode;
   readonly httpStatus: number;
   readonly cause?: unknown;
 
   constructor(code: ErrorCode, message: string, httpStatus: number, cause?: unknown) {
     super(message);
-    this.name = 'GatewayError';
+    this.name = 'ControlPlaneError';
     this.code = code;
     this.httpStatus = httpStatus;
     this.cause = cause;
@@ -30,7 +30,7 @@ const statusMap: Record<ErrorCode, number> = {
   INTERNAL_ERROR: 500,
 };
 
-/** Create a GatewayError with auto-resolved HTTP status */
-export function gatewayError(code: ErrorCode, message: string, cause?: unknown): GatewayError {
-  return new GatewayError(code, message, statusMap[code], cause);
+/** Create a ControlPlaneError with auto-resolved HTTP status */
+export function controlPlaneError(code: ErrorCode, message: string, cause?: unknown): ControlPlaneError {
+  return new ControlPlaneError(code, message, statusMap[code], cause);
 }
