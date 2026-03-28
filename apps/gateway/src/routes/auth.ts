@@ -1,42 +1,31 @@
 import { Hono } from 'hono';
-import { getAuth, processOAuthCallback, revokeSession } from '@hono/oidc-auth';
+import { getAuth, oidcAuthMiddleware, processOAuthCallback, revokeSession } from '@hono/oidc-auth';
 
 /** Auth routes for OIDC login flow (browser-based, not OpenAPI) */
 export function createAuthRoutes() {
   const app = new Hono();
 
-  // Login: redirect to OIDC provider
-  // The oidcAuthMiddleware on the callback route handles the redirect automatically.
-  // This explicit route provides a clean URL for the dashboard to link to.
-  app.get('/auth/login', (c) => {
-    // Redirect to the callback which triggers the OIDC flow
-    return c.redirect('/auth/callback');
+  // Login: the oidcAuthMiddleware checks for a session. If no session,
+  // it redirects to the OIDC provider's authorize endpoint automatically.
+  app.get('/auth/login', oidcAuthMiddleware(), (c) => {
+    // If we get here, user is already authenticated — redirect to dashboard
+    return c.redirect('/');
   });
 
   // OIDC callback: exchange code for tokens, set session cookie
   app.get('/auth/callback', async (c) => {
-    // If this is the initial request (no code param), oidcAuthMiddleware
-    // will redirect to the OIDC provider. When the provider redirects back
-    // with a code, processOAuthCallback handles the exchange.
-    const query = c.req.query('code');
-    if (!query) {
-      // No code = initial login request. The oidcAuthMiddleware on this route
-      // will handle the redirect to the OIDC provider.
-      return c.redirect('/auth/callback');
-    }
     return processOAuthCallback(c);
   });
 
-  // Logout: revoke session and redirect to login
+  // Logout
   app.post('/auth/logout', async (c) => {
     await revokeSession(c);
-    return c.redirect('/auth/login');
+    return c.redirect('/');
   });
 
-  // Also support GET for easy logout links
   app.get('/auth/logout', async (c) => {
     await revokeSession(c);
-    return c.redirect('/auth/login');
+    return c.redirect('/');
   });
 
   // Current user info
