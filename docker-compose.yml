@@ -1,82 +1,131 @@
-version: '3.9'
-
-# Local development compose file.
-# Gateway + Worker running together on one machine.
+# /\_/\
+# ( o.o )  paws control plane
+#  > ^ <
+#
+# Full control plane: gateway + dashboard, Dex OIDC, Caddy reverse proxy,
+# VictoriaMetrics metrics, Grafana dashboards.
 #
 # Usage:
-#   docker compose up              # start both services
-#   docker compose up gateway      # start gateway only
-#   docker compose logs -f worker  # tail worker logs
+#   cp .env.example .env   # edit with your values
+#   docker compose up -d
 #
-# Prerequisites for the worker:
-#   - /dev/kvm must exist on the host (Linux with KVM enabled)
-#   - A Firecracker binary at ./infra/firecracker (or set FIRECRACKER_BIN)
-#   - A snapshot at SNAPSHOT_DIR (default: /var/lib/paws/snapshots/agent-latest)
-#   - An SSH key at SSH_KEY_PATH (default: /var/lib/paws/ssh/id_ed25519)
+# Architecture:
+#   Internet -> Caddy (:80/:443) -> Gateway (:4000) / Dex (:5556) / Grafana (:3000)
+#   VictoriaMetrics scrapes Gateway /metrics every 15s
+#   Grafana reads from VictoriaMetrics
 
 services:
+  # ── Gateway (API + Dashboard) ──────────────────────────────────────────────
   gateway:
     build:
       context: .
-      dockerfile: apps/gateway/Dockerfile
-    image: paws-gateway:local
+      dockerfile: Dockerfile.gateway
     container_name: paws-gateway
     restart: unless-stopped
-    ports:
-      - '${GATEWAY_PORT:-4000}:4000'
+    networks:
+      - paws
+    expose:
+      - '4000'
     environment:
       PORT: '4000'
-      # API key used to authenticate requests to the gateway.
       API_KEY: '${API_KEY:-paws-dev-key}'
-      # URL the gateway uses to reach the worker service.
-      WORKER_URL: 'http://worker:3000'
-    depends_on:
-      worker:
-        condition: service_healthy
+      WORKER_URL: '${WORKER_URL:-}'
+      DASHBOARD_DIR: '/app/apps/dashboard/dist'
+      # OIDC — connects to Dex
+      OIDC_ISSUER: 'http://dex:5556/dex'
+      OIDC_CLIENT_ID: 'paws-gateway'
+      OIDC_CLIENT_SECRET: '${OIDC_CLIENT_SECRET:-paws-dex-secret-changeme}'
+      OIDC_REDIRECT_URI: 'https://${DOMAIN:-localhost}/auth/callback'
+      OIDC_AUTH_EXTERNAL_URL: 'https://${DOMAIN:-localhost}'
+      AUTH_SECRET: '${AUTH_SECRET:-change-me-to-a-random-32-char-string}'
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://localhost:4000/health']
       interval: 15s
       timeout: 5s
       retries: 3
-      start_period: 5s
-
-  worker:
-    build:
-      context: .
-      dockerfile: apps/worker/Dockerfile
-    image: paws-worker:local
-    container_name: paws-worker
-    restart: unless-stopped
-    # Worker needs privileged access for:
-    #   - iptables DNAT rules (per-VM network isolation)
-    #   - TAP device creation (ip tuntap add)
-    #   - /dev/kvm access (Firecracker requires KVM)
-    privileged: true
-    ports:
-      - '${WORKER_PORT:-3000}:3000'
-    environment:
-      PORT: '3000'
-      MAX_CONCURRENT_VMS: '${MAX_CONCURRENT_VMS:-5}'
-      MAX_QUEUE_SIZE: '${MAX_QUEUE_SIZE:-10}'
-      SNAPSHOT_DIR: '${SNAPSHOT_DIR:-/var/lib/paws/snapshots/agent-latest}'
-      VM_BASE_DIR: '${VM_BASE_DIR:-/var/lib/paws/vms}'
-      SSH_KEY_PATH: '${SSH_KEY_PATH:-/var/lib/paws/ssh/id_ed25519}'
-      WORKER_NAME: '${WORKER_NAME:-worker-local}'
-    volumes:
-      # Snapshots: read-only — worker copies disk.ext4 per session (CoW).
-      - '${SNAPSHOT_DIR:-/var/lib/paws/snapshots}:/var/lib/paws/snapshots:ro'
-      # VM scratch space: read-write — per-session CoW disk copies live here.
-      - '${VM_BASE_DIR:-/var/lib/paws/vms}:/var/lib/paws/vms:rw'
-      # SSH key used to connect into VMs.
-      - '${SSH_KEY_DIR:-/var/lib/paws/ssh}:/var/lib/paws/ssh:ro'
-      # Firecracker binary — mount from host so the container stays generic.
-      - '${FIRECRACKER_BIN:-/usr/local/bin/firecracker}:/usr/local/bin/firecracker:ro'
-    devices:
-      # KVM device required by Firecracker.
-      - /dev/kvm:/dev/kvm
-    healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/health']
-      interval: 15s
-      timeout: 5s
-      retries: 3
       start_period: 10s
+
+  # ── Dex (OIDC Identity Provider) ──────────────────────────────────────────
+  dex:
+    image: ghcr.io/dexidp/dex:v2.41.1
+    container_name: paws-dex
+    restart: unless-stopped
+    networks:
+      - paws
+    expose:
+      - '5556'
+    volumes:
+      - ./infra/dex/config.template.yaml:/etc/dex/config.yaml:ro
+      - dex-data:/data
+    environment:
+      DOMAIN: '${DOMAIN:-localhost}'
+      OIDC_CLIENT_SECRET: '${OIDC_CLIENT_SECRET:-paws-dex-secret-changeme}'
+      GITHUB_CLIENT_ID: '${GITHUB_CLIENT_ID:-}'
+      GITHUB_CLIENT_SECRET: '${GITHUB_CLIENT_SECRET:-}'
+
+  # ── Caddy (Reverse Proxy + Auto-HTTPS) ────────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: paws-caddy
+    restart: unless-stopped
+    networks:
+      - paws
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      DOMAIN: '${DOMAIN:-localhost}'
+      GRAFANA_DOMAIN: '${GRAFANA_DOMAIN:-}'
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+  # ── VictoriaMetrics (Metrics Storage) ─────────────────────────────────────
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.108.1
+    container_name: paws-victoriametrics
+    restart: unless-stopped
+    networks:
+      - paws
+    expose:
+      - '8428'
+    volumes:
+      - vm-data:/victoria-metrics-data
+      - ./infra/victoriametrics/scrape.compose.yml:/etc/victoria-metrics/scrape.yml:ro
+    command:
+      - '--storageDataPath=/victoria-metrics-data'
+      - '--retentionPeriod=30d'
+      - '--promscrape.config=/etc/victoria-metrics/scrape.yml'
+      - '--httpListenAddr=:8428'
+
+  # ── Grafana (Dashboards) ──────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana-oss:11.6.0
+    container_name: paws-grafana
+    restart: unless-stopped
+    networks:
+      - paws
+    expose:
+      - '3000'
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: '${GRAFANA_ADMIN_PASSWORD:-admin}'
+      GF_SERVER_ROOT_URL: 'https://${GRAFANA_DOMAIN:-grafana.localhost}/'
+      GF_SERVER_SERVE_FROM_SUB_PATH: 'false'
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./infra/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+
+networks:
+  paws:
+    driver: bridge
+
+volumes:
+  dex-data:
+  caddy-data:
+  caddy-config:
+  vm-data:
+  grafana-data:
