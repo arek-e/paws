@@ -2,6 +2,14 @@ import { randomUUID } from 'node:crypto';
 
 import { OpenAPIHono } from '@hono/zod-openapi';
 import type { Hono } from 'hono';
+import {
+  verifyWebhookSignature,
+  parseWebhookEvent,
+  matchDaemon,
+  createGitHubAuth,
+  postComment,
+} from '@paws/integrations';
+import type { GitHubDaemon } from '@paws/integrations';
 import { selectWorker } from '@paws/scheduler';
 
 import type { WorkerRegistry } from './discovery/registry.js';
@@ -506,6 +514,135 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
     return c.json({ accepted: true as const, sessionId }, 202);
   });
+
+  // --- GitHub App webhooks (no auth — validated by HMAC signature) ---
+
+  const githubWebhookSecret = process.env['GITHUB_WEBHOOK_SECRET'];
+  const githubAppId = process.env['GITHUB_APP_ID'];
+  const githubPrivateKey = process.env['GITHUB_APP_PRIVATE_KEY'];
+
+  if (githubWebhookSecret && githubAppId && githubPrivateKey) {
+    const githubAuth = createGitHubAuth(githubAppId, githubPrivateKey);
+
+    app.post('/webhooks/github', async (c) => {
+      // Verify HMAC signature
+      const signature = c.req.header('x-hub-signature-256');
+      const rawBody = await c.req.text();
+      if (!signature || !verifyWebhookSignature(rawBody, signature, githubWebhookSecret)) {
+        return c.json({ error: { code: 'UNAUTHORIZED', message: 'Invalid signature' } }, 401);
+      }
+
+      const payload = JSON.parse(rawBody) as Record<string, unknown>;
+      const event = parseWebhookEvent(payload);
+      if (!event) {
+        // Not a @paws mention, ignore silently
+        return c.json({ ignored: true }, 200);
+      }
+
+      // Find matching daemon
+      const githubDaemons = daemonStore
+        .list()
+        .filter((d): d is GitHubDaemon & typeof d => d.trigger.type === 'github') as GitHubDaemon[];
+      const match = matchDaemon(event, githubDaemons);
+
+      if (!match) {
+        // Post a helpful comment
+        await postComment(
+          { auth: githubAuth },
+          event.installationId,
+          event.issueUrl,
+          `No daemon configured for \`@paws ${event.command}\` in this repo.`,
+        ).catch(() => {}); // best-effort
+        return c.json({ error: { code: 'NO_MATCH', message: 'No daemon matches' } }, 200);
+      }
+
+      const { daemon } = match;
+
+      // Check governance (daemon from store has proper governance type)
+      const fullDaemon = daemonStore.get(daemon.role);
+      if (fullDaemon && !governance.checkRateLimit(daemon.role, fullDaemon.governance)) {
+        await postComment(
+          { auth: githubAuth },
+          event.installationId,
+          event.issueUrl,
+          `Rate limit exceeded for \`@paws ${event.command}\`. Try again later.`,
+        ).catch(() => {});
+        return c.json({ error: { code: 'RATE_LIMITED', message: 'Rate limited' } }, 429);
+      }
+
+      // Acknowledge quickly
+      await postComment(
+        { auth: githubAuth },
+        event.installationId,
+        event.issueUrl,
+        `Running \`${event.command}\`... I'll post results when done.`,
+      ).catch(() => {});
+
+      // Create session with GitHub metadata
+      const sessionId = randomUUID();
+      // Build session request from daemon config (use fullDaemon for proper types)
+      const src = fullDaemon ?? daemon;
+      const sessionRequest = {
+        snapshot: src.snapshot,
+        workload: {
+          type: 'script' as const,
+          script: src.workload.script,
+          env: {
+            ...src.workload.env,
+            TRIGGER_PAYLOAD: JSON.stringify(event),
+            GITHUB_REPO: event.repo,
+            GITHUB_COMMAND: event.command,
+            ...(event.prNumber ? { GITHUB_PR_NUMBER: String(event.prNumber) } : {}),
+          },
+        },
+        resources: src.resources,
+        timeoutMs: 600_000,
+        network: fullDaemon?.network,
+        metadata: {
+          triggerType: 'github',
+          repo: event.repo,
+          command: event.command,
+          prNumber: event.prNumber ? String(event.prNumber) : '',
+          issueUrl: event.issueUrl,
+          installationId: String(event.installationId),
+          sender: event.sender,
+        },
+      };
+
+      sessionStore.create(sessionId, sessionRequest, daemon.role);
+      governance.recordAction(daemon.role);
+      daemonStore.recordInvocation(daemon.role);
+
+      // Dispatch to worker
+      dispatchSession(discovery, legacyWorkerClient, sessionStore, sessionId, sessionRequest);
+
+      // Listen for completion to post results back
+      const resultListener = (
+        updatedId: string,
+        session: import('./store/sessions.js').StoredSession,
+      ) => {
+        if (updatedId !== sessionId) return;
+        const terminal = ['completed', 'failed', 'timeout', 'cancelled'];
+        if (!terminal.includes(session.status)) return;
+
+        sessionEvents.off('update', resultListener);
+
+        const resultBody =
+          session.status === 'completed'
+            ? ((session.output as string) ?? session.stdout ?? 'Agent completed with no output.')
+            : `Agent ${session.status}: ${session.stderr ?? 'Unknown error'}`;
+
+        postComment({ auth: githubAuth }, event.installationId, event.issueUrl, resultBody).catch(
+          (err) => {
+            console.error(`[github] Failed to post result for session ${sessionId}:`, err);
+          },
+        );
+      };
+      sessionEvents.on('update', resultListener);
+
+      return c.json({ accepted: true, sessionId }, 202);
+    });
+  }
 
   // --- Fleet ---
 

@@ -16,6 +16,7 @@ export {
   DaemonSessionSummarySchema,
   DaemonStatsSchema,
   DaemonStatus,
+  GitHubTriggerSchema,
   GovernanceSchema,
   ScheduleTriggerSchema,
   TriggerSchema,
