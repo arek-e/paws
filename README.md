@@ -4,6 +4,9 @@
  > ^ <   a trust architecture that happens to use sandboxes
 ```
 
+[![CI](https://github.com/arek-e/paws/actions/workflows/ci.yml/badge.svg)](https://github.com/arek-e/paws/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/arek-e/paws)](LICENSE)
+
 # paws
 
 Your AI agent doesn't need your API keys. paws is a zero-trust credential injection layer for
