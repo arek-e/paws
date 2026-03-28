@@ -16,6 +16,7 @@ const OIDC_CLIENT_SECRET = process.env['OIDC_CLIENT_SECRET'] ?? '';
 const OIDC_REDIRECT_URI =
   process.env['OIDC_REDIRECT_URI'] ?? `http://localhost:${PORT}/auth/callback`;
 const AUTH_SECRET = process.env['AUTH_SECRET'] ?? '';
+const OIDC_EXTERNAL_URL = process.env['OIDC_AUTH_EXTERNAL_URL'] ?? '';
 
 const oidc =
   OIDC_ISSUER && OIDC_CLIENT_ID && OIDC_CLIENT_SECRET && AUTH_SECRET
@@ -25,6 +26,7 @@ const oidc =
         clientSecret: OIDC_CLIENT_SECRET,
         redirectUri: OIDC_REDIRECT_URI,
         authSecret: AUTH_SECRET,
+        ...(OIDC_EXTERNAL_URL && { externalUrl: OIDC_EXTERNAL_URL }),
       }
     : undefined;
 
