@@ -169,6 +169,39 @@ export async function createGatewayApp(deps: GatewayDeps) {
     return c.text(metricsOutput, 200, { 'Content-Type': 'text/plain; charset=utf-8' });
   });
 
+  // --- Metrics query proxy (for dashboard charts) ---
+
+  const VICTORIAMETRICS_URL = process.env['VICTORIAMETRICS_URL'] ?? 'http://localhost:8428';
+
+  app.get('/v1/metrics/query', async (c) => {
+    const query = c.req.query('query');
+    const start = c.req.query('start');
+    const end = c.req.query('end');
+    const step = c.req.query('step');
+
+    if (!query) {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing query param' } }, 400);
+    }
+
+    try {
+      const params = new URLSearchParams({ query });
+      if (start && end) {
+        if (step) params.set('step', step);
+        params.set('start', start);
+        params.set('end', end);
+        const res = await fetch(`${VICTORIAMETRICS_URL}/api/v1/query_range?${params}`);
+        return c.json(await res.json());
+      }
+      const res = await fetch(`${VICTORIAMETRICS_URL}/api/v1/query?${params}`);
+      return c.json(await res.json());
+    } catch {
+      return c.json(
+        { error: { code: 'INTERNAL_ERROR', message: 'Metrics backend unreachable' } },
+        502,
+      );
+    }
+  });
+
   // --- HTTP request metrics middleware ---
 
   app.use('/v1/*', async (c, next) => {
