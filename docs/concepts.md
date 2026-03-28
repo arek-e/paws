@@ -371,17 +371,23 @@ Quick reference for every domain term used in paws documentation.
 
 ### paws Domain
 
-| Term             | What it is                                                                       |
-| ---------------- | -------------------------------------------------------------------------------- |
-| **Session**      | One-shot workload execution: spin up VM → run script → collect output → destroy  |
-| **Daemon**       | Persistent role that spawns sessions on trigger events (webhook, cron, watch)    |
-| **Gateway**      | Control plane service — holds credentials, tracks sessions, serves the API       |
-| **Worker**       | Execution node — manages VMs, proxies, and the actual session lifecycle          |
-| **Trigger**      | Event that causes a daemon to spawn a session (webhook, cron schedule, or watch) |
-| **Governance**   | Per-daemon policy: rate limits, approval gates, audit logging                    |
-| **Semaphore**    | Concurrency limiter with FIFO queue — controls how many VMs run in parallel      |
-| **Workload**     | The script + env vars that run inside the VM                                     |
-| **State volume** | Persistent storage at `/var/lib/paws/state/{role}/` — survives across sessions   |
+> **Naming convention:** paws uses cat-themed names for core concepts. A **tree** (worker node)
+> manages **boxes** (VMs), and each box runs a **kitten** (agent). The control plane orchestrates
+> it all. "The control plane picks a tree, the tree builds a box, a kitten runs inside it."
+
+| Term              | What it is                                                                        |
+| ----------------- | --------------------------------------------------------------------------------- |
+| **Tree**          | Worker node — the bare metal server that runs boxes (like a cat tree holds cats)  |
+| **Box**           | Firecracker VM sandbox — the isolated environment a kitten runs in (cats + boxes) |
+| **Kitten**        | AI agent running inside a box — born, does its thing, gone                        |
+| **Session**       | One-shot workload execution: spin up box → run kitten → collect output → destroy  |
+| **Daemon**        | Persistent role that spawns sessions on trigger events (webhook, cron, watch)     |
+| **Control plane** | Central service — holds credentials, tracks sessions, serves the API              |
+| **Trigger**       | Event that causes a daemon to spawn a session (webhook, cron schedule, or watch)  |
+| **Governance**    | Per-daemon policy: rate limits, approval gates, audit logging                     |
+| **Semaphore**     | Concurrency limiter with FIFO queue — controls how many boxes run in parallel     |
+| **Workload**      | The script + env vars that run inside the box                                     |
+| **State volume**  | Persistent storage at `/var/lib/paws/state/{role}/` — survives across sessions    |
 
 ### Infrastructure
 
