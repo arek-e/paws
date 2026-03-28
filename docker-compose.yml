@@ -173,6 +173,8 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./infra/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ./infra/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
 
 networks:
   paws:
