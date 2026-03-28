@@ -1,55 +1,32 @@
 import { Hono } from 'hono';
-import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
-import { getAuth, processOAuthCallback, revokeSession } from '@hono/oidc-auth';
+import { deleteCookie, setCookie } from 'hono/cookie';
+import { getAuth, oidcAuthMiddleware, processOAuthCallback, revokeSession } from '@hono/oidc-auth';
 
 /** Auth routes for OIDC login flow (browser-based, not OpenAPI) */
 export function createAuthRoutes() {
   const app = new Hono();
 
-  // Login: clear stale cookies, redirect to Dex via oidcAuthMiddleware
-  app.get('/auth/login', async (c) => {
-    // Clear stale session cookies
+  // Login: use oidcAuthMiddleware which handles the full redirect-to-provider flow.
+  // Prefix middleware clears stale cookies to prevent "Invalid session" errors.
+  app.use('/auth/login', async (c, next) => {
     deleteCookie(c, 'oidc-auth', { path: '/' });
-    deleteCookie(c, 'state', { path: '/auth/callback' });
-    deleteCookie(c, 'nonce', { path: '/auth/callback' });
-    deleteCookie(c, 'code_verifier', { path: '/auth/callback' });
-    deleteCookie(c, 'continue', { path: '/auth/callback' });
-
-    // Import and use the middleware inline to build the Dex auth URL
-    const { oidcAuthMiddleware } = await import('@hono/oidc-auth');
-    const mw = oidcAuthMiddleware();
-
-    // Override continue to point to dashboard root
+    // Set continue to dashboard root so callback redirects there
     setCookie(c, 'continue', 'https://fleet.tpops.dev/', {
       path: '/auth/callback',
       httpOnly: true,
       secure: true,
     });
-
-    // This will redirect to Dex (since we cleared the session cookie)
-    return mw(c, async () => {
-      // If somehow already authed, go to dashboard
-      return c.redirect('/');
-    });
+    await next();
   });
 
-  // OIDC callback: exchange code for tokens, set session cookie
-  app.get('/auth/callback', async (c) => {
-    try {
-      // Force the continue URL to be the dashboard
-      const url = new URL(c.req.url);
-      if (url.searchParams.has('code')) {
-        // Override continue cookie before processOAuthCallback reads it
-        setCookie(c, 'continue', 'https://fleet.tpops.dev/', {
-          path: '/auth/callback',
-          httpOnly: true,
-          secure: true,
-        });
-      }
-      return await processOAuthCallback(c);
-    } catch {
-      return c.redirect('/auth/login');
-    }
+  app.get('/auth/login', oidcAuthMiddleware(), (c) => {
+    return c.redirect('/');
+  });
+
+  // OIDC callback: oidcAuthMiddleware auto-handles this path
+  // (it checks if the URL matches OIDC_REDIRECT_URI and calls processOAuthCallback)
+  app.get('/auth/callback', oidcAuthMiddleware(), (c) => {
+    return c.redirect('/');
   });
 
   // Logout
