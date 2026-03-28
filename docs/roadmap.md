@@ -96,11 +96,11 @@ least-loaded.
 | #   | What                                                                 | Status |
 | --- | -------------------------------------------------------------------- | ------ |
 | 26  | Auto-scaling — provision/drain nodes based on fleet utilization      | ✅     |
-| 27  | Daemon state sync — object storage for cross-node volume portability | ⬜     |
+| 27  | Daemon state sync — object storage for cross-node volume portability | ✅     |
 | 28  | WebSocket streaming — real-time session output                       | ✅     |
 | 29  | Prometheus metrics export                                            | ✅     |
 | 30  | Dashboard UI — fleet status, daemon activity, session history        | ✅     |
-| 31  | Multi-snapshot support — different base images per workload type     | ⬜     |
+| 31  | Multi-snapshot support — different base images per workload type     | ✅     |
 | 32  | Cost tracking — per-daemon resource usage                            | ⬜     |
 | 33  | Comprehensive test suite                                             | ⬜     |
 | 34  | Security audit                                                       | ✅     |

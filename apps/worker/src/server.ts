@@ -24,8 +24,11 @@ const SNAPSHOT_SYNC_INTERVAL_MS = parseInt(
 );
 
 const semaphore = createSemaphore(MAX_CONCURRENT, MAX_QUEUED);
+const SNAPSHOT_BASE_DIR = process.env['SNAPSHOT_BASE_DIR'] ?? '/var/lib/paws/snapshots';
+
 const executor = createExecutor({
   snapshotDir: SNAPSHOT_DIR,
+  snapshotBaseDir: SNAPSHOT_BASE_DIR,
   vmBaseDir: VM_BASE_DIR,
   sshKeyPath: SSH_KEY_PATH,
   semaphore,
