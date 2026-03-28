@@ -72,6 +72,7 @@ export function Layout() {
         <div className="md:hidden border-b border-zinc-800 bg-zinc-950 p-3 space-y-1">
           <SidebarLink to="/" label="Fleet" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/sessions" label="Sessions" onClick={() => setMenuOpen(false)} />
+          <SidebarLink to="/setup" label="Setup" onClick={() => setMenuOpen(false)} />
           <button
             onClick={handleLogout}
             className="w-full px-4 py-2 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-md transition-colors text-left"
@@ -91,6 +92,7 @@ export function Layout() {
         <nav className="flex-1 p-3 space-y-1">
           <SidebarLink to="/" label="Fleet" />
           <SidebarLink to="/sessions" label="Sessions" />
+          <SidebarLink to="/setup" label="Setup" />
         </nav>
         <div className="p-3 border-t border-zinc-800 space-y-2">
           <button
