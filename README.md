@@ -1,13 +1,17 @@
-```
- /\_/\
-( o.o )  paws
- > ^ <   a trust architecture that happens to use sandboxes
-```
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/arek-e/paws/main/assets/logo.svg" width="120" alt="paws logo">
+
+# paws
+
+Zero-trust credential injection for AI agents.
+Secrets never enter the sandbox.
 
 [![CI](https://github.com/arek-e/paws/actions/workflows/ci.yml/badge.svg)](https://github.com/arek-e/paws/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/arek-e/paws)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/arek-e/paws)](https://github.com/arek-e/paws/releases)
 
-# paws
+</div>
 
 Your AI agent doesn't need your API keys. paws is a zero-trust credential injection layer for
 background AI agents — secrets stay on the host, injected at the network layer by a per-VM TLS MITM
