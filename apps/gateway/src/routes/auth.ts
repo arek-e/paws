@@ -1,20 +1,38 @@
 import { Hono } from 'hono';
+import { deleteCookie } from 'hono/cookie';
 import { getAuth, oidcAuthMiddleware, processOAuthCallback, revokeSession } from '@hono/oidc-auth';
 
 /** Auth routes for OIDC login flow (browser-based, not OpenAPI) */
 export function createAuthRoutes() {
   const app = new Hono();
 
-  // Login: the oidcAuthMiddleware checks for a session. If no session,
-  // it redirects to the OIDC provider's authorize endpoint automatically.
-  app.get('/auth/login', oidcAuthMiddleware(), (c) => {
-    // If we get here, user is already authenticated — redirect to dashboard
-    return c.redirect('/');
-  });
+  // Login: clear any stale cookies first, then use oidcAuthMiddleware
+  // which redirects to the OIDC provider if no valid session exists.
+  app.get(
+    '/auth/login',
+    async (c, next) => {
+      // Clear stale session cookie to avoid "Invalid session" errors
+      deleteCookie(c, 'oidc-auth', { path: '/' });
+      deleteCookie(c, 'state', { path: '/auth/callback' });
+      deleteCookie(c, 'nonce', { path: '/auth/callback' });
+      deleteCookie(c, 'code_verifier', { path: '/auth/callback' });
+      await next();
+    },
+    oidcAuthMiddleware(),
+    (c) => {
+      // If we get here, user is already authenticated
+      return c.redirect('/');
+    },
+  );
 
   // OIDC callback: exchange code for tokens, set session cookie
   app.get('/auth/callback', async (c) => {
-    return processOAuthCallback(c);
+    try {
+      return await processOAuthCallback(c);
+    } catch {
+      // If callback fails (stale state, expired code), redirect to login
+      return c.redirect('/auth/login');
+    }
   });
 
   // Logout
