@@ -1,0 +1,52 @@
+import { createHmac, timingSafeEqual } from 'node:crypto';
+import type { GitHubEvent } from './types.js';
+
+/** Verify GitHub webhook signature */
+export function verifyWebhookSignature(
+  payload: string,
+  signature: string,
+  secret: string,
+): boolean {
+  const expected = 'sha256=' + createHmac('sha256', secret).update(payload).digest('hex');
+  if (expected.length !== signature.length) return false;
+  return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+
+/** Parse @paws mention from comment body, extract command */
+export function parsePawsMention(body: string): string | null {
+  const match = body.match(/@paws\s+(.*)/i);
+  if (!match) return null;
+  return match[1]!.trim();
+}
+
+/** Parse a GitHub issue_comment webhook into a GitHubEvent (or null if not a @paws mention) */
+export function parseWebhookEvent(payload: Record<string, unknown>): GitHubEvent | null {
+  const action = payload.action as string;
+  if (action !== 'created') return null;
+
+  const comment = payload.comment as Record<string, unknown>;
+  const issue = payload.issue as Record<string, unknown>;
+  const repo = payload.repository as Record<string, unknown>;
+  const sender = payload.sender as Record<string, unknown>;
+  const installation = payload.installation as Record<string, unknown>;
+
+  if (!comment || !issue || !repo || !sender || !installation) return null;
+
+  const body = comment.body as string;
+  const command = parsePawsMention(body);
+  if (!command) return null;
+
+  const fullName = repo.full_name as string;
+  const prNumber = issue.pull_request ? (issue.number as number) : undefined;
+
+  return {
+    type: 'mention',
+    command,
+    repo: fullName,
+    sender: sender.login as string,
+    installationId: installation.id as number,
+    prNumber,
+    commentUrl: comment.url as string,
+    issueUrl: issue.url as string,
+  };
+}

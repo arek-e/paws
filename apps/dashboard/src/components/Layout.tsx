@@ -1,10 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router';
 
-const CAT_LOGO = ` /\\_/\\
-( o.o )
- > ^ <`;
-
 function SidebarLink({ to, label, onClick }: { to: string; label: string; onClick?: () => void }) {
   return (
     <NavLink

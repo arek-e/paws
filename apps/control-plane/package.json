@@ -21,6 +21,7 @@
     "@hono/oidc-auth": "^1.8.1",
     "@hono/zod-openapi": "1.2.3",
     "@paws/credentials": "workspace:*",
+    "@paws/integrations": "workspace:*",
     "@paws/provider-aws-ec2": "workspace:*",
     "@paws/provider-hetzner-cloud": "workspace:*",
     "@paws/providers": "workspace:*",

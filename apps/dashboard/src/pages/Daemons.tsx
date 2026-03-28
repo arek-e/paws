@@ -73,7 +73,7 @@ export function Daemons() {
         </div>
       ) : daemons.data && daemons.data.daemons.length > 0 ? (
         <div className="space-y-3">
-          {daemons.data.daemons.map((d: Daemon) => (
+          {(daemons.data.daemons as Daemon[]).map((d) => (
             <div key={d.role} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">

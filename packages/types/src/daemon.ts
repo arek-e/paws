@@ -29,11 +29,20 @@ export const WatchTriggerSchema = z.object({
   intervalMs: DurationMsSchema.default(60_000),
 });
 
+/** GitHub App trigger */
+export const GitHubTriggerSchema = z.object({
+  type: z.literal('github'),
+  repos: z.array(NonEmptyStringSchema).min(1),
+  events: z.array(NonEmptyStringSchema).default(['issue_comment']),
+  command: z.string().optional(),
+});
+
 /** Any trigger type */
 export const TriggerSchema = z.discriminatedUnion('type', [
   WebhookTriggerSchema,
   ScheduleTriggerSchema,
   WatchTriggerSchema,
+  GitHubTriggerSchema,
 ]);
 
 export type Trigger = z.infer<typeof TriggerSchema>;

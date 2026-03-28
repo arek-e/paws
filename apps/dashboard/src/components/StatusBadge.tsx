@@ -1,4 +1,7 @@
 type Status =
+  | 'active'
+  | 'paused'
+  | 'stopped'
   | 'pending'
   | 'running'
   | 'completed'
