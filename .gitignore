@@ -22,6 +22,15 @@ __pycache__/
 # OpenAPI generator
 openapitools.json
 
+# Server-specific docs (private IPs, credentials, infra details)
+docs/fc-staging-server.md
+docs/control-plane-server.md
+
+# Instance-specific configs
+infra/dex/config.yaml
+infra/dex/config.dev.yaml
+infra/cloudflare/tunnel-config.yml
+
 # Generated configs (created by scripts/setup-control-plane.sh)
 config/pangolin/config.yml
 config/traefik/traefik_config.yml
