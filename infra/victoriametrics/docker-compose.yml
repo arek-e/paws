@@ -1,0 +1,26 @@
+# VictoriaMetrics — Prometheus-compatible metrics backend for paws
+#
+# Usage:
+#   cd infra/victoriametrics
+#   docker compose up -d
+#
+# Query UI: http://localhost:8428/vmui
+# Metrics: http://localhost:8428/api/v1/query?query=paws_sessions_active
+
+services:
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.108.1
+    ports:
+      - '127.0.0.1:8428:8428'
+    volumes:
+      - vm-data:/victoria-metrics-data
+      - ./scrape.yml:/etc/victoria-metrics/scrape.yml:ro
+    command:
+      - '--storageDataPath=/victoria-metrics-data'
+      - '--retentionPeriod=30d'
+      - '--promscrape.config=/etc/victoria-metrics/scrape.yml'
+      - '--httpListenAddr=:8428'
+    restart: unless-stopped
+
+volumes:
+  vm-data:

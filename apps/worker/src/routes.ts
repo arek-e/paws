@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import { CreateSessionRequestSchema } from '@paws/types';
 
+import { createWorkerMetrics } from './metrics.js';
 import type { Executor } from './session/executor.js';
 import type { Semaphore } from './semaphore.js';
 import type { SyncLoop } from './sync/sync-loop.js';
@@ -20,6 +21,7 @@ const startTime = Date.now();
 export function createSessionApp(deps: AppDeps) {
   const app = new Hono();
   const { executor, semaphore, workerName, syncLoop } = deps;
+  const metrics = createWorkerMetrics({ semaphore, executor, workerName });
   const sessionResults = new Map<
     string,
     {
@@ -62,6 +64,12 @@ export function createSessionApp(deps: AppDeps) {
         lastError: syncStatus?.lastError ?? null,
       },
     });
+  });
+
+  // Prometheus metrics
+  app.get('/metrics', async (c) => {
+    const output = await metrics.promRegistry.metrics();
+    return c.text(output, 200, { 'Content-Type': 'text/plain; charset=utf-8' });
   });
 
   // Execute a session (fire-and-forget, returns 202)
