@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ─── Stage 1: builder ────────────────────────────────────────────────────────
-# Install all deps and build the workspace packages that gateway depends on.
+# Install all deps and build the workspace packages that control-plane depends on.
 FROM oven/bun:1.3.9-alpine AS builder
 
 WORKDIR /build
@@ -15,14 +15,16 @@ COPY packages/firecracker/package.json  ./packages/firecracker/package.json
 COPY packages/proxy/package.json        ./packages/proxy/package.json
 COPY packages/scheduler/package.json      ./packages/scheduler/package.json
 COPY packages/snapshot-store/package.json ./packages/snapshot-store/package.json
-COPY apps/gateway/package.json            ./apps/gateway/package.json
+COPY packages/credentials/package.json  ./packages/credentials/package.json
+COPY packages/provisioner/package.json  ./packages/provisioner/package.json
+COPY apps/control-plane/package.json            ./apps/control-plane/package.json
 COPY providers/aws-ec2/package.json     ./providers/aws-ec2/package.json
 COPY apps/worker/package.json           ./apps/worker/package.json
 
 # Install all dependencies (including workspace symlinks).
 RUN bun install
 
-# Copy source for workspace packages that gateway depends on.
+# Copy source for workspace packages that control-plane depends on.
 COPY packages/types/       ./packages/types/
 COPY packages/firecracker/ ./packages/firecracker/
 COPY packages/proxy/       ./packages/proxy/
@@ -30,11 +32,11 @@ COPY packages/scheduler/       ./packages/scheduler/
 COPY packages/snapshot-store/  ./packages/snapshot-store/
 COPY providers/aws-ec2/        ./providers/aws-ec2/
 
-# Copy gateway source.
-COPY apps/gateway/ ./apps/gateway/
+# Copy control-plane source.
+COPY apps/control-plane/ ./apps/control-plane/
 
-# Build gateway (outputs to apps/gateway/dist/).
-WORKDIR /build/apps/gateway
+# Build control-plane (outputs to apps/control-plane/dist/).
+WORKDIR /build/apps/control-plane
 RUN bun run build
 
 
@@ -53,7 +55,7 @@ COPY --from=builder /build/package.json ./package.json
 # Copy production node_modules (includes workspace symlinks).
 COPY --from=builder /build/node_modules ./node_modules
 
-# Copy workspace packages (gateway imports @paws/types at runtime via symlink).
+# Copy workspace packages (control-plane imports @paws/types at runtime via symlink).
 COPY --from=builder /build/packages/types/       ./packages/types/
 COPY --from=builder /build/packages/firecracker/ ./packages/firecracker/
 COPY --from=builder /build/packages/proxy/       ./packages/proxy/
@@ -61,10 +63,10 @@ COPY --from=builder /build/packages/scheduler/       ./packages/scheduler/
 COPY --from=builder /build/packages/snapshot-store/  ./packages/snapshot-store/
 COPY --from=builder /build/providers/aws-ec2/        ./providers/aws-ec2/
 
-# Copy gateway source (we run from source with bun, not from the dist bundle,
+# Copy control-plane source (we run from source with bun, not from the dist bundle,
 # because bun handles TypeScript natively and the workspace imports resolve
 # correctly without a bundler step that would need to inline them).
-COPY --from=builder /build/apps/gateway/ ./apps/gateway/
+COPY --from=builder /build/apps/control-plane/ ./apps/control-plane/
 
 USER paws
 
@@ -76,4 +78,4 @@ EXPOSE 4000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
   CMD wget -qO- http://localhost:4000/health || exit 1
 
-CMD ["bun", "run", "apps/gateway/src/server.ts"]
+CMD ["bun", "run", "apps/control-plane/src/server.ts"]

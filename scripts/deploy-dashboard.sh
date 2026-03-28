@@ -85,6 +85,6 @@ echo "( o.o )  dashboard ready!"
 echo " > ^ <"
 echo ""
 if [[ "${DO_DEPLOY}" != true ]]; then
-  info "Local test: DASHBOARD_DIR=${DASHBOARD_DIR}/dist bun run apps/gateway/src/server.ts"
+  info "Local test: DASHBOARD_DIR=${DASHBOARD_DIR}/dist bun run apps/control-plane/src/server.ts"
   info "Deploy:     scripts/deploy-dashboard.sh --deploy"
 fi

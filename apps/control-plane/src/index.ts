@@ -1,6 +1,6 @@
-export { createGatewayApp } from './app.js';
-export type { GatewayDeps } from './app.js';
-export { GatewayError, gatewayError } from './errors.js';
+export { createControlPlaneApp } from './app.js';
+export type { ControlPlaneDeps } from './app.js';
+export { ControlPlaneError, controlPlaneError } from './errors.js';
 export { createGovernanceChecker } from './governance.js';
 export type { GovernanceChecker } from './governance.js';
 export { authMiddleware } from './middleware/auth.js';

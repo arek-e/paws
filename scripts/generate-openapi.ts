@@ -10,7 +10,7 @@
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { createGatewayApp } from '../apps/gateway/src/app.js';
+import { createGatewayApp } from '../apps/control-plane/src/app.js';
 
 const outputPath = process.argv[2] ?? resolve(import.meta.dir, '../docs/openapi.json');
 

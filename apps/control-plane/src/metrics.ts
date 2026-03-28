@@ -10,9 +10,9 @@ export interface MetricsDeps {
   registry?: WorkerRegistry;
 }
 
-export function createGatewayMetrics(deps: MetricsDeps) {
+export function createControlPlaneMetrics(deps: MetricsDeps) {
   const promRegistry = new Registry();
-  promRegistry.setDefaultLabels({ service: 'gateway' });
+  promRegistry.setDefaultLabels({ service: 'control-plane' });
 
   // --- Gauges (read from stores on each scrape) ---
 
@@ -139,4 +139,4 @@ export function createGatewayMetrics(deps: MetricsDeps) {
   };
 }
 
-export type GatewayMetrics = ReturnType<typeof createGatewayMetrics>;
+export type ControlPlaneMetrics = ReturnType<typeof createControlPlaneMetrics>;

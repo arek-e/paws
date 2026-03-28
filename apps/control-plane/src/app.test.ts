@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { createGatewayApp } from './app.js';
+import { createControlPlaneApp } from './app.js';
 import type { WorkerClient } from './worker-client.js';
 
 const API_KEY = 'test-api-key';
@@ -22,7 +22,7 @@ function createMockWorkerClient(overrides?: Partial<WorkerClient>): WorkerClient
 }
 
 async function createApp(workerOverrides?: Partial<WorkerClient>) {
-  return createGatewayApp({
+  return createControlPlaneApp({
     apiKey: API_KEY,
     workerClient: createMockWorkerClient(workerOverrides),
   });
@@ -457,7 +457,7 @@ describe('GET /openapi.json', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.openapi).toBe('3.1.0');
-    expect(body.info.title).toBe('paws Gateway API');
+    expect(body.info.title).toBe('paws Control Plane API');
     expect(body.paths).toBeDefined();
   });
 });

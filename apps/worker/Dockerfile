@@ -14,7 +14,9 @@ COPY packages/firecracker/package.json  ./packages/firecracker/package.json
 COPY packages/proxy/package.json        ./packages/proxy/package.json
 COPY packages/scheduler/package.json    ./packages/scheduler/package.json
 COPY packages/snapshot-store/package.json ./packages/snapshot-store/package.json
-COPY apps/gateway/package.json          ./apps/gateway/package.json
+COPY packages/credentials/package.json  ./packages/credentials/package.json
+COPY packages/provisioner/package.json  ./packages/provisioner/package.json
+COPY apps/control-plane/package.json    ./apps/control-plane/package.json
 COPY providers/aws-ec2/package.json     ./providers/aws-ec2/package.json
 COPY apps/worker/package.json           ./apps/worker/package.json
 

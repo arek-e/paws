@@ -15,7 +15,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        app: [gateway, worker]
+        app: [control-plane, worker]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -73,7 +73,7 @@ jobs:
           $SSH "cd /opt/paws && bun install"
 
           echo "==> Restarting services..."
-          $SSH "systemctl restart paws-gateway paws-worker"
+          $SSH "systemctl restart paws-control-plane paws-worker"
 
           echo "==> Waiting for services to start..."
           sleep 5

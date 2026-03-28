@@ -409,6 +409,7 @@ main() {
     esac
   done
 
+  echo "PAWS_STAGE:checking_prerequisites"
   check_root
   check_arch
   check_dependencies
@@ -421,15 +422,19 @@ main() {
   echo ""
 
   # Step 1: Install Firecracker binary
+  echo "PAWS_STAGE:downloading_firecracker"
   install_firecracker
 
   # Step 2: Create directory structure
+  echo "PAWS_STAGE:creating_directories"
   create_directories
 
   # Step 3: Generate SSH keys (before rootfs, so we can inject the pubkey)
+  echo "PAWS_STAGE:generating_ssh_keys"
   generate_ssh_keys
 
   # Step 4: Download kernel
+  echo "PAWS_STAGE:downloading_kernel"
   if [[ "${skip_kernel}" = false ]]; then
     download_kernel
   else
@@ -437,12 +442,14 @@ main() {
   fi
 
   # Step 5: Create rootfs
+  echo "PAWS_STAGE:creating_rootfs"
   if [[ "${skip_rootfs}" = false ]]; then
     create_rootfs
   else
     warn "Skipping rootfs creation (--skip-rootfs)"
   fi
 
+  echo "PAWS_STAGE:complete"
   echo ""
   info "Installation complete!"
   echo ""

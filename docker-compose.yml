@@ -19,8 +19,8 @@ services:
   gateway:
     build:
       context: .
-      dockerfile: Dockerfile.gateway
-    container_name: paws-gateway
+      dockerfile: Dockerfile.control-plane
+    container_name: paws-control-plane
     restart: unless-stopped
     networks:
       - paws

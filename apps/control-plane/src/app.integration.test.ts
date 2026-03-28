@@ -1,5 +1,5 @@
 /**
- * Tier 2: Gateway integration test
+ * Tier 2: Control plane integration test
  *
  * Boots the real Hono server on a random port and exercises every endpoint
  * over HTTP to catch wiring issues beyond unit-test mocking.
@@ -9,7 +9,7 @@
  */
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
-import { createGatewayApp } from './app.js';
+import { createControlPlaneApp } from './app.js';
 import type { WorkerClient, WorkerHealth, WorkerSessionResult } from './worker-client.js';
 
 // Bun.serve is used to boot the server — skip if Bun runtime isn't available
@@ -36,13 +36,13 @@ function createMockWorkerClient(): WorkerClient {
   };
 }
 
-describe.skipIf(!hasBun)('Gateway integration — real HTTP', () => {
+describe.skipIf(!hasBun)('Control plane integration — real HTTP', () => {
   let server: ReturnType<typeof Bun.serve>;
   let baseUrl: string;
   const API_KEY = 'test-integration-key';
 
-  beforeAll(() => {
-    const app = await createGatewayApp({
+  beforeAll(async () => {
+    const app = await createControlPlaneApp({
       apiKey: API_KEY,
       workerClient: createMockWorkerClient(),
     });
@@ -83,7 +83,7 @@ describe.skipIf(!hasBun)('Gateway integration — real HTTP', () => {
     expect(res.status).toBe(200);
     const spec = await res.json();
     expect(spec.openapi).toBe('3.1.0');
-    expect(spec.info.title).toBe('paws Gateway API');
+    expect(spec.info.title).toBe('paws Control Plane API');
     expect(spec.paths).toBeDefined();
   });
 
