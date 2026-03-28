@@ -21,3 +21,7 @@ __pycache__/
 
 # OpenAPI generator
 openapitools.json
+
+# Generated configs (created by scripts/setup-control-plane.sh)
+config/pangolin/config.yml
+config/traefik/traefik_config.yml

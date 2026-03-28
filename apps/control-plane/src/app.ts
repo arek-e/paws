@@ -77,6 +77,10 @@ export interface ControlPlaneDeps {
   workerRegistry?: WorkerRegistry | undefined;
   /** Bun WebSocket upgrader — needed for worker WS and session streaming. */
   upgradeWebSocket?: import('hono/ws').UpgradeWebSocket | undefined;
+  /** Pangolin tunnel status for fleet overview. */
+  pangolinStatus?:
+    | (() => { connected: boolean; tunnelWorkers: number; lastPollAt: string | null })
+    | undefined;
 }
 
 const startTime = Date.now();
@@ -523,6 +527,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
         queuedSessions,
         activeDaemons: daemonStore.countActive(),
         activeSessions: sessionStore.countActiveSessions(),
+        ...(deps.pangolinStatus && { pangolin: deps.pangolinStatus() }),
       },
       200,
     );

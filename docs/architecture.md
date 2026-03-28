@@ -176,6 +176,58 @@ Per VM:
   - No direct internet access
 ```
 
+## Worker Connectivity
+
+Workers connect to the control plane via Pangolin WireGuard tunnels. Each worker runs
+Newt (Pangolin's tunnel agent) which establishes an encrypted tunnel back to Gerbil on
+the control plane VPS.
+
+```
+Control Plane VPS
+├── Pangolin (tunnel control plane + dashboard)
+├── Gerbil (WireGuard tunnel server, :51820/udp)
+├── Traefik (reverse proxy, :80/:443)
+├── Control Plane (API + dashboard, :4000)
+├── Dex (OIDC, :5556)
+└── VictoriaMetrics + Grafana (metrics)
+
+        ↕ WireGuard tunnel
+
+Worker (bare metal, anywhere)
+├── Newt (tunnel agent → connects to Gerbil)
+├── Worker process (:3000)
+└── Firecracker VMs
+```
+
+### Discovery
+
+The control plane discovers workers by polling Pangolin's API for connected sites:
+
+```
+Pangolin API: GET /api/v1/org/{orgId}/sites
+  → filter to online: true sites
+  → extract tunnel IP from subnet field
+  → health-check worker at http://{tunnelIP}:3000/health
+  → add to fleet registry
+```
+
+Four discovery layers (first match wins):
+
+1. **Pangolin** — tunnel-connected workers (primary)
+2. **Call-home registry** — WebSocket-connected workers (legacy)
+3. **K8s pod discovery** — in-cluster Kubernetes deployments
+4. **Static URL** — manual WORKER_URL env var (dev/single-node)
+
+### Worker Onboarding
+
+```bash
+# On the worker machine:
+curl -fsSL https://raw.githubusercontent.com/arek-e/paws/main/scripts/setup-worker.sh | bash
+# Prompts for: Site ID, Site Secret, Pangolin Endpoint
+# Installs: Newt + paws worker + Firecracker
+# Starts: paws-newt.service + paws-worker.service
+```
+
 ## VM Lifecycle (per session)
 
 ```

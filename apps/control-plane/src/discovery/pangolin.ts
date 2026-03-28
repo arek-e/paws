@@ -67,11 +67,17 @@ export function createPangolinDiscovery(opts: PangolinDiscoveryOptions): WorkerD
   // Background poll state
   let timer: ReturnType<typeof setInterval> | null = null;
 
+  let lastPollAt: string | null = null;
+  let apiReachable = false;
+
   async function pollSites(): Promise<void> {
+    lastPollAt = new Date().toISOString();
     let sites: PangolinSite[];
     try {
       sites = await fetchSites();
-    } catch (err) {
+      apiReachable = true;
+    } catch {
+      apiReachable = false;
       // Keep cached state on failure — don't remove workers on transient errors
       return;
     }
@@ -239,12 +245,17 @@ export function createPangolinDiscovery(opts: PangolinDiscoveryOptions): WorkerD
   // Auto-start polling on creation
   startPolling();
 
-  const discovery: WorkerDiscovery & { stop(): void } = {
+  return {
     async getWorkers(): Promise<Worker[]> {
       return cachedWorkers.filter((w) => w.status === 'healthy' || w.status === 'degraded');
     },
     stop: stopPolling,
+    status(): { connected: boolean; tunnelWorkers: number; lastPollAt: string | null } {
+      return {
+        connected: apiReachable,
+        tunnelWorkers: cachedWorkers.length,
+        lastPollAt,
+      };
+    },
   };
-
-  return discovery;
 }

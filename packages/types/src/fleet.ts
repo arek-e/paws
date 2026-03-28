@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+/** Pangolin tunnel connectivity status */
+export const PangolinStatusSchema = z
+  .object({
+    connected: z.boolean(),
+    tunnelWorkers: z.number().int().nonnegative(),
+    lastPollAt: z.string().nullable(),
+  })
+  .optional();
+
 /** Fleet overview stats */
 export const FleetOverviewSchema = z.object({
   totalWorkers: z.number().int().nonnegative(),
@@ -9,6 +18,7 @@ export const FleetOverviewSchema = z.object({
   queuedSessions: z.number().int().nonnegative(),
   activeDaemons: z.number().int().nonnegative(),
   activeSessions: z.number().int().nonnegative(),
+  pangolin: PangolinStatusSchema,
 });
 
 export type FleetOverview = z.infer<typeof FleetOverviewSchema>;

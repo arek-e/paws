@@ -29,7 +29,6 @@ docs/
 # Infra / scripts (not needed in app images)
 infra/
 scripts/
-providers/
 
 # Docker files themselves
 Dockerfile

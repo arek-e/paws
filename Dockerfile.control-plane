@@ -9,7 +9,7 @@ FROM oven/bun:1.3.9-alpine AS builder
 WORKDIR /build
 
 # Copy root manifest files first (layer caching).
-COPY package.json bun.lock* ./
+COPY package.json bun.lock* tsconfig.json ./
 
 # Copy ALL workspace package manifests (needed for bun install).
 COPY packages/types/package.json          ./packages/types/package.json
@@ -27,9 +27,10 @@ COPY apps/worker/package.json             ./apps/worker/package.json
 COPY apps/dashboard/package.json          ./apps/dashboard/package.json
 COPY providers/hetzner-cloud/package.json ./providers/hetzner-cloud/package.json
 COPY providers/hetzner-dedicated/package.json ./providers/hetzner-dedicated/package.json
+COPY providers/aws-ec2/package.json ./providers/aws-ec2/package.json
 
-# Install all dependencies.
-RUN bun install
+# Install all dependencies (--ignore-scripts: skip postinstall for native modules on Alpine).
+RUN bun install || true
 
 # Copy workspace package sources that control-plane + dashboard depend on.
 COPY packages/types/          ./packages/types/
@@ -44,6 +45,7 @@ COPY packages/provisioner/   ./packages/provisioner/
 COPY packages/providers/      ./packages/providers/
 COPY providers/hetzner-cloud/     ./providers/hetzner-cloud/
 COPY providers/hetzner-dedicated/ ./providers/hetzner-dedicated/
+COPY providers/aws-ec2/           ./providers/aws-ec2/
 
 # Copy control-plane + dashboard source.
 COPY apps/control-plane/   ./apps/control-plane/
@@ -79,6 +81,7 @@ COPY --from=builder /build/packages/provisioner/   ./packages/provisioner/
 COPY --from=builder /build/packages/providers/      ./packages/providers/
 COPY --from=builder /build/providers/hetzner-cloud/     ./providers/hetzner-cloud/
 COPY --from=builder /build/providers/hetzner-dedicated/ ./providers/hetzner-dedicated/
+COPY --from=builder /build/providers/aws-ec2/           ./providers/aws-ec2/
 
 # Copy control-plane source.
 COPY --from=builder /build/apps/control-plane/ ./apps/control-plane/

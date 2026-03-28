@@ -90,6 +90,7 @@ const app = await createControlPlaneApp({
   upgradeWebSocket,
   ...(DASHBOARD_DIR && { dashboardDir: DASHBOARD_DIR }),
   ...(oidc && { oidc }),
+  ...(pangolinDiscovery && { pangolinStatus: () => pangolinDiscovery.status() }),
 });
 
 // --- Autoscaler ---

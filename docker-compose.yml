@@ -2,20 +2,85 @@
 # ( o.o )  paws control plane
 #  > ^ <
 #
-# Full control plane: gateway + dashboard, Dex OIDC, Caddy reverse proxy,
-# VictoriaMetrics metrics, Grafana dashboards.
+# All-in-one deployment: Pangolin (tunnels + reverse proxy), paws control plane,
+# Dex OIDC, VictoriaMetrics metrics, Grafana dashboards.
 #
-# Usage:
-#   cp .env.example .env   # edit with your values
-#   docker compose up -d
+# Setup:
+#   cp .env.example .env   # fill in your values
+#   ./scripts/setup-control-plane.sh
 #
 # Architecture:
-#   Internet -> Caddy (:80/:443) -> Gateway (:4000) / Dex (:5556) / Grafana (:3000)
+#   Internet -> Traefik (:80/:443) -> Gateway (:4000) / Dex (:5556) / Grafana (:3001)
+#   Workers -> Newt -> Gerbil (:51820/udp) -> WireGuard tunnel -> Gateway
+#   Pangolin manages sites, tunnel routing, and dashboard auth
 #   VictoriaMetrics scrapes Gateway /metrics every 15s
-#   Grafana reads from VictoriaMetrics
 
 services:
-  # ── Gateway (API + Dashboard) ──────────────────────────────────────────────
+  # ── Pangolin (Tunnel Control Plane + Dashboard) ───────────────────────────
+  pangolin:
+    image: fosrl/pangolin:latest
+    container_name: paws-pangolin
+    restart: unless-stopped
+    networks:
+      - paws
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 256m
+    volumes:
+      - ./config/pangolin:/app/config
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/api/v1/']
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 15s
+
+  # ── Gerbil (WireGuard Tunnel Server) ─────────────────────────────────────
+  gerbil:
+    image: fosrl/gerbil:latest
+    container_name: paws-gerbil
+    restart: unless-stopped
+    depends_on:
+      pangolin:
+        condition: service_healthy
+    networks:
+      - paws
+    command:
+      - --reachableAt=http://gerbil:3004
+      - --generateAndSaveKeyTo=/var/config/key
+      - --remoteConfig=http://pangolin:3001/api/v1/
+    volumes:
+      - ./config/pangolin:/var/config
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    ports:
+      - '51820:51820/udp'
+      - '21820:21820/udp'
+      - '443:443'
+      - '80:80'
+
+  # ── Traefik (Reverse Proxy + TLS) ────────────────────────────────────────
+  traefik:
+    image: traefik:v3.6
+    container_name: paws-traefik
+    restart: unless-stopped
+    depends_on:
+      pangolin:
+        condition: service_healthy
+    network_mode: service:gerbil
+    environment:
+      CF_DNS_API_TOKEN: '${CF_DNS_API_TOKEN:-}'
+    command:
+      - --configFile=/etc/traefik/traefik_config.yml
+    volumes:
+      - ./config/traefik:/etc/traefik:ro
+      - letsencrypt-data:/letsencrypt
+
+  # ── Gateway (Paws API + Dashboard) ───────────────────────────────────────
   gateway:
     build:
       context: .
@@ -26,6 +91,8 @@ services:
       - paws
     expose:
       - '4000'
+    volumes:
+      - gateway-data:/var/lib/paws/data
     environment:
       PORT: '4000'
       API_KEY: '${API_KEY:-paws-dev-key}'
@@ -33,11 +100,15 @@ services:
       DASHBOARD_DIR: '/app/apps/dashboard/dist'
       # OIDC — connects to Dex
       OIDC_ISSUER: 'http://dex:5556/dex'
-      OIDC_CLIENT_ID: 'paws-gateway'
+      OIDC_CLIENT_ID: 'paws-control-plane'
       OIDC_CLIENT_SECRET: '${OIDC_CLIENT_SECRET:-paws-dex-secret-changeme}'
-      OIDC_REDIRECT_URI: 'https://${DOMAIN:-localhost}/auth/callback'
-      OIDC_AUTH_EXTERNAL_URL: 'https://${DOMAIN:-localhost}'
+      OIDC_REDIRECT_URI: 'https://fleet.${DOMAIN:-localhost}/auth/callback'
+      OIDC_AUTH_EXTERNAL_URL: 'https://fleet.${DOMAIN:-localhost}'
       AUTH_SECRET: '${AUTH_SECRET:-change-me-to-a-random-32-char-string}'
+      # Pangolin discovery
+      PANGOLIN_API_URL: '${PANGOLIN_API_URL:-}'
+      PANGOLIN_API_KEY: '${PANGOLIN_API_KEY:-}'
+      PANGOLIN_ORG_ID: '${PANGOLIN_ORG_ID:-}'
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://localhost:4000/health']
       interval: 15s
@@ -45,7 +116,7 @@ services:
       retries: 3
       start_period: 10s
 
-  # ── Dex (OIDC Identity Provider) ──────────────────────────────────────────
+  # ── Dex (OIDC Identity Provider) ─────────────────────────────────────────
   dex:
     image: ghcr.io/dexidp/dex:v2.41.1
     container_name: paws-dex
@@ -58,33 +129,12 @@ services:
       - ./infra/dex/config.template.yaml:/etc/dex/config.yaml:ro
       - dex-data:/data
     environment:
-      DOMAIN: '${DOMAIN:-localhost}'
+      DOMAIN: 'fleet.${DOMAIN:-localhost}'
       OIDC_CLIENT_SECRET: '${OIDC_CLIENT_SECRET:-paws-dex-secret-changeme}'
       GITHUB_CLIENT_ID: '${GITHUB_CLIENT_ID:-}'
       GITHUB_CLIENT_SECRET: '${GITHUB_CLIENT_SECRET:-}'
 
-  # ── Caddy (Reverse Proxy + Auto-HTTPS) ────────────────────────────────────
-  caddy:
-    image: caddy:2-alpine
-    container_name: paws-caddy
-    restart: unless-stopped
-    networks:
-      - paws
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    environment:
-      DOMAIN: '${DOMAIN:-localhost}'
-      GRAFANA_DOMAIN: '${GRAFANA_DOMAIN:-}'
-    depends_on:
-      gateway:
-        condition: service_healthy
-
-  # ── VictoriaMetrics (Metrics Storage) ─────────────────────────────────────
+  # ── VictoriaMetrics (Metrics Storage) ────────────────────────────────────
   victoriametrics:
     image: victoriametrics/victoria-metrics:v1.108.1
     container_name: paws-victoriametrics
@@ -102,7 +152,7 @@ services:
       - '--promscrape.config=/etc/victoria-metrics/scrape.yml'
       - '--httpListenAddr=:8428'
 
-  # ── Grafana (Dashboards) ──────────────────────────────────────────────────
+  # ── Grafana (Dashboards) ─────────────────────────────────────────────────
   grafana:
     image: grafana/grafana-oss:11.6.0
     container_name: paws-grafana
@@ -110,9 +160,10 @@ services:
     networks:
       - paws
     expose:
-      - '3000'
+      - '3001'
     environment:
       GF_SECURITY_ADMIN_PASSWORD: '${GRAFANA_ADMIN_PASSWORD:-admin}'
+      GF_SERVER_HTTP_PORT: '3001'
       GF_SERVER_ROOT_URL: 'https://${GRAFANA_DOMAIN:-grafana.localhost}/'
       GF_SERVER_SERVE_FROM_SUB_PATH: 'false'
     volumes:
@@ -125,7 +176,7 @@ networks:
 
 volumes:
   dex-data:
-  caddy-data:
-  caddy-config:
+  gateway-data:
+  letsencrypt-data:
   vm-data:
   grafana-data:
