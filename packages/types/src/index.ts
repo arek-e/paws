@@ -25,6 +25,7 @@ export {
   WebhookTriggerSchema,
 } from './daemon.js';
 export type {
+  CreateDaemonInput,
   CreateDaemonRequest,
   CreateDaemonResponse,
   DaemonDetail,
@@ -59,6 +60,7 @@ export {
 } from './session.js';
 export type {
   CancelSessionResponse,
+  CreateSessionInput,
   CreateSessionRequest,
   CreateSessionResponse,
   Resources,
@@ -68,6 +70,7 @@ export type {
 } from './session.js';
 
 export {
+  SnapshotBuildJobSchema,
   SnapshotBuildRequestSchema,
   SnapshotBuildResponseSchema,
   SnapshotBuildStatus,
@@ -77,6 +80,7 @@ export {
 } from './snapshot.js';
 export type {
   Snapshot,
+  SnapshotBuildJob,
   SnapshotBuildRequest,
   SnapshotBuildResponse,
   SnapshotListResponse,

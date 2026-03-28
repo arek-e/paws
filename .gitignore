@@ -6,3 +6,18 @@ dist/
 .turbo/
 .DS_Store
 .oxfmt-cache/
+
+# IDE / tools
+.claude/worktrees/
+.gstack/
+.mcp.json
+.infisical.json
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.tox/
+
+# OpenAPI generator
+openapitools.json

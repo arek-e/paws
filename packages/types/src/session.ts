@@ -51,6 +51,9 @@ export const CreateSessionRequestSchema = z.object({
 
 export type CreateSessionRequest = z.infer<typeof CreateSessionRequestSchema>;
 
+/** Input type (defaults are optional) — use in SDKs and client code */
+export type CreateSessionInput = z.input<typeof CreateSessionRequestSchema>;
+
 /** Create session response (202) */
 export const CreateSessionResponseSchema = z.object({
   sessionId: IdSchema,

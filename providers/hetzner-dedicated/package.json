@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@paws/providers": "*",
+    "@paws/providers": "workspace:*",
     "neverthrow": "^8.2.0"
   },
   "devDependencies": {
