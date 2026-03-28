@@ -119,8 +119,8 @@ secret management, and the UX details that make self-hosted software delightful.
 | #   | What                                                                         | Status |
 | --- | ---------------------------------------------------------------------------- | ------ |
 | 39  | GitHub App integration — daemons triggered by GitHub events (PR, push, etc.) | ⬜     |
-| 40  | Onboarding wizard — stepped setup flow in dashboard with validation          | 🟡     |
-| 41  | Real-time setup streaming — stream worker bootstrap logs to dashboard via WS | ⬜     |
+| 40  | Onboarding wizard — stepped setup flow in dashboard with validation          | ✅     |
+| 41  | Real-time setup streaming — stream worker bootstrap logs to dashboard via WS | ✅     |
 | 42  | Secret adapter pattern — resolve secrets from 1Password/Vault/Infisical/env  | ⬜     |
 | 43  | SSH key management — first-class entities in dashboard, encrypted storage    | ⬜     |
 | 44  | Git provider abstraction — GitHub/GitLab/Bitbucket/Gitea support             | ⬜     |
