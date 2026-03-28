@@ -104,16 +104,16 @@ allowlisting, Git credential injection, and iptables network isolation.
 
 ## Configuration Reference
 
-| Config key               | Default             | Description                                |
-| ------------------------ | ------------------- | ------------------------------------------ |
-| `hcloud:token`           | (required)          | Hetzner Cloud API token (secret)           |
-| `paws:sshPublicKey`      | (required)          | SSH public key for server access           |
-| `paws:sshAllowCidr`      | (none -- deny all)  | CIDR for SSH access (e.g. `100.64.0.0/10`) |
-| `paws:workerCount`       | `1`                 | Number of worker nodes                     |
-| `paws:gatewayServerType` | `cx31`              | Hetzner server type for gateway            |
-| `paws:workerServerType`  | `cx31`              | Hetzner server type for workers            |
-| `paws:location`          | `fsn1`              | Hetzner datacenter location                |
-| `paws:sshPrivateKeyPath` | `~/.ssh/id_ed25519` | Path to SSH private key on your machine    |
+| Config key               | Default             | Description                                                                                                                                                                          |
+| ------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `hcloud:token`           | (required)          | Hetzner Cloud API token (secret)                                                                                                                                                     |
+| `paws:sshPublicKey`      | (required)          | SSH public key for server access                                                                                                                                                     |
+| `paws:sshAllowCidr`      | (none -- deny all)  | CIDR for SSH access (e.g. `100.64.0.0/10`)                                                                                                                                           |
+| `paws:workerCount`       | `1`                 | Number of worker nodes                                                                                                                                                               |
+| `paws:gatewayServerType` | `cx31`              | Hetzner server type for gateway                                                                                                                                                      |
+| `paws:workerServerType`  | `cx31`              | Hetzner server type for workers (dev/staging only -- Hetzner Cloud VMs lack /dev/kvm and cannot run Firecracker; production workers need bare metal or AWS EC2 C8i with nested virt) |
+| `paws:location`          | `fsn1`              | Hetzner datacenter location                                                                                                                                                          |
+| `paws:sshPrivateKeyPath` | `~/.ssh/id_ed25519` | Path to SSH private key on your machine                                                                                                                                              |
 
 ## Tearing Down
 
