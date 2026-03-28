@@ -1,3 +1,4 @@
+import { createCallHome } from './call-home.js';
 import { createSessionApp } from './routes.js';
 import { createExecutor } from './session/executor.js';
 import { createSemaphore } from './semaphore.js';
@@ -55,6 +56,37 @@ if (SNAPSHOT_SYNC_ENABLED) {
 }
 
 const app = createSessionApp({ executor, semaphore, workerName: WORKER_NAME, syncLoop });
+const startTime = Date.now();
+
+// Call-home: register with gateway via WebSocket
+const GATEWAY_URL = process.env['GATEWAY_URL'] ?? '';
+const API_KEY = process.env['API_KEY'] ?? '';
+const WORKER_URL = process.env['WORKER_URL'] ?? `http://localhost:${PORT}`;
+
+if (GATEWAY_URL && API_KEY) {
+  const callHome = createCallHome({
+    gatewayUrl: GATEWAY_URL,
+    apiKey: API_KEY,
+    workerName: WORKER_NAME,
+    workerUrl: WORKER_URL,
+    healthFn: () => ({
+      status:
+        semaphore.running === 0 && semaphore.queued === 0
+          ? 'healthy'
+          : semaphore.available > 0
+            ? 'healthy'
+            : 'degraded',
+      capacity: {
+        maxConcurrent: semaphore.running + semaphore.available,
+        running: semaphore.running,
+        queued: semaphore.queued,
+        available: semaphore.available,
+      },
+      uptime: Date.now() - startTime,
+    }),
+  });
+  callHome.start();
+}
 
 console.log(`
  /\\_/\\
@@ -67,6 +99,7 @@ Max queued: ${MAX_QUEUED}
 Snapshot: ${SNAPSHOT_DIR}
 Worker: ${WORKER_NAME}
 Snapshot sync: ${SNAPSHOT_SYNC_ENABLED ? 'enabled' : 'disabled'}
+Call-home: ${GATEWAY_URL ? `${GATEWAY_URL}` : 'disabled (set GATEWAY_URL + API_KEY)'}
 `);
 
 export default {
