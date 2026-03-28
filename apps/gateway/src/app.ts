@@ -4,6 +4,7 @@ import { OpenAPIHono } from '@hono/zod-openapi';
 import { selectWorker } from '@paws/scheduler';
 
 import type { WorkerRegistry } from './discovery/registry.js';
+import { createBuildStore } from './store/builds.js';
 import { createGovernanceChecker } from './governance.js';
 import { createGatewayMetrics, type GatewayMetrics } from './metrics.js';
 import { authMiddleware, type AuthConfig } from './middleware/auth.js';
@@ -528,17 +529,39 @@ export async function createGatewayApp(deps: GatewayDeps) {
     return c.json({ snapshots: [] }, 200);
   });
 
+  const buildStore = createBuildStore();
+
   app.openapi(buildSnapshotRoute, (c) => {
     const { id } = c.req.valid('param');
-    c.req.valid('json'); // consume body for validation
-    return c.json(
-      {
-        snapshotId: id,
-        status: 'building' as const,
-        jobId: `build-${randomUUID().slice(0, 8)}`,
-      },
-      202,
-    );
+    const body = c.req.valid('json');
+    const jobId = `build-${randomUUID().slice(0, 8)}`;
+
+    buildStore.create(jobId, id);
+
+    // Dispatch build to a worker (fire-and-forget)
+    void (async () => {
+      try {
+        const workers = discovery ? await discovery.getWorkers() : [];
+        const worker = workers[0]; // pick any available worker
+        if (worker) {
+          const client = createWorkerClient(worker.name);
+          await client.buildSnapshot(jobId, id, body);
+          buildStore.updateStatus(jobId, 'building', { worker: worker.name });
+        } else {
+          buildStore.updateStatus(jobId, 'failed', {
+            error: 'No workers available',
+            completedAt: new Date().toISOString(),
+          });
+        }
+      } catch (err) {
+        buildStore.updateStatus(jobId, 'failed', {
+          error: err instanceof Error ? err.message : String(err),
+          completedAt: new Date().toISOString(),
+        });
+      }
+    })();
+
+    return c.json({ snapshotId: id, status: 'building' as const, jobId }, 202);
   });
 
   // --- WebSocket routes (require Bun runtime) ---
