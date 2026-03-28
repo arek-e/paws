@@ -65,3 +65,9 @@ export async function getSession(id: string): Promise<Session> {
   if (result.isErr()) throw result.error;
   return result.value;
 }
+
+export async function getDaemons(): Promise<{ daemons: unknown[] }> {
+  const result = await getClient().daemons.list();
+  if (result.isErr()) throw result.error;
+  return result.value as { daemons: unknown[] };
+}

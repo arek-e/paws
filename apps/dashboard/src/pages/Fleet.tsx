@@ -5,6 +5,31 @@ import { WorkerCard } from '../components/WorkerCard.js';
 import { useMetrics } from '../hooks/useMetrics.js';
 import { usePolling } from '../hooks/usePolling.js';
 
+function TunnelStatus({
+  pangolin,
+}: {
+  pangolin?: { connected: boolean; tunnelWorkers: number; lastPollAt: string | null };
+}) {
+  if (!pangolin) return null;
+
+  return (
+    <div
+      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs ${
+        pangolin.connected
+          ? 'bg-emerald-400/10 text-emerald-400 border border-emerald-400/20'
+          : 'bg-red-400/10 text-red-400 border border-red-400/20'
+      }`}
+    >
+      <span
+        className={`w-2 h-2 rounded-full ${pangolin.connected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`}
+      />
+      {pangolin.connected
+        ? `Tunnel active \u00b7 ${pangolin.tunnelWorkers} worker${pangolin.tunnelWorkers !== 1 ? 's' : ''} connected`
+        : 'Tunnel disconnected'}
+    </div>
+  );
+}
+
 export function Fleet() {
   const fleet = usePolling(getFleet, 5000);
   const workers = usePolling(getWorkers, 5000);
@@ -15,9 +40,18 @@ export function Fleet() {
   const workersChart = useMetrics('paws_workers_healthy', 60, 30);
   const requestsChart = useMetrics('sum(rate(paws_http_requests_total[1m]))', 60, 30);
 
+  const fleetData = fleet.data as
+    | (typeof fleet.data & {
+        pangolin?: { connected: boolean; tunnelWorkers: number; lastPollAt: string | null };
+      })
+    | undefined;
+
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold">Fleet Overview</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold">Fleet Overview</h1>
+        <TunnelStatus pangolin={fleetData?.pangolin} />
+      </div>
 
       {fleet.loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -34,10 +68,10 @@ export function Fleet() {
         </div>
       ) : fleet.data ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="Total Workers" value={fleet.data.totalWorkers} />
-          <StatCard label="Healthy Workers" value={fleet.data.healthyWorkers} color="emerald" />
+          <StatCard label="Workers" value={fleet.data.totalWorkers} />
+          <StatCard label="Healthy" value={fleet.data.healthyWorkers} color="emerald" />
           <StatCard label="Active Sessions" value={fleet.data.activeSessions} color="amber" />
-          <StatCard label="Queued Sessions" value={fleet.data.queuedSessions} />
+          <StatCard label="Queued" value={fleet.data.queuedSessions} />
         </div>
       ) : null}
 
@@ -65,7 +99,7 @@ export function Fleet() {
           </div>
         ) : workers.error ? (
           <div className="bg-red-400/10 border border-red-400/20 rounded-lg p-4 text-red-400 text-sm">
-            Failed to load workers: {workers.error.message}
+            Failed to load trees: {workers.error.message}
           </div>
         ) : workers.data && workers.data.workers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -75,10 +109,12 @@ export function Fleet() {
           </div>
         ) : (
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center">
+            <pre className="text-zinc-600 text-xs font-mono mb-2">{`   /\\_/\\
+  ( -.- )
+   > ^ <`}</pre>
             <p className="text-zinc-500 text-sm">No workers connected.</p>
             <p className="text-zinc-600 text-xs mt-1">
-              Start a worker with{' '}
-              <code className="text-zinc-500">bun run apps/worker/src/server.ts</code>
+              Run <code className="text-zinc-500">scripts/setup-worker.sh</code> on a bare metal box
             </p>
           </div>
         )}

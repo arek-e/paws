@@ -71,6 +71,7 @@ export function Layout() {
       {menuOpen && (
         <div className="md:hidden border-b border-zinc-800 bg-zinc-950 p-3 space-y-1">
           <SidebarLink to="/" label="Fleet" onClick={() => setMenuOpen(false)} />
+          <SidebarLink to="/daemons" label="Daemons" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/sessions" label="Sessions" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/setup" label="Setup" onClick={() => setMenuOpen(false)} />
           <button
@@ -91,6 +92,7 @@ export function Layout() {
         </div>
         <nav className="flex-1 p-3 space-y-1">
           <SidebarLink to="/" label="Fleet" />
+          <SidebarLink to="/daemons" label="Daemons" />
           <SidebarLink to="/sessions" label="Sessions" />
           <SidebarLink to="/setup" label="Setup" />
         </nav>

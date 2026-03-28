@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router';
 
 import { AuthGate } from './components/AuthGate.js';
 import { Layout } from './components/Layout.js';
+import { Daemons } from './pages/Daemons.js';
 import { Fleet } from './pages/Fleet.js';
 import { SessionDetail } from './pages/SessionDetail.js';
 import { Sessions } from './pages/Sessions.js';
@@ -14,6 +15,7 @@ export function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Fleet />} />
+            <Route path="daemons" element={<Daemons />} />
             <Route path="setup" element={<Setup />} />
             <Route path="sessions" element={<Sessions />} />
             <Route path="sessions/:id" element={<SessionDetail />} />
