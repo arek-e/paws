@@ -43,7 +43,8 @@ interface PangolinSite {
   name: string;
   online: boolean;
   subnet: string; // CIDR like "100.89.137.5/32"
-  // Other fields exist but are not needed for discovery
+  type: string; // "newt" | "local" | "wireguard"
+  endpoint: string | null; // "65.108.10.170:56974" (public IP:port of the Newt agent)
 }
 
 interface PangolinSitesResponse {
@@ -93,7 +94,7 @@ export function createPangolinDiscovery(opts: PangolinDiscoveryOptions) {
     }
 
     const now = Date.now();
-    const onlineSites = sites.filter((s) => s.online && s.subnet);
+    const onlineSites = sites.filter((s) => s.online && s.type !== 'local');
 
     // Track disconnections for grace period
     const currentSiteIds = new Set(onlineSites.map((s) => s.siteId));
@@ -231,11 +232,35 @@ export function createPangolinDiscovery(opts: PangolinDiscoveryOptions) {
     return body.data.sites;
   }
 
-  async function healthCheckSite(site: PangolinSite): Promise<Worker | null> {
-    const tunnelIp = site.subnet.split('/')[0];
-    if (!tunnelIp) return null;
+  /** Fetch a single site's full details (includes endpoint IP not in list response). */
+  async function fetchSiteDetail(siteId: string): Promise<{ endpoint?: string } | null> {
+    try {
+      const res = await fetch(`${apiUrl}/site/${siteId}`, {
+        headers: buildHeaders(),
+        signal: AbortSignal.timeout(5_000),
+      });
+      if (!res.ok) return null;
+      const body = (await res.json()) as { data?: { endpoint?: string } };
+      return body.data ?? null;
+    } catch {
+      return null;
+    }
+  }
 
-    const baseUrl = `http://${tunnelIp}:${workerPort}`;
+  async function healthCheckSite(site: PangolinSite): Promise<Worker | null> {
+    // Skip local sites (they're not workers)
+    if (site.type === 'local') return null;
+
+    // Fetch full site details to get the endpoint IP (not included in list response)
+    const detail = await fetchSiteDetail(site.siteId);
+    const endpoint = detail?.endpoint?.split(':')[0]; // "65.108.10.170:56974" → "65.108.10.170"
+    const tunnelIp = site.subnet?.split('/')[0];
+    const baseUrl = endpoint
+      ? `http://${endpoint}:${workerPort}`
+      : tunnelIp
+        ? `http://${tunnelIp}:${workerPort}`
+        : null;
+    if (!baseUrl) return null;
     try {
       const res = await fetch(`${baseUrl}/health`, { signal: AbortSignal.timeout(5_000) });
       if (!res.ok) return null;
