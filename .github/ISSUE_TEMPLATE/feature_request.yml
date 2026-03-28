@@ -1,0 +1,23 @@
+name: Feature Request
+description: Suggest an idea for paws.
+title: 'feat: '
+labels: ['enhancement']
+body:
+  - type: textarea
+    attributes:
+      label: What problem does this solve?
+      description: Describe the problem or use case.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What does the solution look like?
+      description: How should it work? Be as specific as you can.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Alternatives considered
+      description: Any other approaches you thought about?
+    validations:
+      required: false
