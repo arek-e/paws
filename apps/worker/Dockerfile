@@ -13,6 +13,7 @@ COPY packages/types/package.json        ./packages/types/package.json
 COPY packages/firecracker/package.json  ./packages/firecracker/package.json
 COPY packages/proxy/package.json        ./packages/proxy/package.json
 COPY packages/scheduler/package.json    ./packages/scheduler/package.json
+COPY packages/snapshot-store/package.json ./packages/snapshot-store/package.json
 COPY apps/gateway/package.json          ./apps/gateway/package.json
 COPY apps/worker/package.json           ./apps/worker/package.json
 
@@ -23,7 +24,8 @@ RUN bun install
 COPY packages/types/       ./packages/types/
 COPY packages/firecracker/ ./packages/firecracker/
 COPY packages/proxy/       ./packages/proxy/
-COPY packages/scheduler/   ./packages/scheduler/
+COPY packages/scheduler/       ./packages/scheduler/
+COPY packages/snapshot-store/  ./packages/snapshot-store/
 
 # Copy worker source.
 COPY apps/worker/ ./apps/worker/
@@ -63,7 +65,8 @@ COPY --from=builder /build/node_modules ./node_modules
 COPY --from=builder /build/packages/types/       ./packages/types/
 COPY --from=builder /build/packages/firecracker/ ./packages/firecracker/
 COPY --from=builder /build/packages/proxy/       ./packages/proxy/
-COPY --from=builder /build/packages/scheduler/   ./packages/scheduler/
+COPY --from=builder /build/packages/scheduler/       ./packages/scheduler/
+COPY --from=builder /build/packages/snapshot-store/  ./packages/snapshot-store/
 COPY --from=builder /build/apps/worker/ ./apps/worker/
 
 # Create directories that the worker uses at runtime.
