@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { hasApiKey, setApiKey } from '../api/client.js';
+import { hasApiKey, setApiKey, setSessionMode } from '../api/client.js';
 
 type AuthMode = 'loading' | 'authenticated' | 'login';
 
@@ -18,10 +18,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   async function checkAuth() {
     // Check OIDC session first
     try {
-      const res = await fetch('/auth/me');
+      const res = await fetch('/auth/me', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         if (data.authenticated) {
+          setSessionMode(true);
           setMode('authenticated');
           return;
         }

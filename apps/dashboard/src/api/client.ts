@@ -2,6 +2,7 @@ import type { FleetOverview, Session, SessionListResponse, WorkerListResponse } 
 import { createClient, type PawsClient } from '@paws/sdk';
 
 let _client: PawsClient | null = null;
+let _useSession = false;
 
 export function getApiKey(): string {
   if (typeof window !== 'undefined') {
@@ -12,7 +13,12 @@ export function getApiKey(): string {
 
 export function setApiKey(key: string) {
   localStorage.setItem('paws_api_key', key);
-  _client = null; // force re-creation
+  _client = null;
+}
+
+export function setSessionMode(enabled: boolean) {
+  _useSession = enabled;
+  _client = null;
 }
 
 export function hasApiKey(): boolean {
@@ -21,7 +27,17 @@ export function hasApiKey(): boolean {
 
 function getClient(): PawsClient {
   if (!_client) {
-    _client = createClient({ baseUrl: '', apiKey: getApiKey() });
+    // When using OIDC session, create client with empty API key
+    // but inject credentials: 'include' in fetch so cookies are sent
+    const apiKey = _useSession ? '' : getApiKey();
+    const fetchWithCredentials: typeof fetch = (url, init) => {
+      return fetch(url, { ...init, credentials: 'include' });
+    };
+    _client = createClient({
+      baseUrl: '',
+      apiKey,
+      fetch: _useSession ? fetchWithCredentials : undefined,
+    });
   }
   return _client;
 }
