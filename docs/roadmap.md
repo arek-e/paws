@@ -111,6 +111,29 @@ least-loaded.
 
 ---
 
+## v2.0 — Integrations + Developer Experience
+
+**Goal:** Make paws feel like a polished product. GitHub integration, onboarding wizard,
+secret management, and the UX details that make self-hosted software delightful.
+
+| #   | What                                                                         | Status |
+| --- | ---------------------------------------------------------------------------- | ------ |
+| 39  | GitHub App integration — daemons triggered by GitHub events (PR, push, etc.) | ⬜     |
+| 40  | Onboarding wizard — stepped setup flow in dashboard with validation          | ⬜     |
+| 41  | Real-time setup streaming — stream worker bootstrap logs to dashboard via WS | ⬜     |
+| 42  | Secret adapter pattern — resolve secrets from 1Password/Vault/Infisical/env  | ⬜     |
+| 43  | SSH key management — first-class entities in dashboard, encrypted storage    | ⬜     |
+| 44  | Git provider abstraction — GitHub/GitLab/Bitbucket/Gitea support             | ⬜     |
+| 45  | Server management UI — add/remove/validate servers from dashboard            | ⬜     |
+| 46  | One-click worker provisioning — provision cloud servers from dashboard       | ⬜     |
+| 47  | Daemon templates — pre-built agent configurations (PR reviewer, etc.)        | ⬜     |
+| 48  | Audit log UI — searchable event history in dashboard                         | ⬜     |
+
+**Inspired by:** Coolify (onboarding wizard, GitHub App), Dokploy (git provider abstraction,
+real-time streaming), Kamal (secret adapters, zero-agent philosophy).
+
+---
+
 ## Design Principles (carry through all versions)
 
 1. **Zero secrets in the VM** — never compromise on this
