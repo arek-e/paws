@@ -1,7 +1,5 @@
 import type { Worker } from '@paws/types';
 
-import type { WorkerDiscovery } from './index.js';
-
 /**
  * Pangolin API discovery — polls Pangolin's site list to find connected workers.
  *
