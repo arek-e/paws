@@ -52,3 +52,15 @@ export const SnapshotListResponseSchema = z.object({
 });
 
 export type SnapshotListResponse = z.infer<typeof SnapshotListResponseSchema>;
+
+/** Snapshot build job (for tracking distributed builds) */
+export const SnapshotBuildJobSchema = z.object({
+  jobId: NonEmptyStringSchema,
+  snapshotId: NonEmptyStringSchema,
+  status: SnapshotBuildStatus,
+  startedAt: TimestampSchema.optional(),
+  completedAt: TimestampSchema.optional(),
+  error: z.string().optional(),
+});
+
+export type SnapshotBuildJob = z.infer<typeof SnapshotBuildJobSchema>;

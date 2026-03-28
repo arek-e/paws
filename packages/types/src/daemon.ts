@@ -80,6 +80,9 @@ export const CreateDaemonRequestSchema = z.object({
 
 export type CreateDaemonRequest = z.infer<typeof CreateDaemonRequestSchema>;
 
+/** Input type (defaults are optional) — use in SDKs and client code */
+export type CreateDaemonInput = z.input<typeof CreateDaemonRequestSchema>;
+
 /** Register daemon response (201) */
 export const CreateDaemonResponseSchema = z.object({
   role: NonEmptyStringSchema,
