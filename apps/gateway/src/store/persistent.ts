@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 import type { DaemonStore, StoredDaemon } from './daemons.js';
@@ -44,7 +44,10 @@ export function createPersistentDaemonStore(filePath: string): DaemonStore {
     try {
       const dir = dirname(filePath);
       if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      writeFileSync(filePath, JSON.stringify(inner.list(), null, 2));
+      // Atomic write: write to temp file, then rename (prevents corruption on crash)
+      const tmpPath = `${filePath}.tmp`;
+      writeFileSync(tmpPath, JSON.stringify(inner.list(), null, 2));
+      renameSync(tmpPath, filePath);
     } catch (err) {
       console.error(`[store] Failed to save daemons:`, err);
     }

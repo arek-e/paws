@@ -71,6 +71,69 @@ const app = await createGatewayApp({
   ...(oidc && { oidc }),
 });
 
+// --- Autoscaler ---
+const AUTOSCALE_ENABLED = process.env['AUTOSCALE_ENABLED'] === 'true';
+const AUTOSCALE_PROVIDER = process.env['AUTOSCALE_PROVIDER'] ?? 'hetzner-cloud';
+const AUTOSCALE_MIN_WORKERS = parseInt(process.env['AUTOSCALE_MIN_WORKERS'] ?? '1', 10);
+const AUTOSCALE_MAX_WORKERS = parseInt(process.env['AUTOSCALE_MAX_WORKERS'] ?? '10', 10);
+const AUTOSCALE_WORKER_PLAN = process.env['AUTOSCALE_WORKER_PLAN'] ?? 'cx31';
+const AUTOSCALE_WORKER_REGION = process.env['AUTOSCALE_WORKER_REGION'] ?? 'fsn1';
+
+let autoscalerStatus = 'disabled';
+
+if (AUTOSCALE_ENABLED) {
+  try {
+    const { createAutoscaler } = await import('./autoscaler.js');
+
+    // Dynamically load the provider based on AUTOSCALE_PROVIDER
+    let provider: import('@paws/providers').HostProvider | null = null;
+
+    if (AUTOSCALE_PROVIDER === 'hetzner-cloud') {
+      const { createHetznerCloudProvider } = await import('@paws/provider-hetzner-cloud');
+      const hcloudToken = process.env['HCLOUD_TOKEN'] ?? '';
+      if (hcloudToken) {
+        provider = createHetznerCloudProvider({ token: hcloudToken });
+      }
+    } else if (AUTOSCALE_PROVIDER === 'aws-ec2') {
+      try {
+        const { createAwsEc2Provider } = await import('@paws/provider-aws-ec2');
+        provider = createAwsEc2Provider({
+          region: process.env['AWS_REGION'] ?? 'us-east-1',
+          accessKeyId: process.env['AWS_ACCESS_KEY_ID'] ?? '',
+          secretAccessKey: process.env['AWS_SECRET_ACCESS_KEY'] ?? '',
+        });
+      } catch {
+        console.warn('[autoscaler] AWS EC2 provider not available');
+      }
+    }
+
+    if (provider) {
+      const scaler = createAutoscaler({
+        provider,
+        registry: workerRegistry,
+        minWorkers: AUTOSCALE_MIN_WORKERS,
+        maxWorkers: AUTOSCALE_MAX_WORKERS,
+        scaleUpThreshold: 0.8,
+        scaleDownThreshold: 0.2,
+        scaleDownDelayMs: 300_000,
+        cooldownMs: 120_000,
+        pollIntervalMs: 30_000,
+        workerPlan: AUTOSCALE_WORKER_PLAN,
+        workerRegion: AUTOSCALE_WORKER_REGION,
+        gatewayUrl: oidc?.externalUrl ?? `http://localhost:${PORT}`,
+        apiKey: API_KEY,
+      });
+      scaler.start();
+      autoscalerStatus = `${AUTOSCALE_PROVIDER} (${AUTOSCALE_MIN_WORKERS}-${AUTOSCALE_MAX_WORKERS} workers)`;
+    } else {
+      autoscalerStatus = 'no provider configured';
+    }
+  } catch (err) {
+    console.error('[autoscaler] Failed to start:', err);
+    autoscalerStatus = 'error';
+  }
+}
+
 const discoveryMode = [];
 discoveryMode.push('call-home');
 if (WORKER_URL) discoveryMode.push(`static (${WORKER_URL})`);
@@ -84,6 +147,7 @@ console.log(`
 Listening on :${PORT}
 Worker discovery: ${discoveryMode.join(' + ')}
 Auth: ${oidc ? `OIDC (${OIDC_ISSUER})` : 'API key only'}
+Autoscaler: ${autoscalerStatus}
 Dashboard: ${DASHBOARD_DIR ? `serving from ${DASHBOARD_DIR}` : 'disabled (set DASHBOARD_DIR)'}
 OpenAPI spec: http://localhost:${PORT}/openapi.json
 `);
