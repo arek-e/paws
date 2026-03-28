@@ -98,8 +98,8 @@ services:
       API_KEY: '${API_KEY:-paws-dev-key}'
       WORKER_URL: '${WORKER_URL:-}'
       DASHBOARD_DIR: '/app/apps/dashboard/dist'
-      # OIDC — connects to Dex
-      OIDC_ISSUER: 'http://dex:5556/dex'
+      # OIDC — issuer must match Dex's external URL (what tokens contain)
+      OIDC_ISSUER: 'https://fleet.${DOMAIN:-localhost}/dex'
       OIDC_CLIENT_ID: 'paws-control-plane'
       OIDC_CLIENT_SECRET: '${OIDC_CLIENT_SECRET:-paws-dex-secret-changeme}'
       OIDC_REDIRECT_URI: 'https://fleet.${DOMAIN:-localhost}/auth/callback'
@@ -128,7 +128,7 @@ services:
     expose:
       - '5556'
     volumes:
-      - ./infra/dex/config.template.yaml:/etc/dex/config.yaml:ro
+      - ./config/dex/config.yaml:/etc/dex/config.docker.yaml:ro
       - dex-data:/data
     environment:
       DOMAIN: 'fleet.${DOMAIN:-localhost}'

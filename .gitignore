@@ -33,4 +33,6 @@ infra/cloudflare/tunnel-config.yml
 
 # Generated configs (created by scripts/setup-control-plane.sh)
 config/pangolin/config.yml
+config/dex/config.yaml
 config/traefik/traefik_config.yml
+config/traefik/dynamic_config.yml

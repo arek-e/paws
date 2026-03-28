@@ -109,6 +109,31 @@ flags:
   allow_raw_resources: true
 EOF
 
+# ── Generate Dex config ────────────────────────────────────────────────────
+echo "==> Generating Dex config..."
+mkdir -p config/dex
+
+cat > config/dex/config.yaml << EOF
+issuer: https://fleet.${DOMAIN}/dex
+
+storage:
+  type: sqlite3
+  config:
+    file: /data/dex.db
+
+web:
+  http: 0.0.0.0:5556
+
+staticClients:
+  - id: paws-control-plane
+    name: paws
+    redirectURIs:
+      - https://fleet.${DOMAIN}/auth/callback
+    secret: ${OIDC_CLIENT_SECRET}
+
+enablePasswordDB: true
+EOF
+
 # ── Generate Traefik config ─────────────────────────────────────────────────
 echo "==> Generating Traefik config..."
 mkdir -p config/traefik
