@@ -3,9 +3,11 @@ import { randomUUID } from 'node:crypto';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { selectWorker } from '@paws/scheduler';
 
+import type { WorkerRegistry } from './discovery/registry.js';
 import { createGovernanceChecker } from './governance.js';
 import { authMiddleware, type AuthConfig } from './middleware/auth.js';
 import { createAuthRoutes } from './routes/auth.js';
+import { registerWorkerWebSocket } from './routes/worker-ws.js';
 import {
   createDaemonRoute,
   deleteDaemonRoute,
@@ -60,6 +62,10 @@ export interface GatewayDeps {
         authSecret: string;
       }
     | undefined;
+  /** Worker registry for call-home discovery. */
+  workerRegistry?: WorkerRegistry | undefined;
+  /** Bun WebSocket upgrader — needed for worker WS and session streaming. */
+  upgradeWebSocket?: import('hono/ws').UpgradeWebSocket | undefined;
 }
 
 const startTime = Date.now();
@@ -462,6 +468,26 @@ export async function createGatewayApp(deps: GatewayDeps) {
       202,
     );
   });
+
+  // --- WebSocket routes (require Bun runtime) ---
+
+  if (deps.upgradeWebSocket) {
+    // Worker call-home registration
+    if (deps.workerRegistry) {
+      registerWorkerWebSocket(app, deps.upgradeWebSocket, {
+        apiKey: deps.apiKey,
+        registry: deps.workerRegistry,
+      });
+    }
+
+    // Session streaming (imported lazily to avoid circular deps)
+    const { registerWebSocketRoutes } = await import('./routes/ws.js');
+    registerWebSocketRoutes(app, deps.upgradeWebSocket, {
+      apiKey: deps.apiKey,
+      sessionStore,
+      events: sessionEvents,
+    });
+  }
 
   // --- OpenAPI spec endpoint ---
 
