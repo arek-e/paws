@@ -119,6 +119,16 @@ See @docs/testing.md for full strategy.
 - Commit prefix with scope: `firecracker: add snapshot restore`, `gateway: add sessions`
 - Each commit independently valid (bisect-friendly)
 
+## Gotchas
+
+- **Dockerfiles must list ALL workspace packages.** When adding a new `packages/*` directory,
+  update BOTH `apps/gateway/Dockerfile` AND `apps/worker/Dockerfile` with: the package.json
+  COPY (manifest stage), the source COPY (builder stage), and the runner COPY (final stage).
+  Missing a package causes `bun install` to fail in CI with "Workspace dependency not found."
+- **Turbo daemon hangs on GH runners.** Always set `TURBO_NO_DAEMON=1` in CI workflows.
+- **Vitest polyfill rejects `new Response('', {status: 204})`.** Use `new Response(null, {status: 204})`
+  in test mocks for HTTP 204 responses.
+
 ## Current Phase
 
 v0.1 — single server, no K8s. See @docs/roadmap.md
