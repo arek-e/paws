@@ -8,6 +8,10 @@ import {
   matchDaemon,
   createGitHubAuth,
   postComment,
+  buildManifest,
+  exchangeManifestCode,
+  saveCredentials,
+  loadCredentials,
 } from '@paws/integrations';
 import type { GitHubDaemon } from '@paws/integrations';
 import { selectWorker } from '@paws/scheduler';
@@ -515,11 +519,56 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     return c.json({ accepted: true as const, sessionId }, 202);
   });
 
+  // --- GitHub App manifest flow (setup) ---
+
+  const externalUrl = deps.oidc?.externalUrl ?? `http://localhost:${process.env['PORT'] ?? 4000}`;
+
+  // GET /setup/github/manifest — returns the manifest JSON for the dashboard form
+  app.get('/setup/github/manifest', (c) => {
+    const manifest = buildManifest(externalUrl);
+    return c.json(manifest);
+  });
+
+  // GET /setup/github/callback — handles redirect from GitHub after app creation
+  app.get('/setup/github/callback', async (c) => {
+    const code = c.req.query('code');
+    if (!code) {
+      return c.json({ error: { code: 'MISSING_CODE', message: 'No code parameter' } }, 400);
+    }
+
+    try {
+      const creds = await exchangeManifestCode(code);
+      saveCredentials(creds);
+      // Redirect to dashboard with success
+      return c.redirect('/setup?github=connected');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return c.json({ error: { code: 'EXCHANGE_FAILED', message } }, 500);
+    }
+  });
+
+  // GET /setup/github/status — check if GitHub App is connected
+  app.get('/setup/github/status', (c) => {
+    const creds = loadCredentials();
+    if (creds) {
+      return c.json({
+        connected: true,
+        appSlug: creds.appSlug,
+        appId: creds.appId,
+        htmlUrl: creds.htmlUrl,
+        createdAt: creds.createdAt,
+      });
+    }
+    return c.json({ connected: false });
+  });
+
   // --- GitHub App webhooks (no auth — validated by HMAC signature) ---
 
-  const githubWebhookSecret = process.env['GITHUB_WEBHOOK_SECRET'];
-  const githubAppId = process.env['GITHUB_APP_ID'];
-  const githubPrivateKey = process.env['GITHUB_APP_PRIVATE_KEY'];
+  // Load credentials from file (manifest flow) or env vars (manual setup)
+  const savedCreds = loadCredentials();
+  const githubWebhookSecret = savedCreds?.webhookSecret ?? process.env['GITHUB_WEBHOOK_SECRET'];
+  const githubAppId = savedCreds?.appId ?? process.env['GITHUB_APP_ID'];
+  const githubPrivateKey = savedCreds?.privateKey ?? process.env['GITHUB_APP_PRIVATE_KEY'];
 
   if (githubWebhookSecret && githubAppId && githubPrivateKey) {
     const githubAuth = createGitHubAuth(githubAppId, githubPrivateKey);
