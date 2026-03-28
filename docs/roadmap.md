@@ -70,9 +70,9 @@ least-loaded.
 
 | #   | What                                                                   | Status |
 | --- | ---------------------------------------------------------------------- | ------ |
-| 17  | `apps/snapshot-builder` — K8s Job, builds snapshot from YAML config    | ⬜     |
-| 18  | Object storage integration (S3-compatible) — upload/download snapshots | ⬜     |
-| 19  | Worker sync loop — check manifest version, pull if stale, atomic swap  | ⬜     |
+| 17  | Snapshot builder — build script from YAML config (K8s Job deferred)    | ✅     |
+| 18  | Object storage integration (Cloudflare R2) — upload/download snapshots | ✅     |
+| 19  | Worker sync loop — check manifest version, pull if stale, atomic swap  | ✅     |
 | 20  | `POST /v1/snapshots/:id/build` triggers distributed rebuild            | ⬜     |
 
 ---
