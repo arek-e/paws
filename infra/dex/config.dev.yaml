@@ -1,0 +1,33 @@
+# Dex dev config — static test user, no external IdP needed
+#
+# Usage:
+#   cd infra/dex
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+# Test user:
+#   Email:    admin@paws.dev
+#   Password: password
+
+issuer: http://localhost:5556/dex
+
+storage:
+  type: sqlite3
+  config:
+    file: /data/dex.db
+
+web:
+  http: 0.0.0.0:5556
+
+staticClients:
+  - id: paws-gateway
+    name: paws
+    redirectURIs:
+      - http://localhost:4000/auth/callback
+    secret: paws-dex-secret-changeme
+
+enablePasswordDB: true
+staticPasswords:
+  - email: admin@paws.dev
+    hash: '$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W'
+    username: admin
+    userID: '00000000-0000-0000-0000-000000000001'
