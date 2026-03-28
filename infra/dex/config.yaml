@@ -1,0 +1,92 @@
+# Dex OIDC Identity Provider — default config for paws
+#
+# Dex acts as a federation broker: it speaks OIDC to the paws gateway
+# and connects upstream to GitHub, Google, LDAP, SAML, etc.
+#
+# Docs: https://dexidp.io/docs/
+#
+# To use:
+#   1. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET below (or use env vars)
+#   2. docker compose up -d
+#   3. Set these on the gateway:
+#      OIDC_ISSUER=http://localhost:5556/dex
+#      OIDC_CLIENT_ID=paws-gateway
+#      OIDC_CLIENT_SECRET=paws-dex-secret-changeme
+#      AUTH_SECRET=<random-32-char-string>
+
+issuer: http://localhost:5556/dex
+
+storage:
+  type: sqlite3
+  config:
+    file: /data/dex.db
+
+web:
+  http: 0.0.0.0:5556
+
+# Static client for the paws gateway
+staticClients:
+  - id: paws-gateway
+    name: paws
+    redirectURIs:
+      - http://localhost:4000/auth/callback
+    secret: paws-dex-secret-changeme
+
+# Upstream identity connectors
+# Uncomment and configure the ones you need.
+connectors:
+  # GitHub (community / open source users)
+  - type: github
+    id: github
+    name: GitHub
+    config:
+      clientID: ${GITHUB_CLIENT_ID}
+      clientSecret: ${GITHUB_CLIENT_SECRET}
+      redirectURI: http://localhost:5556/dex/callback
+
+  # Google Workspace
+  # - type: oidc
+  #   id: google
+  #   name: Google
+  #   config:
+  #     issuer: https://accounts.google.com
+  #     clientID: ${GOOGLE_CLIENT_ID}
+  #     clientSecret: ${GOOGLE_CLIENT_SECRET}
+  #     redirectURI: http://localhost:5556/dex/callback
+
+  # Okta
+  # - type: oidc
+  #   id: okta
+  #   name: Okta
+  #   config:
+  #     issuer: https://your-org.okta.com
+  #     clientID: ${OKTA_CLIENT_ID}
+  #     clientSecret: ${OKTA_CLIENT_SECRET}
+  #     redirectURI: http://localhost:5556/dex/callback
+
+  # Azure AD (Microsoft Entra ID)
+  # - type: microsoft
+  #   id: azure
+  #   name: Azure AD
+  #   config:
+  #     clientID: ${AZURE_CLIENT_ID}
+  #     clientSecret: ${AZURE_CLIENT_SECRET}
+  #     redirectURI: http://localhost:5556/dex/callback
+  #     tenant: your-tenant-id
+
+  # LDAP (on-prem Active Directory)
+  # - type: ldap
+  #   id: ldap
+  #   name: LDAP
+  #   config:
+  #     host: ldap.example.com:636
+  #     rootCA: /etc/dex/ldap-ca.pem
+  #     bindDN: cn=admin,dc=example,dc=com
+  #     bindPW: ${LDAP_BIND_PASSWORD}
+  #     userSearch:
+  #       baseDN: ou=users,dc=example,dc=com
+  #       filter: "(objectClass=person)"
+  #       username: uid
+  #       idAttr: uid
+  #       emailAttr: mail
+  #       nameAttr: cn

@@ -5,7 +5,7 @@ import { authMiddleware } from './auth.js';
 
 function createTestApp() {
   const app = new Hono();
-  app.use('/protected/*', authMiddleware('secret-key'));
+  app.use('/protected/*', authMiddleware({ apiKey: 'secret-key' }));
   app.get('/protected/resource', (c) => c.json({ ok: true }));
   return app;
 }

@@ -21,7 +21,7 @@ function createMockWorkerClient(overrides?: Partial<WorkerClient>): WorkerClient
   };
 }
 
-function createApp(workerOverrides?: Partial<WorkerClient>) {
+async function createApp(workerOverrides?: Partial<WorkerClient>) {
   return createGatewayApp({
     apiKey: API_KEY,
     workerClient: createMockWorkerClient(workerOverrides),
@@ -32,7 +32,7 @@ function createApp(workerOverrides?: Partial<WorkerClient>) {
 
 describe('GET /health', () => {
   test('returns healthy status without auth', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/health');
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -46,7 +46,7 @@ describe('GET /health', () => {
 
 describe('auth middleware', () => {
   test('rejects missing auth header', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/v1/sessions', { method: 'POST' });
     expect(res.status).toBe(401);
     const body = await res.json();
@@ -54,7 +54,7 @@ describe('auth middleware', () => {
   });
 
   test('rejects invalid API key', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/v1/sessions', {
       method: 'POST',
       headers: { Authorization: 'Bearer wrong-key' },
@@ -67,7 +67,7 @@ describe('auth middleware', () => {
 
 describe('POST /v1/sessions', () => {
   test('creates session and returns 202', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/v1/sessions', {
       method: 'POST',
       headers: JSON_HEADERS,
@@ -83,7 +83,7 @@ describe('POST /v1/sessions', () => {
   });
 
   test('rejects invalid body', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/v1/sessions', {
       method: 'POST',
       headers: JSON_HEADERS,
@@ -95,7 +95,7 @@ describe('POST /v1/sessions', () => {
 
 describe('GET /v1/sessions', () => {
   test('returns empty list when no sessions', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/v1/sessions', { headers: AUTH });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -103,7 +103,7 @@ describe('GET /v1/sessions', () => {
   });
 
   test('lists sessions after creation', async () => {
-    const app = createApp();
+    const app = await createApp();
     await app.request('/v1/sessions', {
       method: 'POST',
       headers: JSON_HEADERS,
@@ -121,7 +121,7 @@ describe('GET /v1/sessions', () => {
   });
 
   test('respects limit query param', async () => {
-    const app = createApp();
+    const app = await createApp();
     for (let i = 0; i < 3; i++) {
       await app.request('/v1/sessions', {
         method: 'POST',
@@ -142,7 +142,7 @@ describe('GET /v1/sessions', () => {
 
 describe('GET /v1/sessions/:id', () => {
   test('returns session after creation', async () => {
-    const app = createApp();
+    const app = await createApp();
     const createRes = await app.request('/v1/sessions', {
       method: 'POST',
       headers: JSON_HEADERS,
@@ -163,7 +163,7 @@ describe('GET /v1/sessions/:id', () => {
   });
 
   test('returns 404 for unknown session', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/v1/sessions/00000000-0000-0000-0000-000000000000', {
       headers: AUTH,
     });
@@ -175,7 +175,7 @@ describe('GET /v1/sessions/:id', () => {
 
 describe('DELETE /v1/sessions/:id', () => {
   test('cancels existing session', async () => {
-    const app = createApp();
+    const app = await createApp();
     const createRes = await app.request('/v1/sessions', {
       method: 'POST',
       headers: JSON_HEADERS,
@@ -208,7 +208,7 @@ const DAEMON_BODY = {
 
 describe('POST /v1/daemons', () => {
   test('registers a new daemon', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/v1/daemons', {
       method: 'POST',
       headers: JSON_HEADERS,
@@ -222,7 +222,7 @@ describe('POST /v1/daemons', () => {
   });
 
   test('rejects duplicate daemon', async () => {
-    const app = createApp();
+    const app = await createApp();
     await app.request('/v1/daemons', {
       method: 'POST',
       headers: JSON_HEADERS,
@@ -241,7 +241,7 @@ describe('POST /v1/daemons', () => {
 
 describe('GET /v1/daemons', () => {
   test('lists registered daemons', async () => {
-    const app = createApp();
+    const app = await createApp();
     await app.request('/v1/daemons', {
       method: 'POST',
       headers: JSON_HEADERS,
@@ -258,7 +258,7 @@ describe('GET /v1/daemons', () => {
 
 describe('GET /v1/daemons/:role', () => {
   test('returns daemon detail', async () => {
-    const app = createApp();
+    const app = await createApp();
     await app.request('/v1/daemons', {
       method: 'POST',
       headers: JSON_HEADERS,
@@ -274,7 +274,7 @@ describe('GET /v1/daemons/:role', () => {
   });
 
   test('returns 404 for unknown daemon', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/v1/daemons/nonexistent', { headers: AUTH });
     expect(res.status).toBe(404);
   });
@@ -282,7 +282,7 @@ describe('GET /v1/daemons/:role', () => {
 
 describe('PATCH /v1/daemons/:role', () => {
   test('updates daemon config', async () => {
-    const app = createApp();
+    const app = await createApp();
     await app.request('/v1/daemons', {
       method: 'POST',
       headers: JSON_HEADERS,
@@ -302,7 +302,7 @@ describe('PATCH /v1/daemons/:role', () => {
 
 describe('DELETE /v1/daemons/:role', () => {
   test('deletes daemon', async () => {
-    const app = createApp();
+    const app = await createApp();
     await app.request('/v1/daemons', {
       method: 'POST',
       headers: JSON_HEADERS,
@@ -327,7 +327,7 @@ describe('DELETE /v1/daemons/:role', () => {
 
 describe('POST /v1/webhooks/:role', () => {
   test('triggers session for webhook daemon', async () => {
-    const app = createApp();
+    const app = await createApp();
     await app.request('/v1/daemons', {
       method: 'POST',
       headers: JSON_HEADERS,
@@ -346,7 +346,7 @@ describe('POST /v1/webhooks/:role', () => {
   });
 
   test('returns 404 for unknown daemon', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/v1/webhooks/nonexistent', {
       method: 'POST',
     });
@@ -354,7 +354,7 @@ describe('POST /v1/webhooks/:role', () => {
   });
 
   test('rate limits webhook triggers', async () => {
-    const app = createApp();
+    const app = await createApp();
     await app.request('/v1/daemons', {
       method: 'POST',
       headers: JSON_HEADERS,
@@ -388,7 +388,7 @@ describe('POST /v1/webhooks/:role', () => {
 
 describe('GET /v1/fleet', () => {
   test('returns fleet overview', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/v1/fleet', { headers: AUTH });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -398,7 +398,7 @@ describe('GET /v1/fleet', () => {
   });
 
   test('handles worker down gracefully', async () => {
-    const app = createApp({
+    const app = await createApp({
       health: async () => {
         throw new Error('connection refused');
       },
@@ -412,7 +412,7 @@ describe('GET /v1/fleet', () => {
 
 describe('GET /v1/fleet/workers', () => {
   test('returns worker list', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/v1/fleet/workers', { headers: AUTH });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -425,7 +425,7 @@ describe('GET /v1/fleet/workers', () => {
 
 describe('GET /v1/snapshots', () => {
   test('returns empty list for v0.1', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/v1/snapshots', { headers: AUTH });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -435,7 +435,7 @@ describe('GET /v1/snapshots', () => {
 
 describe('POST /v1/snapshots/:id/build', () => {
   test('returns build placeholder', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/v1/snapshots/test-snap/build', {
       method: 'POST',
       headers: JSON_HEADERS,
@@ -452,7 +452,7 @@ describe('POST /v1/snapshots/:id/build', () => {
 
 describe('GET /openapi.json', () => {
   test('returns OpenAPI spec', async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await app.request('/openapi.json');
     expect(res.status).toBe(200);
     const body = await res.json();
