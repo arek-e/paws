@@ -1,0 +1,13 @@
+id: test-minimal
+base:
+  kernel: /var/lib/paws/kernels/vmlinux-default
+  rootfs: /var/lib/paws/rootfs/ubuntu-default.ext4
+vcpu: 1
+memory_mb: 512
+setup: |
+  #!/bin/bash
+  set -euo pipefail
+  apt-get update
+  apt-get install -y --no-install-recommends openssh-server
+  echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+  systemctl enable ssh

@@ -52,6 +52,45 @@ describe('GET /health', () => {
       allocated: 0,
       available: 256,
     });
+    expect(body.snapshot).toMatchObject({
+      syncEnabled: false,
+      currentVersion: 0,
+      syncing: false,
+      lastCheck: null,
+      lastError: null,
+    });
+  });
+
+  test('includes sync loop status when provided', async () => {
+    const semaphore = createSemaphore(5, 10);
+    const executor = createMockExecutor();
+    const mockSyncLoop = {
+      start: vi.fn(),
+      stop: vi.fn(),
+      _tick: vi.fn(),
+      status: () => ({
+        currentVersion: 3,
+        syncing: false,
+        lastCheck: new Date('2026-03-28T00:00:00Z'),
+        lastError: null,
+      }),
+    };
+    const app = createSessionApp({
+      executor: executor as never,
+      semaphore,
+      workerName: 'test-worker',
+      syncLoop: mockSyncLoop,
+    });
+
+    const res = await app.request('/health');
+    const body = await res.json();
+    expect(body.snapshot).toMatchObject({
+      syncEnabled: true,
+      currentVersion: 3,
+      syncing: false,
+      lastCheck: '2026-03-28T00:00:00.000Z',
+      lastError: null,
+    });
   });
 });
 
