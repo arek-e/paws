@@ -95,7 +95,7 @@ least-loaded.
 
 | #   | What                                                                 | Status |
 | --- | -------------------------------------------------------------------- | ------ |
-| 26  | Auto-scaling — provision/drain nodes based on fleet utilization      | ⬜     |
+| 26  | Auto-scaling — provision/drain nodes based on fleet utilization      | ✅     |
 | 27  | Daemon state sync — object storage for cross-node volume portability | ⬜     |
 | 28  | WebSocket streaming — real-time session output                       | ✅     |
 | 29  | Prometheus metrics export                                            | ✅     |
