@@ -49,6 +49,7 @@ export const ProviderErrorCode = {
   CREATE_FAILED: 'CREATE_FAILED',
   DELETE_FAILED: 'DELETE_FAILED',
   LIST_FAILED: 'LIST_FAILED',
+  TIMEOUT: 'TIMEOUT',
 } as const;
 
 export type ProviderErrorCode = (typeof ProviderErrorCode)[keyof typeof ProviderErrorCode];

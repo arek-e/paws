@@ -4,7 +4,7 @@ export { ProviderError, ProviderErrorCode } from './provider-interface.js';
 
 // AWS EC2 provider
 export { createAwsEc2Provider } from './provider.js';
-export type { AwsEc2Config } from './provider.js';
+export type { AwsEc2Config, AwsEc2Provider } from './provider.js';
 
 // AWS EC2 client (for advanced use)
 export { createAwsEc2Client } from './client.js';
