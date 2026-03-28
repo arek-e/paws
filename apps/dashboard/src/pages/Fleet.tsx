@@ -1,11 +1,19 @@
 import { getFleet, getWorkers } from '../api/client.js';
+import { MiniChart } from '../components/MiniChart.js';
 import { StatCard } from '../components/StatCard.js';
 import { WorkerCard } from '../components/WorkerCard.js';
+import { useMetrics } from '../hooks/useMetrics.js';
 import { usePolling } from '../hooks/usePolling.js';
 
 export function Fleet() {
   const fleet = usePolling(getFleet, 5000);
   const workers = usePolling(getWorkers, 5000);
+
+  // Historical charts (last 1 hour)
+  const sessionsChart = useMetrics('paws_sessions_active', 60, 30);
+  const capacityChart = useMetrics('paws_fleet_capacity_used', 60, 30);
+  const workersChart = useMetrics('paws_workers_healthy', 60, 30);
+  const requestsChart = useMetrics('sum(rate(paws_http_requests_total[1m]))', 60, 30);
 
   return (
     <div className="space-y-6">
@@ -33,6 +41,15 @@ export function Fleet() {
         </div>
       ) : null}
 
+      {/* Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MiniChart data={sessionsChart.data} label="Active Sessions (1h)" color="#fbbf24" />
+        <MiniChart data={capacityChart.data} label="Capacity Used (1h)" color="#f87171" />
+        <MiniChart data={workersChart.data} label="Healthy Workers (1h)" color="#34d399" />
+        <MiniChart data={requestsChart.data} label="Requests/s (1h)" color="#60a5fa" />
+      </div>
+
+      {/* Workers */}
       <div>
         <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-3">
           Workers
