@@ -101,9 +101,23 @@ function sessionToJson(s: StoredSession) {
 
 /** Create the gateway Hono OpenAPI app with all routes */
 export async function createGatewayApp(deps: GatewayDeps) {
-  const sessionStore = deps.sessionStore ?? createSessionStore();
+  const rawSessionStore = deps.sessionStore ?? createSessionStore();
   const daemonStore = deps.daemonStore ?? createDaemonStore();
   const governance = deps.governance ?? createGovernanceChecker();
+  const { createSessionEvents } = await import('./events.js');
+  const sessionEvents = createSessionEvents();
+
+  // Wrap session store to emit events on status updates (for WebSocket streaming)
+  const sessionStore: SessionStore = {
+    ...rawSessionStore,
+    updateStatus(sessionId, status, result) {
+      rawSessionStore.updateStatus(sessionId, status, result);
+      const session = rawSessionStore.get(sessionId);
+      if (session) {
+        sessionEvents.emit('update', sessionId, session);
+      }
+    },
+  };
 
   // Resolve effective discovery:
   // 1. Use explicit discovery if provided.
