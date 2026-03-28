@@ -4,7 +4,8 @@ import { OpenAPIHono } from '@hono/zod-openapi';
 import { selectWorker } from '@paws/scheduler';
 
 import { createGovernanceChecker } from './governance.js';
-import { authMiddleware } from './middleware/auth.js';
+import { authMiddleware, type AuthConfig } from './middleware/auth.js';
+import { createAuthRoutes } from './routes/auth.js';
 import {
   createDaemonRoute,
   deleteDaemonRoute,
@@ -49,6 +50,16 @@ export interface GatewayDeps {
   governance?: GovernanceChecker | undefined;
   /** Path to dashboard dist/ directory. When set, serves static files + SPA fallback. */
   dashboardDir?: string | undefined;
+  /** OIDC config. When set, enables OIDC session auth alongside API key auth. */
+  oidc?:
+    | {
+        issuer: string;
+        clientId: string;
+        clientSecret: string;
+        redirectUri: string;
+        authSecret: string;
+      }
+    | undefined;
 }
 
 const startTime = Date.now();
@@ -83,7 +94,7 @@ function sessionToJson(s: StoredSession) {
 }
 
 /** Create the gateway Hono OpenAPI app with all routes */
-export function createGatewayApp(deps: GatewayDeps) {
+export async function createGatewayApp(deps: GatewayDeps) {
   const sessionStore = deps.sessionStore ?? createSessionStore();
   const daemonStore = deps.daemonStore ?? createDaemonStore();
   const governance = deps.governance ?? createGovernanceChecker();
@@ -95,7 +106,25 @@ export function createGatewayApp(deps: GatewayDeps) {
   const discovery: WorkerDiscovery | null = deps.discovery ?? null;
   const legacyWorkerClient: WorkerClient | null = deps.workerClient ?? null;
 
+  const oidcEnabled = !!deps.oidc;
+
+  // If OIDC is configured, init the middleware with env vars so @hono/oidc-auth
+  // can discover the provider and validate sessions.
   const app = new OpenAPIHono();
+
+  if (deps.oidc) {
+    const { initOidcAuthMiddleware } = await import('@hono/oidc-auth');
+    app.use(
+      '*',
+      initOidcAuthMiddleware({
+        OIDC_ISSUER: deps.oidc.issuer,
+        OIDC_CLIENT_ID: deps.oidc.clientId,
+        OIDC_CLIENT_SECRET: deps.oidc.clientSecret,
+        OIDC_REDIRECT_URI: deps.oidc.redirectUri,
+        OIDC_AUTH_SECRET: deps.oidc.authSecret,
+      }),
+    );
+  }
 
   // --- Health (no auth) ---
 
@@ -103,15 +132,22 @@ export function createGatewayApp(deps: GatewayDeps) {
     return c.json({ status: 'healthy', uptime: Date.now() - startTime, version: '0.1.0' }, 200);
   });
 
+  // --- Auth routes (login/callback/logout/me — no API key required) ---
+
+  if (oidcEnabled) {
+    app.route('/', createAuthRoutes());
+  }
+
   // --- Auth middleware for all /v1 routes (except webhooks) ---
 
-  app.use('/v1/sessions', authMiddleware(deps.apiKey));
-  app.use('/v1/sessions/*', authMiddleware(deps.apiKey));
-  app.use('/v1/daemons/*', authMiddleware(deps.apiKey));
-  app.use('/v1/fleet/*', authMiddleware(deps.apiKey));
-  app.use('/v1/fleet', authMiddleware(deps.apiKey));
-  app.use('/v1/snapshots/*', authMiddleware(deps.apiKey));
-  app.use('/v1/snapshots', authMiddleware(deps.apiKey));
+  const authConfig: AuthConfig = { apiKey: deps.apiKey, oidcEnabled };
+  app.use('/v1/sessions', authMiddleware(authConfig));
+  app.use('/v1/sessions/*', authMiddleware(authConfig));
+  app.use('/v1/daemons/*', authMiddleware(authConfig));
+  app.use('/v1/fleet/*', authMiddleware(authConfig));
+  app.use('/v1/fleet', authMiddleware(authConfig));
+  app.use('/v1/snapshots/*', authMiddleware(authConfig));
+  app.use('/v1/snapshots', authMiddleware(authConfig));
 
   // --- Sessions ---
 

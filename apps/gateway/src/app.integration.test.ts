@@ -42,7 +42,7 @@ describe.skipIf(!hasBun)('Gateway integration — real HTTP', () => {
   const API_KEY = 'test-integration-key';
 
   beforeAll(() => {
-    const app = createGatewayApp({
+    const app = await createGatewayApp({
       apiKey: API_KEY,
       workerClient: createMockWorkerClient(),
     });

@@ -41,7 +41,7 @@ const SESSION_BODY = {
 
 describe('session dispatch with WorkerDiscovery', () => {
   test('creates session and returns 202 when healthy worker available', async () => {
-    const app = createGatewayApp({
+    const app = await createGatewayApp({
       apiKey: API_KEY,
       discovery: createMockDiscovery([HEALTHY_WORKER]),
     });
@@ -61,7 +61,7 @@ describe('session dispatch with WorkerDiscovery', () => {
   test('returns 202 even when no workers available (fire-and-forget)', async () => {
     // The dispatch is fire-and-forget, so the API always returns 202.
     // The session is later marked failed if no worker is found.
-    const app = createGatewayApp({
+    const app = await createGatewayApp({
       apiKey: API_KEY,
       discovery: createMockDiscovery([]),
     });
@@ -97,7 +97,7 @@ describe('session dispatch with WorkerDiscovery', () => {
       },
     ];
 
-    const app = createGatewayApp({
+    const app = await createGatewayApp({
       apiKey: API_KEY,
       discovery: createMockDiscovery(workers),
       // We can't intercept the HTTP call without a real server, but we can verify
@@ -135,7 +135,7 @@ describe('session dispatch with WorkerDiscovery', () => {
       },
     ];
 
-    const app = createGatewayApp({
+    const app = await createGatewayApp({
       apiKey: API_KEY,
       discovery: createMockDiscovery(workers),
     });
@@ -172,7 +172,7 @@ describe('fleet routes with WorkerDiscovery', () => {
       },
     ];
 
-    const app = createGatewayApp({
+    const app = await createGatewayApp({
       apiKey: API_KEY,
       discovery: createMockDiscovery(workers),
     });
@@ -191,7 +191,7 @@ describe('fleet routes with WorkerDiscovery', () => {
   });
 
   test('GET /v1/fleet shows 0 workers when discovery returns empty', async () => {
-    const app = createGatewayApp({
+    const app = await createGatewayApp({
       apiKey: API_KEY,
       discovery: createMockDiscovery([]),
     });
@@ -225,7 +225,7 @@ describe('fleet routes with WorkerDiscovery', () => {
       },
     ];
 
-    const app = createGatewayApp({
+    const app = await createGatewayApp({
       apiKey: API_KEY,
       discovery: createMockDiscovery(workers),
     });
@@ -259,7 +259,7 @@ describe('fleet routes with WorkerDiscovery', () => {
       },
     ];
 
-    const app = createGatewayApp({
+    const app = await createGatewayApp({
       apiKey: API_KEY,
       discovery: createMockDiscovery(workers),
     });
@@ -279,7 +279,7 @@ describe('fleet routes with WorkerDiscovery', () => {
 
 describe('backward compat: workerClient without discovery', () => {
   test('creates session using legacy workerClient', async () => {
-    const app = createGatewayApp({
+    const app = await createGatewayApp({
       apiKey: API_KEY,
       workerClient: {
         health: async () => ({
@@ -303,7 +303,7 @@ describe('backward compat: workerClient without discovery', () => {
   });
 
   test('GET /v1/fleet works with legacy workerClient', async () => {
-    const app = createGatewayApp({
+    const app = await createGatewayApp({
       apiKey: API_KEY,
       workerClient: {
         health: async () => ({
