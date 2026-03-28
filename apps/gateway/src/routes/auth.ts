@@ -1,36 +1,41 @@
 import { Hono } from 'hono';
-import { deleteCookie } from 'hono/cookie';
+import { deleteCookie, setCookie } from 'hono/cookie';
 import { getAuth, oidcAuthMiddleware, processOAuthCallback, revokeSession } from '@hono/oidc-auth';
 
 /** Auth routes for OIDC login flow (browser-based, not OpenAPI) */
 export function createAuthRoutes() {
   const app = new Hono();
 
-  // Login: clear any stale cookies first, then use oidcAuthMiddleware
-  // which redirects to the OIDC provider if no valid session exists.
+  // Login: clear stale cookies, set continue to dashboard root, then redirect to Dex
   app.get(
     '/auth/login',
     async (c, next) => {
-      // Clear stale session cookie to avoid "Invalid session" errors
+      // Clear stale cookies
       deleteCookie(c, 'oidc-auth', { path: '/' });
       deleteCookie(c, 'state', { path: '/auth/callback' });
       deleteCookie(c, 'nonce', { path: '/auth/callback' });
       deleteCookie(c, 'code_verifier', { path: '/auth/callback' });
+      deleteCookie(c, 'continue', { path: '/auth/callback' });
       await next();
     },
     oidcAuthMiddleware(),
     (c) => {
-      // If we get here, user is already authenticated
+      // Already authenticated — go to dashboard
       return c.redirect('/');
     },
   );
 
-  // OIDC callback: exchange code for tokens, set session cookie
+  // OIDC callback: exchange code for tokens, set session cookie, redirect to dashboard
   app.get('/auth/callback', async (c) => {
     try {
+      // Override the continue cookie to always redirect to dashboard root
+      setCookie(c, 'continue', '/', {
+        path: '/auth/callback',
+        httpOnly: true,
+        secure: true,
+      });
       return await processOAuthCallback(c);
     } catch {
-      // If callback fails (stale state, expired code), redirect to login
       return c.redirect('/auth/login');
     }
   });
