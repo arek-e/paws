@@ -89,10 +89,13 @@ describe('createPangolinDiscovery', () => {
       pollIntervalMs: 100_000, // don't auto-poll during test
     });
 
-    // Wait for initial poll
-    await new Promise((r) => setTimeout(r, 100));
-
-    const workers = await discovery.getWorkers();
+    // Wait for initial poll (CI can be slow)
+    let workers: Awaited<ReturnType<typeof discovery.getWorkers>> = [];
+    for (let i = 0; i < 20; i++) {
+      await new Promise((r) => setTimeout(r, 100));
+      workers = await discovery.getWorkers();
+      if (workers.length > 0) break;
+    }
     expect(workers).toHaveLength(1);
     expect(workers[0]!.name).toBe(`http://127.0.0.1:${workerPort}`);
     expect(workers[0]!.status).toBe('healthy');
