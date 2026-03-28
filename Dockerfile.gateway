@@ -1,0 +1,93 @@
+# syntax=docker/dockerfile:1
+
+# Gateway + Dashboard combined build.
+# Builds the Vite dashboard, then runs the gateway serving static files.
+
+# ── Stage 1: install + build ────────────────────────────────────────────────
+FROM oven/bun:1.3.9-alpine AS builder
+
+WORKDIR /build
+
+# Copy root manifest files first (layer caching).
+COPY package.json bun.lock* ./
+
+# Copy ALL workspace package manifests (needed for bun install).
+COPY packages/types/package.json          ./packages/types/package.json
+COPY packages/firecracker/package.json    ./packages/firecracker/package.json
+COPY packages/proxy/package.json          ./packages/proxy/package.json
+COPY packages/scheduler/package.json      ./packages/scheduler/package.json
+COPY packages/snapshot-store/package.json ./packages/snapshot-store/package.json
+COPY packages/sdk/package.json            ./packages/sdk/package.json
+COPY packages/cli/package.json            ./packages/cli/package.json
+COPY packages/providers/package.json      ./packages/providers/package.json
+COPY apps/gateway/package.json            ./apps/gateway/package.json
+COPY apps/worker/package.json             ./apps/worker/package.json
+COPY apps/dashboard/package.json          ./apps/dashboard/package.json
+COPY providers/hetzner-cloud/package.json ./providers/hetzner-cloud/package.json
+COPY providers/hetzner-dedicated/package.json ./providers/hetzner-dedicated/package.json
+
+# Install all dependencies.
+RUN bun install
+
+# Copy workspace package sources that gateway + dashboard depend on.
+COPY packages/types/          ./packages/types/
+COPY packages/firecracker/    ./packages/firecracker/
+COPY packages/proxy/          ./packages/proxy/
+COPY packages/scheduler/      ./packages/scheduler/
+COPY packages/snapshot-store/ ./packages/snapshot-store/
+COPY packages/sdk/            ./packages/sdk/
+COPY packages/cli/            ./packages/cli/
+COPY packages/providers/      ./packages/providers/
+COPY providers/hetzner-cloud/     ./providers/hetzner-cloud/
+COPY providers/hetzner-dedicated/ ./providers/hetzner-dedicated/
+
+# Copy gateway + dashboard source.
+COPY apps/gateway/   ./apps/gateway/
+COPY apps/dashboard/ ./apps/dashboard/
+
+# Build the dashboard (Vite -> apps/dashboard/dist/).
+WORKDIR /build/apps/dashboard
+RUN bunx vite build
+
+# ── Stage 2: runner ─────────────────────────────────────────────────────────
+FROM oven/bun:1.3.9-alpine AS runner
+
+WORKDIR /app
+
+RUN addgroup -S paws && adduser -S -G paws paws
+
+# Copy root manifest.
+COPY --from=builder /build/package.json ./package.json
+
+# Copy node_modules (includes workspace symlinks).
+COPY --from=builder /build/node_modules ./node_modules
+
+# Copy workspace packages (gateway imports at runtime via symlinks).
+COPY --from=builder /build/packages/types/          ./packages/types/
+COPY --from=builder /build/packages/firecracker/    ./packages/firecracker/
+COPY --from=builder /build/packages/proxy/          ./packages/proxy/
+COPY --from=builder /build/packages/scheduler/      ./packages/scheduler/
+COPY --from=builder /build/packages/snapshot-store/ ./packages/snapshot-store/
+COPY --from=builder /build/packages/sdk/            ./packages/sdk/
+COPY --from=builder /build/packages/cli/            ./packages/cli/
+COPY --from=builder /build/packages/providers/      ./packages/providers/
+COPY --from=builder /build/providers/hetzner-cloud/     ./providers/hetzner-cloud/
+COPY --from=builder /build/providers/hetzner-dedicated/ ./providers/hetzner-dedicated/
+
+# Copy gateway source.
+COPY --from=builder /build/apps/gateway/ ./apps/gateway/
+
+# Copy built dashboard.
+COPY --from=builder /build/apps/dashboard/dist/ ./apps/dashboard/dist/
+
+USER paws
+
+ENV PORT=4000
+ENV NODE_ENV=production
+
+EXPOSE 4000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
+  CMD wget -qO- http://localhost:4000/health || exit 1
+
+CMD ["bun", "run", "apps/gateway/src/server.ts"]

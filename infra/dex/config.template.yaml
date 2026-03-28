@@ -1,0 +1,39 @@
+# Dex OIDC config template for docker-compose deployment.
+#
+# Dex expands ${VAR} from environment variables at startup.
+# Set these via docker-compose environment section:
+#   DOMAIN, OIDC_CLIENT_SECRET, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
+
+issuer: https://${DOMAIN}/dex
+
+storage:
+  type: sqlite3
+  config:
+    file: /data/dex.db
+
+web:
+  http: 0.0.0.0:5556
+
+staticClients:
+  - id: paws-gateway
+    name: paws
+    redirectURIs:
+      - https://${DOMAIN}/auth/callback
+    secret: ${OIDC_CLIENT_SECRET}
+
+connectors:
+  - type: github
+    id: github
+    name: GitHub
+    config:
+      clientID: ${GITHUB_CLIENT_ID}
+      clientSecret: ${GITHUB_CLIENT_SECRET}
+      redirectURI: https://${DOMAIN}/dex/callback
+
+# Uncomment for local testing with static passwords:
+# enablePasswordDB: true
+# staticPasswords:
+#   - email: admin@paws.dev
+#     hash: '$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W'
+#     username: admin
+#     userID: '00000000-0000-0000-0000-000000000001'

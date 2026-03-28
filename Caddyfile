@@ -1,0 +1,27 @@
+# /\_/\
+# ( o.o )  paws Caddy config
+#  > ^ <
+#
+# Reverse proxy for the paws control plane.
+# Uses Caddy's automatic HTTPS (Let's Encrypt / ZeroSSL).
+#
+# Env vars (set via docker-compose):
+#   DOMAIN          — primary domain (e.g., fleet.example.com)
+#   GRAFANA_DOMAIN  — grafana subdomain (e.g., grafana.example.com)
+
+{$DOMAIN:localhost} {
+	# Dex OIDC — must come before the catch-all.
+	# Dex's issuer is https://{DOMAIN}/dex so paths stay as /dex/*.
+	handle /dex/* {
+		reverse_proxy dex:5556
+	}
+
+	# Gateway API + Dashboard (catch-all).
+	handle {
+		reverse_proxy gateway:4000
+	}
+}
+
+{$GRAFANA_DOMAIN:grafana.localhost} {
+	reverse_proxy grafana:3000
+}
