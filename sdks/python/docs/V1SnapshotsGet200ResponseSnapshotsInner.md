@@ -1,15 +1,14 @@
 # V1SnapshotsGet200ResponseSnapshotsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**version** | **int** |  | 
-**created_at** | **datetime** |  | 
-**size** | [**V1SnapshotsGet200ResponseSnapshotsInnerSize**](V1SnapshotsGet200ResponseSnapshotsInnerSize.md) |  | 
-**config** | [**V1SessionsPostRequestResources**](V1SessionsPostRequestResources.md) |  | 
+| Name           | Type                                                                                              | Description | Notes |
+| -------------- | ------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **id**         | **str**                                                                                           |             |
+| **version**    | **int**                                                                                           |             |
+| **created_at** | **datetime**                                                                                      |             |
+| **size**       | [**V1SnapshotsGet200ResponseSnapshotsInnerSize**](V1SnapshotsGet200ResponseSnapshotsInnerSize.md) |             |
+| **config**     | [**V1SessionsPostRequestResources**](V1SessionsPostRequestResources.md)                           |             |
 
 ## Example
 
@@ -28,6 +27,5 @@ v1_snapshots_get200_response_snapshots_inner_dict = v1_snapshots_get200_response
 # create an instance of V1SnapshotsGet200ResponseSnapshotsInner from a dict
 v1_snapshots_get200_response_snapshots_inner_from_dict = V1SnapshotsGet200ResponseSnapshotsInner.from_dict(v1_snapshots_get200_response_snapshots_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

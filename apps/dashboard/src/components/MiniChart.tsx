@@ -31,7 +31,7 @@ export function MiniChart({ data, label, color = '#34d399', height = 120 }: Mini
     })
     .join(' ');
 
-  const current = values[values.length - 1];
+  const current = values[values.length - 1] ?? 0;
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4" style={{ height }}>

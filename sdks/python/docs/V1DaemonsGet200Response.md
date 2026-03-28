@@ -1,11 +1,10 @@
 # V1DaemonsGet200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**daemons** | [**List[V1DaemonsGet200ResponseDaemonsInner]**](V1DaemonsGet200ResponseDaemonsInner.md) |  | 
+| Name        | Type                                                                                    | Description | Notes |
+| ----------- | --------------------------------------------------------------------------------------- | ----------- | ----- |
+| **daemons** | [**List[V1DaemonsGet200ResponseDaemonsInner]**](V1DaemonsGet200ResponseDaemonsInner.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ v1_daemons_get200_response_dict = v1_daemons_get200_response_instance.to_dict()
 # create an instance of V1DaemonsGet200Response from a dict
 v1_daemons_get200_response_from_dict = V1DaemonsGet200Response.from_dict(v1_daemons_get200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

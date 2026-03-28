@@ -1,13 +1,12 @@
 # V1DaemonsGet200ResponseDaemonsInnerStats
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**total_invocations** | **int** |  | 
-**last_invoked_at** | **datetime** |  | [optional] 
-**avg_duration_ms** | **int** |  | [optional] 
+| Name                  | Type         | Description | Notes      |
+| --------------------- | ------------ | ----------- | ---------- |
+| **total_invocations** | **int**      |             |
+| **last_invoked_at**   | **datetime** |             | [optional] |
+| **avg_duration_ms**   | **int**      |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ v1_daemons_get200_response_daemons_inner_stats_dict = v1_daemons_get200_response
 # create an instance of V1DaemonsGet200ResponseDaemonsInnerStats from a dict
 v1_daemons_get200_response_daemons_inner_stats_from_dict = V1DaemonsGet200ResponseDaemonsInnerStats.from_dict(v1_daemons_get200_response_daemons_inner_stats_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

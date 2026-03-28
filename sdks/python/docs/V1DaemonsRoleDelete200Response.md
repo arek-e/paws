@@ -1,12 +1,11 @@
 # V1DaemonsRoleDelete200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**role** | **str** |  | 
-**status** | **str** |  | 
+| Name       | Type    | Description | Notes |
+| ---------- | ------- | ----------- | ----- |
+| **role**   | **str** |             |
+| **status** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ v1_daemons_role_delete200_response_dict = v1_daemons_role_delete200_response_ins
 # create an instance of V1DaemonsRoleDelete200Response from a dict
 v1_daemons_role_delete200_response_from_dict = V1DaemonsRoleDelete200Response.from_dict(v1_daemons_role_delete200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

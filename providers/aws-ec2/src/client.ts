@@ -121,7 +121,7 @@ export function createAwsEc2Client(options: AwsEc2ClientOptions) {
         (async () => {
           const input: RunInstancesCommandInput = {
             ImageId: request.imageId,
-            InstanceType: request.instanceType,
+            InstanceType: request.instanceType as RunInstancesCommandInput['InstanceType'],
             MinCount: 1,
             MaxCount: 1,
             TagSpecifications: [

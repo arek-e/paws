@@ -6,7 +6,7 @@
  * that run Firecracker VMs.
  */
 
-import { ResultAsync, errAsync, okAsync } from 'neverthrow';
+import { ResultAsync, okAsync } from 'neverthrow';
 
 import { createAwsEc2Client } from './client.js';
 import type { AwsEc2ClientOptions, Ec2ClientDep } from './client.js';

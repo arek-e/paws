@@ -1,11 +1,10 @@
 # V1SessionsPost400Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**error** | [**V1SessionsPost400ResponseError**](V1SessionsPost400ResponseError.md) |  | 
+| Name      | Type                                                                    | Description | Notes |
+| --------- | ----------------------------------------------------------------------- | ----------- | ----- |
+| **error** | [**V1SessionsPost400ResponseError**](V1SessionsPost400ResponseError.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ v1_sessions_post400_response_dict = v1_sessions_post400_response_instance.to_dic
 # create an instance of V1SessionsPost400Response from a dict
 v1_sessions_post400_response_from_dict = V1SessionsPost400Response.from_dict(v1_sessions_post400_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,21 +1,20 @@
 # V1SessionsIdGet200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**session_id** | **UUID** |  | 
-**status** | **str** |  | 
-**exit_code** | **int** |  | [optional] 
-**stdout** | **str** |  | [optional] 
-**stderr** | **str** |  | [optional] 
-**output** | **object** |  | [optional] 
-**started_at** | **datetime** |  | [optional] 
-**completed_at** | **datetime** |  | [optional] 
-**duration_ms** | **int** |  | [optional] 
-**worker** | **str** |  | [optional] 
-**metadata** | **Dict[str, object]** |  | [optional] 
+| Name             | Type                  | Description | Notes      |
+| ---------------- | --------------------- | ----------- | ---------- |
+| **session_id**   | **UUID**              |             |
+| **status**       | **str**               |             |
+| **exit_code**    | **int**               |             | [optional] |
+| **stdout**       | **str**               |             | [optional] |
+| **stderr**       | **str**               |             | [optional] |
+| **output**       | **object**            |             | [optional] |
+| **started_at**   | **datetime**          |             | [optional] |
+| **completed_at** | **datetime**          |             | [optional] |
+| **duration_ms**  | **int**               |             | [optional] |
+| **worker**       | **str**               |             | [optional] |
+| **metadata**     | **Dict[str, object]** |             | [optional] |
 
 ## Example
 
@@ -34,6 +33,5 @@ v1_sessions_id_get200_response_dict = v1_sessions_id_get200_response_instance.to
 # create an instance of V1SessionsIdGet200Response from a dict
 v1_sessions_id_get200_response_from_dict = V1SessionsIdGet200Response.from_dict(v1_sessions_id_get200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

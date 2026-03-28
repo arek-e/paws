@@ -95,3 +95,6 @@ export {
   WorkerStatus,
 } from './worker.js';
 export type { Worker, WorkerCapacity, WorkerListResponse, WorkerSnapshotInfo } from './worker.js';
+
+export { WsSessionMessage, WsStatusMessage, WsCompleteMessage, WsErrorMessage } from './ws.js';
+export type { WsSessionMessage as WsSessionMsg } from './ws.js';

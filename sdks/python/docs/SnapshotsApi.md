@@ -1,19 +1,18 @@
 # paws_client.SnapshotsApi
 
-All URIs are relative to *http://localhost*
+All URIs are relative to _http://localhost_
 
-Method | HTTP request | Description
-------------- | ------------- | -------------
-[**v1_snapshots_builds_job_id_get**](SnapshotsApi.md#v1_snapshots_builds_job_id_get) | **GET** /v1/snapshots/builds/{jobId} | 
-[**v1_snapshots_get**](SnapshotsApi.md#v1_snapshots_get) | **GET** /v1/snapshots | 
-[**v1_snapshots_id_build_post**](SnapshotsApi.md#v1_snapshots_id_build_post) | **POST** /v1/snapshots/{id}/build | 
-
+| Method                                                                               | HTTP request                         | Description |
+| ------------------------------------------------------------------------------------ | ------------------------------------ | ----------- |
+| [**v1_snapshots_builds_job_id_get**](SnapshotsApi.md#v1_snapshots_builds_job_id_get) | **GET** /v1/snapshots/builds/{jobId} |
+| [**v1_snapshots_get**](SnapshotsApi.md#v1_snapshots_get)                             | **GET** /v1/snapshots                |
+| [**v1_snapshots_id_build_post**](SnapshotsApi.md#v1_snapshots_id_build_post)         | **POST** /v1/snapshots/{id}/build    |
 
 # **v1_snapshots_builds_job_id_get**
+
 > V1SnapshotsBuildsJobIdGet200Response v1_snapshots_builds_job_id_get(job_id)
 
 ### Example
-
 
 ```python
 import paws_client
@@ -32,7 +31,7 @@ configuration = paws_client.Configuration(
 with paws_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = paws_client.SnapshotsApi(api_client)
-    job_id = 'job_id_example' # str | 
+    job_id = 'job_id_example' # str |
 
     try:
         api_response = api_instance.v1_snapshots_builds_job_id_get(job_id)
@@ -42,14 +41,11 @@ with paws_client.ApiClient(configuration) as api_client:
         print("Exception when calling SnapshotsApi->v1_snapshots_builds_job_id_get: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **job_id** | **str**|  | 
+| Name       | Type    | Description | Notes |
+| ---------- | ------- | ----------- | ----- |
+| **job_id** | **str** |             |
 
 ### Return type
 
@@ -61,23 +57,23 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Build job status |  -  |
-**404** | Build job not found |  -  |
+| Status code | Description         | Response headers |
+| ----------- | ------------------- | ---------------- |
+| **200**     | Build job status    | -                |
+| **404**     | Build job not found | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **v1_snapshots_get**
+
 > V1SnapshotsGet200Response v1_snapshots_get()
 
 ### Example
-
 
 ```python
 import paws_client
@@ -105,8 +101,6 @@ with paws_client.ApiClient(configuration) as api_client:
         print("Exception when calling SnapshotsApi->v1_snapshots_get: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -121,22 +115,22 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | List of snapshots |  -  |
+| Status code | Description       | Response headers |
+| ----------- | ----------------- | ---------------- |
+| **200**     | List of snapshots | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **v1_snapshots_id_build_post**
+
 > V1SnapshotsIdBuildPost202Response v1_snapshots_id_build_post(id, v1_snapshots_id_build_post_request=v1_snapshots_id_build_post_request)
 
 ### Example
-
 
 ```python
 import paws_client
@@ -156,7 +150,7 @@ configuration = paws_client.Configuration(
 with paws_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = paws_client.SnapshotsApi(api_client)
-    id = 'id_example' # str | 
+    id = 'id_example' # str |
     v1_snapshots_id_build_post_request = paws_client.V1SnapshotsIdBuildPostRequest() # V1SnapshotsIdBuildPostRequest |  (optional)
 
     try:
@@ -167,15 +161,12 @@ with paws_client.ApiClient(configuration) as api_client:
         print("Exception when calling SnapshotsApi->v1_snapshots_id_build_post: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **id** | **str**|  | 
- **v1_snapshots_id_build_post_request** | [**V1SnapshotsIdBuildPostRequest**](V1SnapshotsIdBuildPostRequest.md)|  | [optional] 
+| Name                                   | Type                                                                  | Description | Notes      |
+| -------------------------------------- | --------------------------------------------------------------------- | ----------- | ---------- |
+| **id**                                 | **str**                                                               |             |
+| **v1_snapshots_id_build_post_request** | [**V1SnapshotsIdBuildPostRequest**](V1SnapshotsIdBuildPostRequest.md) |             | [optional] |
 
 ### Return type
 
@@ -187,15 +178,14 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**202** | Snapshot build started |  -  |
-**400** | Validation error |  -  |
+| Status code | Description            | Response headers |
+| ----------- | ---------------------- | ---------------- |
+| **202**     | Snapshot build started | -                |
+| **400**     | Validation error       | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

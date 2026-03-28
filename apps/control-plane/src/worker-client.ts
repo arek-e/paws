@@ -31,6 +31,7 @@ export interface WorkerClient {
     request: CreateSessionRequest,
   ): Promise<{ sessionId: string; status: string }>;
   getSession(sessionId: string): Promise<WorkerSessionResult | undefined>;
+  buildSnapshot(jobId: string, snapshotId: string, config: Record<string, unknown>): Promise<void>;
 }
 
 /** Create an HTTP client to communicate with a worker service */
@@ -54,6 +55,14 @@ export function createWorkerClient(baseUrl: string): WorkerClient {
       const res = await fetch(`${baseUrl}/v1/sessions/${sessionId}`);
       if (res.status === 404) return undefined;
       return (await res.json()) as WorkerSessionResult;
+    },
+
+    async buildSnapshot(jobId, snapshotId, config) {
+      await fetch(`${baseUrl}/v1/snapshots/${snapshotId}/build`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, ...config }),
+      });
     },
   };
 }

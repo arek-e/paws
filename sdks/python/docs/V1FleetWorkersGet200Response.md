@@ -1,11 +1,10 @@
 # V1FleetWorkersGet200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**workers** | [**List[V1FleetWorkersGet200ResponseWorkersInner]**](V1FleetWorkersGet200ResponseWorkersInner.md) |  | 
+| Name        | Type                                                                                              | Description | Notes |
+| ----------- | ------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **workers** | [**List[V1FleetWorkersGet200ResponseWorkersInner]**](V1FleetWorkersGet200ResponseWorkersInner.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ v1_fleet_workers_get200_response_dict = v1_fleet_workers_get200_response_instanc
 # create an instance of V1FleetWorkersGet200Response from a dict
 v1_fleet_workers_get200_response_from_dict = V1FleetWorkersGet200Response.from_dict(v1_fleet_workers_get200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

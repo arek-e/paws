@@ -2,13 +2,19 @@ import { createBunWebSocket } from 'hono/bun';
 
 import { createControlPlaneApp } from './app.js';
 import { createK8sDiscovery } from './discovery/k8s.js';
+import { createPangolinDiscovery } from './discovery/pangolin.js';
 import { createWorkerRegistry } from './discovery/registry.js';
-import { createPersistentDaemonStore } from './store/persistent.js';
 import { createStaticDiscovery } from './discovery/static.js';
+import { createPersistentDaemonStore } from './store/persistent.js';
 
 const PORT = parseInt(process.env['PORT'] ?? '4000', 10);
 const API_KEY = process.env['API_KEY'] ?? 'paws-dev-key';
 const WORKER_URL = process.env['WORKER_URL'] ?? '';
+
+// Pangolin discovery config (optional — set all 3 to enable)
+const PANGOLIN_API_URL = process.env['PANGOLIN_API_URL'] ?? '';
+const PANGOLIN_API_KEY = process.env['PANGOLIN_API_KEY'] ?? '';
+const PANGOLIN_ORG_ID = process.env['PANGOLIN_ORG_ID'] ?? '';
 
 // OIDC config (optional — set all 4 to enable)
 const OIDC_ISSUER = process.env['OIDC_ISSUER'] ?? '';
@@ -31,10 +37,19 @@ const oidc =
       }
     : undefined;
 
-// Worker discovery — three layers, merged:
-// 1. Call-home registry (workers connect via WebSocket)
-// 2. K8s pod-watching (in-cluster)
-// 3. Static URLs (manual WORKER_URL)
+// Worker discovery — four layers, first match wins:
+// 1. Pangolin tunnel discovery (workers connect via Newt/WireGuard)
+// 2. Call-home registry (workers connect via WebSocket — legacy)
+// 3. K8s pod-watching (in-cluster)
+// 4. Static URLs (manual WORKER_URL)
+const pangolinDiscovery =
+  PANGOLIN_API_URL && PANGOLIN_API_KEY && PANGOLIN_ORG_ID
+    ? createPangolinDiscovery({
+        apiUrl: PANGOLIN_API_URL,
+        apiKey: PANGOLIN_API_KEY,
+        orgId: PANGOLIN_ORG_ID,
+      })
+    : null;
 const workerRegistry = createWorkerRegistry();
 const k8sDiscovery = createK8sDiscovery();
 const staticUrls = WORKER_URL ? [WORKER_URL] : [];
@@ -42,7 +57,13 @@ const staticDiscovery = createStaticDiscovery(staticUrls);
 
 const discovery = {
   async getWorkers() {
-    // Registry workers are most up-to-date (live WebSocket connection)
+    // Pangolin tunnel discovery (primary when configured)
+    if (pangolinDiscovery) {
+      const pangolinWorkers = await pangolinDiscovery.getWorkers();
+      if (pangolinWorkers.length > 0) return pangolinWorkers;
+    }
+
+    // Call-home registry (legacy WebSocket connection)
     const registryWorkers = await workerRegistry.getWorkers();
     if (registryWorkers.length > 0) return registryWorkers;
 
@@ -92,16 +113,21 @@ if (AUTOSCALE_ENABLED) {
       const { createHetznerCloudProvider } = await import('@paws/provider-hetzner-cloud');
       const hcloudToken = process.env['HCLOUD_TOKEN'] ?? '';
       if (hcloudToken) {
-        provider = createHetznerCloudProvider({ token: hcloudToken });
+        provider = createHetznerCloudProvider({
+          token: hcloudToken,
+        }) as unknown as import('@paws/providers').HostProvider;
       }
     } else if (AUTOSCALE_PROVIDER === 'aws-ec2') {
       try {
         const { createAwsEc2Provider } = await import('@paws/provider-aws-ec2');
         provider = createAwsEc2Provider({
           region: process.env['AWS_REGION'] ?? 'us-east-1',
-          accessKeyId: process.env['AWS_ACCESS_KEY_ID'] ?? '',
-          secretAccessKey: process.env['AWS_SECRET_ACCESS_KEY'] ?? '',
-        });
+          defaultImageId: process.env['AWS_AMI_ID'] ?? '',
+          credentials: {
+            accessKeyId: process.env['AWS_ACCESS_KEY_ID'] ?? '',
+            secretAccessKey: process.env['AWS_SECRET_ACCESS_KEY'] ?? '',
+          },
+        }) as unknown as import('@paws/providers').HostProvider;
       } catch {
         console.warn('[autoscaler] AWS EC2 provider not available');
       }
@@ -110,6 +136,7 @@ if (AUTOSCALE_ENABLED) {
     if (provider) {
       const scaler = createAutoscaler({
         provider,
+        discovery,
         registry: workerRegistry,
         minWorkers: AUTOSCALE_MIN_WORKERS,
         maxWorkers: AUTOSCALE_MAX_WORKERS,
@@ -135,6 +162,7 @@ if (AUTOSCALE_ENABLED) {
 }
 
 const discoveryMode = [];
+if (pangolinDiscovery) discoveryMode.push('pangolin');
 discoveryMode.push('call-home');
 if (WORKER_URL) discoveryMode.push(`static (${WORKER_URL})`);
 discoveryMode.push('k8s');

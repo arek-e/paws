@@ -1,13 +1,12 @@
 # V1SessionsPostRequestWorkload
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**script** | **str** |  | 
-**env** | **Dict[str, str]** |  | [optional] 
+| Name       | Type               | Description | Notes      |
+| ---------- | ------------------ | ----------- | ---------- |
+| **type**   | **str**            |             |
+| **script** | **str**            |             |
+| **env**    | **Dict[str, str]** |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ v1_sessions_post_request_workload_dict = v1_sessions_post_request_workload_insta
 # create an instance of V1SessionsPostRequestWorkload from a dict
 v1_sessions_post_request_workload_from_dict = V1SessionsPostRequestWorkload.from_dict(v1_sessions_post_request_workload_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

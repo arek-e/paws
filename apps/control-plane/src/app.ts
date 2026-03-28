@@ -1,12 +1,13 @@
 import { randomUUID } from 'node:crypto';
 
 import { OpenAPIHono } from '@hono/zod-openapi';
+import type { Hono } from 'hono';
 import { selectWorker } from '@paws/scheduler';
 
 import type { WorkerRegistry } from './discovery/registry.js';
 import { createBuildStore } from './store/builds.js';
 import { createGovernanceChecker } from './governance.js';
-import { createControlPlaneMetrics, type ControlPlaneMetrics } from './metrics.js';
+import { createControlPlaneMetrics } from './metrics.js';
 import { authMiddleware, type AuthConfig } from './middleware/auth.js';
 import { createAuthRoutes } from './routes/auth.js';
 import { registerWorkerWebSocket } from './routes/worker-ws.js';
@@ -159,7 +160,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
         OIDC_CLIENT_SECRET: deps.oidc.clientSecret,
         OIDC_REDIRECT_URI: deps.oidc.redirectUri,
         OIDC_AUTH_SECRET: deps.oidc.authSecret,
-        OIDC_AUTH_EXTERNAL_URL: deps.oidc.externalUrl,
+        ...(deps.oidc.externalUrl ? { OIDC_AUTH_EXTERNAL_URL: deps.oidc.externalUrl } : {}),
       }),
     );
   }
@@ -590,11 +591,13 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
         const sessionId = randomUUID();
         sessionStore.create(sessionId, {
           snapshot: 'default',
-          workload: { type: 'script', script: prompt },
+          workload: { type: 'script' as const, script: prompt, env: {} },
+          timeoutMs: 600_000,
         });
         dispatchSession(discovery, legacyWorkerClient, sessionStore, sessionId, {
           snapshot: 'default',
-          workload: { type: 'script', script: prompt },
+          workload: { type: 'script' as const, script: prompt, env: {} },
+          timeoutMs: 600_000,
         });
         return { sessionId };
       },
@@ -607,7 +610,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   if (deps.upgradeWebSocket) {
     // Worker call-home registration
     if (deps.workerRegistry) {
-      registerWorkerWebSocket(app, deps.upgradeWebSocket, {
+      registerWorkerWebSocket(app as unknown as Hono, deps.upgradeWebSocket, {
         apiKey: deps.apiKey,
         registry: deps.workerRegistry,
       });
@@ -615,7 +618,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
     // Session streaming (imported lazily to avoid circular deps)
     const { registerWebSocketRoutes } = await import('./routes/ws.js');
-    registerWebSocketRoutes(app, deps.upgradeWebSocket, {
+    registerWebSocketRoutes(app as unknown as Hono, deps.upgradeWebSocket, {
       apiKey: deps.apiKey,
       sessionStore,
       events: sessionEvents,

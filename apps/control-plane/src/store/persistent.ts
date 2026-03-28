@@ -2,9 +2,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '
 import { dirname } from 'node:path';
 
 import type { DaemonStore, StoredDaemon } from './daemons.js';
-import type { SessionStore, StoredSession } from './sessions.js';
 import { createDaemonStore } from './daemons.js';
-import { createSessionStore } from './sessions.js';
 
 /** Wrap a daemon store with JSON file persistence */
 export function createPersistentDaemonStore(filePath: string): DaemonStore {

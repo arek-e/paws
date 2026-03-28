@@ -33,6 +33,7 @@ function createMockWorkerClient(): WorkerClient {
     async getSession(sessionId) {
       return sessions.get(sessionId);
     },
+    async buildSnapshot() {},
   };
 }
 

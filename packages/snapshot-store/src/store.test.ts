@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { Readable } from 'node:stream';
 import { createSnapshotStore } from './store.js';
 import { SnapshotStoreErrorCode } from './errors.js';

@@ -1,17 +1,16 @@
 # paws_client.WebhooksApi
 
-All URIs are relative to *http://localhost*
+All URIs are relative to _http://localhost_
 
-Method | HTTP request | Description
-------------- | ------------- | -------------
-[**v1_webhooks_role_post**](WebhooksApi.md#v1_webhooks_role_post) | **POST** /v1/webhooks/{role} | 
-
+| Method                                                            | HTTP request                 | Description |
+| ----------------------------------------------------------------- | ---------------------------- | ----------- |
+| [**v1_webhooks_role_post**](WebhooksApi.md#v1_webhooks_role_post) | **POST** /v1/webhooks/{role} |
 
 # **v1_webhooks_role_post**
+
 > V1WebhooksRolePost202Response v1_webhooks_role_post(role)
 
 ### Example
-
 
 ```python
 import paws_client
@@ -30,7 +29,7 @@ configuration = paws_client.Configuration(
 with paws_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = paws_client.WebhooksApi(api_client)
-    role = 'role_example' # str | 
+    role = 'role_example' # str |
 
     try:
         api_response = api_instance.v1_webhooks_role_post(role)
@@ -40,14 +39,11 @@ with paws_client.ApiClient(configuration) as api_client:
         print("Exception when calling WebhooksApi->v1_webhooks_role_post: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **role** | **str**|  | 
+| Name     | Type    | Description | Notes |
+| -------- | ------- | ----------- | ----- |
+| **role** | **str** |             |
 
 ### Return type
 
@@ -59,16 +55,15 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**202** | Webhook accepted, session created |  -  |
-**404** | Daemon not found |  -  |
-**429** | Rate limited |  -  |
+| Status code | Description                       | Response headers |
+| ----------- | --------------------------------- | ---------------- |
+| **202**     | Webhook accepted, session created | -                |
+| **404**     | Daemon not found                  | -                |
+| **429**     | Rate limited                      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

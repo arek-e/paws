@@ -210,7 +210,7 @@ export function createSnapshotStore(config: SnapshotStoreConfig) {
           const bodyStream =
             res.Body instanceof Readable
               ? res.Body
-              : Readable.fromWeb(res.Body as import('node:stream/web').ReadableStream);
+              : Readable.fromWeb(res.Body as unknown as import('node:stream/web').ReadableStream);
 
           const writeStream = createWriteStream(destPath);
           await pipeline(bodyStream, hashTransform, writeStream);

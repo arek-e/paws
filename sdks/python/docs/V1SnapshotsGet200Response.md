@@ -1,11 +1,10 @@
 # V1SnapshotsGet200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**snapshots** | [**List[V1SnapshotsGet200ResponseSnapshotsInner]**](V1SnapshotsGet200ResponseSnapshotsInner.md) |  | 
+| Name          | Type                                                                                            | Description | Notes |
+| ------------- | ----------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **snapshots** | [**List[V1SnapshotsGet200ResponseSnapshotsInner]**](V1SnapshotsGet200ResponseSnapshotsInner.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ v1_snapshots_get200_response_dict = v1_snapshots_get200_response_instance.to_dic
 # create an instance of V1SnapshotsGet200Response from a dict
 v1_snapshots_get200_response_from_dict = V1SnapshotsGet200Response.from_dict(v1_snapshots_get200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

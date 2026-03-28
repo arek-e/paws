@@ -1,12 +1,11 @@
 # V1SessionsPost202Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**session_id** | **UUID** |  | 
-**status** | **str** |  | 
+| Name           | Type     | Description | Notes |
+| -------------- | -------- | ----------- | ----- |
+| **session_id** | **UUID** |             |
+| **status**     | **str**  |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ v1_sessions_post202_response_dict = v1_sessions_post202_response_instance.to_dic
 # create an instance of V1SessionsPost202Response from a dict
 v1_sessions_post202_response_from_dict = V1SessionsPost202Response.from_dict(v1_sessions_post202_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

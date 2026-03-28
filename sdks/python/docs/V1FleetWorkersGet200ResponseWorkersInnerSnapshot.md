@@ -1,13 +1,12 @@
 # V1FleetWorkersGet200ResponseWorkersInnerSnapshot
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**version** | **int** |  | 
-**age_ms** | **int** |  | 
+| Name        | Type    | Description | Notes |
+| ----------- | ------- | ----------- | ----- |
+| **id**      | **str** |             |
+| **version** | **int** |             |
+| **age_ms**  | **int** |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ v1_fleet_workers_get200_response_workers_inner_snapshot_dict = v1_fleet_workers_
 # create an instance of V1FleetWorkersGet200ResponseWorkersInnerSnapshot from a dict
 v1_fleet_workers_get200_response_workers_inner_snapshot_from_dict = V1FleetWorkersGet200ResponseWorkersInnerSnapshot.from_dict(v1_fleet_workers_get200_response_workers_inner_snapshot_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

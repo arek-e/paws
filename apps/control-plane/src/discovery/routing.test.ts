@@ -290,6 +290,7 @@ describe('backward compat: workerClient without discovery', () => {
         }),
         createSession: async (sessionId) => ({ sessionId, status: 'pending' }),
         getSession: async () => undefined,
+        buildSnapshot: async () => {},
       },
     });
 
@@ -314,6 +315,7 @@ describe('backward compat: workerClient without discovery', () => {
         }),
         createSession: async (sessionId) => ({ sessionId, status: 'pending' }),
         getSession: async () => undefined,
+        buildSnapshot: async () => {},
       },
     });
 

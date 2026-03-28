@@ -1,13 +1,12 @@
 # V1SnapshotsIdBuildPostRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**base** | **str** |  | 
-**setup** | **str** |  | 
-**resources** | [**V1SessionsPostRequestResources**](V1SessionsPostRequestResources.md) |  | [optional] 
+| Name          | Type                                                                    | Description | Notes      |
+| ------------- | ----------------------------------------------------------------------- | ----------- | ---------- |
+| **base**      | **str**                                                                 |             |
+| **setup**     | **str**                                                                 |             |
+| **resources** | [**V1SessionsPostRequestResources**](V1SessionsPostRequestResources.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ v1_snapshots_id_build_post_request_dict = v1_snapshots_id_build_post_request_ins
 # create an instance of V1SnapshotsIdBuildPostRequest from a dict
 v1_snapshots_id_build_post_request_from_dict = V1SnapshotsIdBuildPostRequest.from_dict(v1_snapshots_id_build_post_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

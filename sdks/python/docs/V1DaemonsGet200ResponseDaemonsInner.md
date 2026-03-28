@@ -1,15 +1,14 @@
 # V1DaemonsGet200ResponseDaemonsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**role** | **str** |  | 
-**description** | **str** |  | 
-**status** | **str** |  | 
-**trigger** | [**V1DaemonsGet200ResponseDaemonsInnerTrigger**](V1DaemonsGet200ResponseDaemonsInnerTrigger.md) |  | 
-**stats** | [**V1DaemonsGet200ResponseDaemonsInnerStats**](V1DaemonsGet200ResponseDaemonsInnerStats.md) |  | 
+| Name            | Type                                                                                            | Description | Notes |
+| --------------- | ----------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **role**        | **str**                                                                                         |             |
+| **description** | **str**                                                                                         |             |
+| **status**      | **str**                                                                                         |             |
+| **trigger**     | [**V1DaemonsGet200ResponseDaemonsInnerTrigger**](V1DaemonsGet200ResponseDaemonsInnerTrigger.md) |             |
+| **stats**       | [**V1DaemonsGet200ResponseDaemonsInnerStats**](V1DaemonsGet200ResponseDaemonsInnerStats.md)     |             |
 
 ## Example
 
@@ -28,6 +27,5 @@ v1_daemons_get200_response_daemons_inner_dict = v1_daemons_get200_response_daemo
 # create an instance of V1DaemonsGet200ResponseDaemonsInner from a dict
 v1_daemons_get200_response_daemons_inner_from_dict = V1DaemonsGet200ResponseDaemonsInner.from_dict(v1_daemons_get200_response_daemons_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

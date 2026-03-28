@@ -7,7 +7,7 @@ import type { SessionStore } from './store/sessions.js';
 export interface MetricsDeps {
   sessionStore: SessionStore;
   daemonStore: DaemonStore;
-  registry?: WorkerRegistry;
+  registry?: WorkerRegistry | undefined;
 }
 
 export function createControlPlaneMetrics(deps: MetricsDeps) {

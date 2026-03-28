@@ -1,12 +1,11 @@
 # V1WebhooksRolePost202Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**accepted** | **bool** |  | 
-**session_id** | **UUID** |  | 
+| Name           | Type     | Description | Notes |
+| -------------- | -------- | ----------- | ----- |
+| **accepted**   | **bool** |             |
+| **session_id** | **UUID** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ v1_webhooks_role_post202_response_dict = v1_webhooks_role_post202_response_insta
 # create an instance of V1WebhooksRolePost202Response from a dict
 v1_webhooks_role_post202_response_from_dict = V1WebhooksRolePost202Response.from_dict(v1_webhooks_role_post202_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,12 +1,11 @@
 # V1SessionsPostRequestResources
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**vcpus** | **int** |  | [optional] [default to 2]
-**memory_mb** | **int** |  | [optional] [default to 4096]
+| Name          | Type    | Description | Notes                        |
+| ------------- | ------- | ----------- | ---------------------------- |
+| **vcpus**     | **int** |             | [optional] [default to 2]    |
+| **memory_mb** | **int** |             | [optional] [default to 4096] |
 
 ## Example
 
@@ -25,6 +24,5 @@ v1_sessions_post_request_resources_dict = v1_sessions_post_request_resources_ins
 # create an instance of V1SessionsPostRequestResources from a dict
 v1_sessions_post_request_resources_from_dict = V1SessionsPostRequestResources.from_dict(v1_sessions_post_request_resources_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

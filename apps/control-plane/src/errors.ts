@@ -31,6 +31,10 @@ const statusMap: Record<ErrorCode, number> = {
 };
 
 /** Create a ControlPlaneError with auto-resolved HTTP status */
-export function controlPlaneError(code: ErrorCode, message: string, cause?: unknown): ControlPlaneError {
+export function controlPlaneError(
+  code: ErrorCode,
+  message: string,
+  cause?: unknown,
+): ControlPlaneError {
   return new ControlPlaneError(code, message, statusMap[code], cause);
 }

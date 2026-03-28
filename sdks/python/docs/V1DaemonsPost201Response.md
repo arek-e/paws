@@ -1,13 +1,12 @@
 # V1DaemonsPost201Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**role** | **str** |  | 
-**status** | **str** |  | 
-**created_at** | **datetime** |  | 
+| Name           | Type         | Description | Notes |
+| -------------- | ------------ | ----------- | ----- |
+| **role**       | **str**      |             |
+| **status**     | **str**      |             |
+| **created_at** | **datetime** |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ v1_daemons_post201_response_dict = v1_daemons_post201_response_instance.to_dict(
 # create an instance of V1DaemonsPost201Response from a dict
 v1_daemons_post201_response_from_dict = V1DaemonsPost201Response.from_dict(v1_daemons_post201_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

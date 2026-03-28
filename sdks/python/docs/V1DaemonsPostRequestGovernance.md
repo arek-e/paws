@@ -1,13 +1,12 @@
 # V1DaemonsPostRequestGovernance
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**max_actions_per_hour** | **int** |  | [optional] 
-**requires_approval** | **List[str]** |  | [optional] [default to []]
-**audit_log** | **bool** |  | [optional] [default to True]
+| Name                     | Type          | Description | Notes                        |
+| ------------------------ | ------------- | ----------- | ---------------------------- |
+| **max_actions_per_hour** | **int**       |             | [optional]                   |
+| **requires_approval**    | **List[str]** |             | [optional] [default to []]   |
+| **audit_log**            | **bool**      |             | [optional] [default to True] |
 
 ## Example
 
@@ -26,6 +25,5 @@ v1_daemons_post_request_governance_dict = v1_daemons_post_request_governance_ins
 # create an instance of V1DaemonsPostRequestGovernance from a dict
 v1_daemons_post_request_governance_from_dict = V1DaemonsPostRequestGovernance.from_dict(v1_daemons_post_request_governance_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

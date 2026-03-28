@@ -22,7 +22,7 @@ export function registerWebSocketRoutes(
   app.get(
     '/v1/sessions/:id/stream',
     upgradeWebSocket((c) => {
-      const sessionId = c.req.param('id');
+      const sessionId = c.req.param('id')!;
       const token = c.req.query('token');
 
       return {

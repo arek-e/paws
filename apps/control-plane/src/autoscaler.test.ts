@@ -1,5 +1,5 @@
 import { okAsync } from 'neverthrow';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { createAutoscaler, type AutoscalerConfig } from './autoscaler.js';
 import { createWorkerRegistry } from './discovery/registry.js';
@@ -35,9 +35,11 @@ const workerHealth = {
 };
 
 function createConfig(overrides?: Partial<AutoscalerConfig>): AutoscalerConfig {
+  const registry = overrides?.registry ?? createWorkerRegistry();
   return {
     provider: mockProvider(),
-    registry: createWorkerRegistry(),
+    discovery: overrides?.discovery ?? registry,
+    registry,
     minWorkers: 1,
     maxWorkers: 5,
     scaleUpThreshold: 0.8,

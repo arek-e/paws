@@ -1,16 +1,15 @@
 # V1DaemonsGet200ResponseDaemonsInnerTrigger
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**events** | **List[str]** |  | 
-**secret** | **str** |  | [optional] 
-**cron** | **str** |  | 
-**condition** | **str** |  | 
-**interval_ms** | **int** |  | [optional] [default to 60000]
+| Name            | Type          | Description | Notes                         |
+| --------------- | ------------- | ----------- | ----------------------------- |
+| **type**        | **str**       |             |
+| **events**      | **List[str]** |             |
+| **secret**      | **str**       |             | [optional]                    |
+| **cron**        | **str**       |             |
+| **condition**   | **str**       |             |
+| **interval_ms** | **int**       |             | [optional] [default to 60000] |
 
 ## Example
 
@@ -29,6 +28,5 @@ v1_daemons_get200_response_daemons_inner_trigger_dict = v1_daemons_get200_respon
 # create an instance of V1DaemonsGet200ResponseDaemonsInnerTrigger from a dict
 v1_daemons_get200_response_daemons_inner_trigger_from_dict = V1DaemonsGet200ResponseDaemonsInnerTrigger.from_dict(v1_daemons_get200_response_daemons_inner_trigger_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

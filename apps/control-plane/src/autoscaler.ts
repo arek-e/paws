@@ -1,10 +1,14 @@
 import type { HostProvider } from '@paws/providers';
 
+import type { WorkerDiscovery } from './discovery/index.js';
 import type { WorkerRegistry } from './discovery/registry.js';
 
 export interface AutoscalerConfig {
   provider: HostProvider;
-  registry: WorkerRegistry;
+  /** Primary source of worker data. Used for utilization and capacity checks. */
+  discovery: WorkerDiscovery;
+  /** Legacy registry, used for unregister on scale-down. Optional. */
+  registry?: WorkerRegistry | undefined;
   minWorkers: number;
   maxWorkers: number;
   scaleUpThreshold: number;
@@ -16,7 +20,7 @@ export interface AutoscalerConfig {
   workerRegion: string;
   gatewayUrl: string;
   apiKey: string;
-  sshKeyIds?: string[];
+  sshKeyIds?: string[] | undefined;
 }
 
 export interface ScaleEvent {
@@ -47,6 +51,7 @@ export interface Autoscaler {
 export function createAutoscaler(config: AutoscalerConfig): Autoscaler {
   const {
     provider,
+    discovery,
     registry,
     minWorkers,
     maxWorkers,
@@ -68,6 +73,13 @@ export function createAutoscaler(config: AutoscalerConfig): Autoscaler {
   let pendingProvisions = 0;
   let lowUtilSince = 0; // timestamp when utilization first dropped below threshold
 
+  // Cached workers from last poll (computeUtilization is sync, discovery is async)
+  let lastKnownWorkers: import('@paws/types').Worker[] = [];
+
+  async function refreshWorkers(): Promise<void> {
+    lastKnownWorkers = await discovery.getWorkers();
+  }
+
   function computeUtilization(): {
     utilization: number;
     totalCapacity: number;
@@ -75,26 +87,63 @@ export function createAutoscaler(config: AutoscalerConfig): Autoscaler {
     totalQueued: number;
     workerCount: number;
   } {
-    const workers = registry.getAll();
     let totalCapacity = 0;
     let totalRunning = 0;
     let totalQueued = 0;
 
-    for (const w of workers) {
+    for (const w of lastKnownWorkers) {
       totalCapacity += w.capacity.maxConcurrent;
       totalRunning += w.capacity.running;
       totalQueued += w.capacity.queued;
     }
 
     const utilization = totalCapacity > 0 ? totalRunning / totalCapacity : 0;
-    return { utilization, totalCapacity, totalRunning, totalQueued, workerCount: workers.length };
+    return {
+      utilization,
+      totalCapacity,
+      totalRunning,
+      totalQueued,
+      workerCount: lastKnownWorkers.length,
+    };
   }
 
   function cooldownExpired(): boolean {
     return Date.now() - lastScaleTime >= cooldownMs;
   }
 
-  function generateCloudInit(): string {
+  function generateCloudInit(newtSiteId?: string, newtSiteSecret?: string): string {
+    const newtSetup =
+      newtSiteId && newtSiteSecret
+        ? `
+# Install and start Newt (Pangolin tunnel agent)
+curl -fsSL https://static.pangolin.net/get-newt.sh | bash
+cat > /etc/systemd/system/newt.service << 'SYSTEMD'
+[Unit]
+Description=Newt Tunnel Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/newt --id ${newtSiteId} --secret ${newtSiteSecret} --endpoint ${gatewayUrl}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+SYSTEMD
+systemctl daemon-reload
+systemctl enable --now newt
+`
+        : `
+# Start worker with call-home (legacy, no Pangolin)
+GATEWAY_URL=${gatewayUrl} \\
+API_KEY=${apiKey} \\
+WORKER_NAME=worker-$(hostname) \\
+WORKER_URL=http://$(curl -s http://169.254.169.254/hetzner/v1/metadata/public-ipv4):3000 \\
+PORT=3000 \\
+nohup bun run apps/worker/src/server.ts > /var/log/paws-worker.log 2>&1 &
+`;
+
     return `#!/bin/bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
@@ -111,19 +160,15 @@ bun install
 # Install Firecracker
 scripts/install-firecracker.sh
 
-# Start worker with call-home
-GATEWAY_URL=${gatewayUrl} \\
-API_KEY=${apiKey} \\
-WORKER_NAME=worker-$(hostname) \\
-WORKER_URL=http://$(curl -s http://169.254.169.254/hetzner/v1/metadata/public-ipv4):3000 \\
-PORT=3000 \\
-nohup bun run apps/worker/src/server.ts > /var/log/paws-worker.log 2>&1 &
+# Start worker
+PORT=3000 nohup bun run apps/worker/src/server.ts > /var/log/paws-worker.log 2>&1 &
+${newtSetup}
 `;
   }
 
   async function scaleUp(reason: string): Promise<void> {
     if (!cooldownExpired()) return;
-    if (registry.count() + pendingProvisions >= maxWorkers) return;
+    if (lastKnownWorkers.length + pendingProvisions >= maxWorkers) return;
 
     const name = `paws-worker-${Date.now()}`;
     console.log(`[autoscaler] Scaling UP: ${reason} → provisioning ${name}`);
@@ -136,7 +181,7 @@ nohup bun run apps/worker/src/server.ts > /var/log/paws-worker.log 2>&1 &
       name,
       region: workerRegion,
       plan: workerPlan,
-      sshKeyIds,
+      ...(sshKeyIds ? { sshKeyIds } : {}),
       userData: Buffer.from(generateCloudInit()).toString('base64'),
     });
 
@@ -152,11 +197,10 @@ nohup bun run apps/worker/src/server.ts > /var/log/paws-worker.log 2>&1 &
 
   async function scaleDown(reason: string): Promise<void> {
     if (!cooldownExpired()) return;
-    if (registry.count() <= minWorkers) return;
+    if (lastKnownWorkers.length <= minWorkers) return;
 
     // Pick least-loaded worker
-    const workers = registry.getAll();
-    const sorted = [...workers].sort((a, b) => a.capacity.running - b.capacity.running);
+    const sorted = [...lastKnownWorkers].sort((a, b) => a.capacity.running - b.capacity.running);
     const candidate = sorted[0];
     if (!candidate) return;
 
@@ -168,15 +212,17 @@ nohup bun run apps/worker/src/server.ts > /var/log/paws-worker.log 2>&1 &
     lastScaleTime = Date.now();
     lastScaleEvent = { type: 'down', at: new Date().toISOString(), reason };
 
-    // Unregister so no new sessions get routed here
-    registry.unregister(candidate.name);
+    // Unregister from legacy registry if available
+    if (registry) {
+      registry.unregister(candidate.name);
+    }
 
     // Find the host in the provider and delete it
+    // candidate.name is the worker URL (e.g., http://100.89.1.5:3000)
     const hosts = await provider.listHosts();
     if (hosts.isOk()) {
-      // Match by IP in the worker URL
-      const workerIp = new URL(candidate.url).hostname;
-      const host = hosts.value.find((h) => h.ipv4 === workerIp || h.name.includes(candidate.name));
+      const workerIp = new URL(candidate.name).hostname;
+      const host = hosts.value.find((h) => h.ipv4 === workerIp || h.name.includes(workerIp));
       if (host) {
         const deleteResult = await provider.deleteHost(host.id);
         if (deleteResult.isOk()) {
@@ -193,6 +239,7 @@ nohup bun run apps/worker/src/server.ts > /var/log/paws-worker.log 2>&1 &
   }
 
   async function evaluate(): Promise<void> {
+    await refreshWorkers();
     const { utilization, totalQueued, workerCount } = computeUtilization();
 
     // Scale UP: high utilization or queued sessions

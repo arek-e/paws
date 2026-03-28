@@ -71,7 +71,6 @@ describe('createProvisioner', () => {
 
     await provisioner.start({
       ...defaultStartOpts,
-      password: undefined,
       privateKey: '-----BEGIN OPENSSH PRIVATE KEY-----\ntest\n-----END OPENSSH PRIVATE KEY-----',
     });
 
@@ -248,9 +247,9 @@ describe('createProvisioner', () => {
 
     const stageEvents = events.filter((e) => e.message.startsWith('Stage:'));
     expect(stageEvents.length).toBe(3);
-    expect(stageEvents[0].message).toBe('Stage: checking_prerequisites');
-    expect(stageEvents[1].message).toBe('Stage: downloading_firecracker');
-    expect(stageEvents[2].message).toBe('Stage: complete');
+    expect(stageEvents[0]!.message).toBe('Stage: checking_prerequisites');
+    expect(stageEvents[1]!.message).toBe('Stage: downloading_firecracker');
+    expect(stageEvents[2]!.message).toBe('Stage: complete');
   });
 
   test('Disconnect called on success', async () => {
@@ -317,7 +316,7 @@ describe('createProvisioner', () => {
 
     const progressValues = events.filter((e) => e.progress !== undefined).map((e) => e.progress!);
     for (let i = 1; i < progressValues.length; i++) {
-      expect(progressValues[i]).toBeGreaterThanOrEqual(progressValues[i - 1]);
+      expect(progressValues[i]!).toBeGreaterThanOrEqual(progressValues[i - 1]!);
     }
   });
 

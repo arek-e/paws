@@ -1,17 +1,16 @@
 # V1FleetGet200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**total_workers** | **int** |  | 
-**healthy_workers** | **int** |  | 
-**total_capacity** | **int** |  | 
-**used_capacity** | **int** |  | 
-**queued_sessions** | **int** |  | 
-**active_daemons** | **int** |  | 
-**active_sessions** | **int** |  | 
+| Name                | Type    | Description | Notes |
+| ------------------- | ------- | ----------- | ----- |
+| **total_workers**   | **int** |             |
+| **healthy_workers** | **int** |             |
+| **total_capacity**  | **int** |             |
+| **used_capacity**   | **int** |             |
+| **queued_sessions** | **int** |             |
+| **active_daemons**  | **int** |             |
+| **active_sessions** | **int** |             |
 
 ## Example
 
@@ -30,6 +29,5 @@ v1_fleet_get200_response_dict = v1_fleet_get200_response_instance.to_dict()
 # create an instance of V1FleetGet200Response from a dict
 v1_fleet_get200_response_from_dict = V1FleetGet200Response.from_dict(v1_fleet_get200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

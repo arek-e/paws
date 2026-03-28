@@ -1,14 +1,13 @@
 # V1FleetWorkersGet200ResponseWorkersInnerCapacity
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**max_concurrent** | **int** |  | 
-**running** | **int** |  | 
-**queued** | **int** |  | 
-**available** | **int** |  | 
+| Name               | Type    | Description | Notes |
+| ------------------ | ------- | ----------- | ----- |
+| **max_concurrent** | **int** |             |
+| **running**        | **int** |             |
+| **queued**         | **int** |             |
+| **available**      | **int** |             |
 
 ## Example
 
@@ -27,6 +26,5 @@ v1_fleet_workers_get200_response_workers_inner_capacity_dict = v1_fleet_workers_
 # create an instance of V1FleetWorkersGet200ResponseWorkersInnerCapacity from a dict
 v1_fleet_workers_get200_response_workers_inner_capacity_from_dict = V1FleetWorkersGet200ResponseWorkersInnerCapacity.from_dict(v1_fleet_workers_get200_response_workers_inner_capacity_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

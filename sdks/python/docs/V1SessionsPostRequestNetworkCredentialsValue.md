@@ -1,11 +1,10 @@
 # V1SessionsPostRequestNetworkCredentialsValue
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**headers** | **Dict[str, str]** |  | 
+| Name        | Type               | Description | Notes |
+| ----------- | ------------------ | ----------- | ----- |
+| **headers** | **Dict[str, str]** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ v1_sessions_post_request_network_credentials_value_dict = v1_sessions_post_reque
 # create an instance of V1SessionsPostRequestNetworkCredentialsValue from a dict
 v1_sessions_post_request_network_credentials_value_from_dict = V1SessionsPostRequestNetworkCredentialsValue.from_dict(v1_sessions_post_request_network_credentials_value_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

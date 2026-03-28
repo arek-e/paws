@@ -49,8 +49,8 @@ describe('createWorkerRegistry', () => {
 
     const workers = await reg.getWorkers();
     expect(workers).toHaveLength(1);
-    expect(workers[0].name).toBe('http://10.0.0.1:3000');
-    expect(workers[0].status).toBe('healthy');
+    expect(workers[0]!.name).toBe('http://10.0.0.1:3000');
+    expect(workers[0]!.status).toBe('healthy');
   });
 
   it('getWorkers skips workers with stale heartbeats', async () => {

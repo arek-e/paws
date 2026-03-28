@@ -1,13 +1,12 @@
 # V1SnapshotsGet200ResponseSnapshotsInnerSize
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**disk** | **str** |  | 
-**memory** | **str** |  | 
-**total** | **str** |  | 
+| Name       | Type    | Description | Notes |
+| ---------- | ------- | ----------- | ----- |
+| **disk**   | **str** |             |
+| **memory** | **str** |             |
+| **total**  | **str** |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ v1_snapshots_get200_response_snapshots_inner_size_dict = v1_snapshots_get200_res
 # create an instance of V1SnapshotsGet200ResponseSnapshotsInnerSize from a dict
 v1_snapshots_get200_response_snapshots_inner_size_from_dict = V1SnapshotsGet200ResponseSnapshotsInnerSize.from_dict(v1_snapshots_get200_response_snapshots_inner_size_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

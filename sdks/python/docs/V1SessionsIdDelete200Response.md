@@ -1,12 +1,11 @@
 # V1SessionsIdDelete200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**session_id** | **UUID** |  | 
-**status** | **str** |  | 
+| Name           | Type     | Description | Notes |
+| -------------- | -------- | ----------- | ----- |
+| **session_id** | **UUID** |             |
+| **status**     | **str**  |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ v1_sessions_id_delete200_response_dict = v1_sessions_id_delete200_response_insta
 # create an instance of V1SessionsIdDelete200Response from a dict
 v1_sessions_id_delete200_response_from_dict = V1SessionsIdDelete200Response.from_dict(v1_sessions_id_delete200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

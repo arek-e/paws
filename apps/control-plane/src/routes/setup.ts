@@ -6,7 +6,7 @@ import { z } from '@hono/zod-openapi';
 import type { CredentialStore } from '@paws/credentials';
 import type { CredentialProvider } from '@paws/credentials';
 import type { Provisioner, Server } from '@paws/provisioner';
-import type { UpgradeWebSocket, WSContext } from 'hono/ws';
+import type { UpgradeWebSocket } from 'hono/ws';
 
 import type { ServerStore } from '../store/servers.js';
 
@@ -128,7 +128,7 @@ export function createSetupRoutes(deps: SetupDeps) {
     app.get(
       '/v1/setup/servers/:id/stream',
       upgrade((c) => {
-        const serverId = c.req.param('id');
+        const serverId = c.req.param('id')!;
         return {
           onOpen(_evt, ws) {
             const server = serverStore.get(serverId);

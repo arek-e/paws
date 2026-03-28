@@ -1,13 +1,12 @@
 # V1SnapshotsIdBuildPost202Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**snapshot_id** | **str** |  | 
-**status** | **str** |  | 
-**job_id** | **str** |  | 
+| Name            | Type    | Description | Notes |
+| --------------- | ------- | ----------- | ----- |
+| **snapshot_id** | **str** |             |
+| **status**      | **str** |             |
+| **job_id**      | **str** |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ v1_snapshots_id_build_post202_response_dict = v1_snapshots_id_build_post202_resp
 # create an instance of V1SnapshotsIdBuildPost202Response from a dict
 v1_snapshots_id_build_post202_response_from_dict = V1SnapshotsIdBuildPost202Response.from_dict(v1_snapshots_id_build_post202_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

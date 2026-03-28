@@ -2,9 +2,7 @@
 name = "paws_client"
 version = "0.1.0"
 description = "paws Gateway API"
-authors = [
-  {name = "OpenAPI Generator Community",email = "team@openapitools.org"},
-]
+authors = [{ name = "OpenAPI Generator Community", email = "team@openapitools.org" }]
 readme = "README.md"
 keywords = ["OpenAPI", "OpenAPI-Generator", "paws Gateway API"]
 requires-python = ">=3.9"
@@ -77,9 +75,7 @@ disallow_any_generics = true
 #warn_return_any = true
 
 [[tool.mypy.overrides]]
-module = [
-  "paws_client.configuration",
-]
+module = ["paws_client.configuration"]
 warn_unused_ignores = true
 strict_equality = true
 extra_checks = true

@@ -17,6 +17,7 @@ function createMockWorkerClient(overrides?: Partial<WorkerClient>): WorkerClient
     }),
     createSession: async (sessionId) => ({ sessionId, status: 'pending' }),
     getSession: async () => undefined,
+    buildSnapshot: async () => {},
     ...overrides,
   };
 }
