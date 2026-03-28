@@ -111,6 +111,8 @@ services:
       PANGOLIN_ORG_ID: '${PANGOLIN_ORG_ID:-}'
       PANGOLIN_EMAIL: '${PANGOLIN_EMAIL:-}'
       PANGOLIN_PASSWORD: '${PANGOLIN_PASSWORD:-}'
+      # Metrics proxy (for dashboard charts)
+      VICTORIAMETRICS_URL: 'http://victoriametrics:8428'
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://localhost:4000/health']
       interval: 15s
