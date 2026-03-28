@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { deleteCookie } from 'hono/cookie';
+import { deleteCookie, setCookie } from 'hono/cookie';
 import { getAuth, oidcAuthMiddleware, processOAuthCallback, revokeSession } from '@hono/oidc-auth';
 
 /** Auth routes for OIDC login flow (browser-based, not OpenAPI) */
@@ -12,9 +12,23 @@ export function createAuthRoutes() {
     await next();
   });
 
-  app.get('/auth/login', oidcAuthMiddleware(), (c) => {
-    return c.redirect('/');
-  });
+  app.get(
+    '/auth/login',
+    async (c, next) => {
+      await next();
+      // After oidcAuthMiddleware sets the continue cookie to /auth/login,
+      // override it to point to the dashboard root instead
+      setCookie(c, 'continue', '/', {
+        path: '/auth/callback',
+        httpOnly: true,
+        secure: true,
+      });
+    },
+    oidcAuthMiddleware(),
+    (c) => {
+      return c.redirect('/');
+    },
+  );
 
   // Callback: process the code exchange directly (don't use oidcAuthMiddleware
   // here — behind a reverse proxy, the origin mismatch causes it to start a
