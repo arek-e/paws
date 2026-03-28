@@ -37,8 +37,7 @@ export function Layout() {
       {/* Mobile header */}
       <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-950">
         <div className="flex items-center gap-3">
-          <pre className="text-emerald-400 text-[10px] leading-tight font-mono">{` /\\_/\\
-( o.o )`}</pre>
+          <img src="/logo.svg" alt="paws" className="w-6 h-6" />
           <span className="text-sm font-semibold text-zinc-100">paws</span>
         </div>
         <button
@@ -86,7 +85,7 @@ export function Layout() {
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-56 flex-shrink-0 border-r border-zinc-800 bg-zinc-950 flex-col">
         <div className="p-4 border-b border-zinc-800">
-          <pre className="text-emerald-400 text-xs leading-tight font-mono">{CAT_LOGO}</pre>
+          <img src="/logo.svg" alt="paws" className="w-8 h-8" />
           <p className="mt-2 text-sm font-semibold text-zinc-100">paws</p>
           <p className="text-xs text-zinc-500">fleet dashboard</p>
         </div>
