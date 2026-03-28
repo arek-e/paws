@@ -18,8 +18,10 @@ import type { Semaphore } from '../semaphore.js';
 
 /** Configuration for the session executor */
 export interface ExecutorConfig {
-  /** Path to snapshot directory */
+  /** Path to snapshot directory (default snapshot) */
   snapshotDir: string;
+  /** Base directory containing all snapshots (for multi-snapshot support) */
+  snapshotBaseDir?: string;
   /** Base directory for VM working directories */
   vmBaseDir: string;
   /** Path to SSH private key for VM access */
@@ -52,6 +54,23 @@ export interface ActiveSession {
   vmHandle?: VmHandle;
   proxyHandle?: ProxyInstance;
   ca?: SessionCa;
+}
+
+/** Resolve a snapshot ID to a local directory path */
+function resolveSnapshotDir(config: ExecutorConfig, snapshotId: string): string {
+  if (config.snapshotBaseDir) {
+    // Multi-snapshot: look for the snapshot in the base directory
+    const resolved = `${config.snapshotBaseDir}/${snapshotId}`;
+    // Fall back to default if the specific snapshot doesn't exist
+    try {
+      const stat = Bun.file(`${resolved}/vmstate.snap`);
+      if (stat.size > 0) return resolved;
+    } catch {
+      // Snapshot not found, fall back
+    }
+  }
+  // Single-snapshot: always use the configured default
+  return config.snapshotDir;
 }
 
 /** Create the session executor that orchestrates the full VM lifecycle */
@@ -139,9 +158,10 @@ export function createExecutor(config: ExecutorConfig) {
         await proxyHandle.start();
         session.proxyHandle = proxyHandle;
 
-        // 7. Restore VM from snapshot
+        // 7. Restore VM from snapshot (resolve snapshot ID → directory)
+        const snapshotDir = resolveSnapshotDir(config, request.snapshot);
         const restoreOpts = {
-          snapshotDir: config.snapshotDir,
+          snapshotDir,
           vmDir,
           ...(config.firecrackerBin ? { firecrackerBin: config.firecrackerBin } : {}),
         };

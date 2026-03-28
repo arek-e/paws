@@ -3,6 +3,7 @@ import { createBunWebSocket } from 'hono/bun';
 import { createGatewayApp } from './app.js';
 import { createK8sDiscovery } from './discovery/k8s.js';
 import { createWorkerRegistry } from './discovery/registry.js';
+import { createPersistentDaemonStore } from './store/persistent.js';
 import { createStaticDiscovery } from './discovery/static.js';
 
 const PORT = parseInt(process.env['PORT'] ?? '4000', 10);
@@ -57,10 +58,14 @@ const discovery = {
 const DASHBOARD_DIR = process.env['DASHBOARD_DIR'] ?? '';
 const { upgradeWebSocket, websocket } = createBunWebSocket();
 
+const DATA_DIR = process.env['DATA_DIR'] ?? '/var/lib/paws/data';
+const daemonStore = createPersistentDaemonStore(`${DATA_DIR}/daemons.json`);
+
 const app = await createGatewayApp({
   apiKey: API_KEY,
   discovery,
   workerRegistry,
+  daemonStore,
   upgradeWebSocket,
   ...(DASHBOARD_DIR && { dashboardDir: DASHBOARD_DIR }),
   ...(oidc && { oidc }),
