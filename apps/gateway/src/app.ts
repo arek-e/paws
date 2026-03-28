@@ -5,6 +5,7 @@ import { selectWorker } from '@paws/scheduler';
 
 import type { WorkerRegistry } from './discovery/registry.js';
 import { createGovernanceChecker } from './governance.js';
+import { createGatewayMetrics, type GatewayMetrics } from './metrics.js';
 import { authMiddleware, type AuthConfig } from './middleware/auth.js';
 import { createAuthRoutes } from './routes/auth.js';
 import { registerWorkerWebSocket } from './routes/worker-ws.js';
@@ -108,6 +109,13 @@ export async function createGatewayApp(deps: GatewayDeps) {
   const { createSessionEvents } = await import('./events.js');
   const sessionEvents = createSessionEvents();
 
+  // Metrics
+  const metrics = createGatewayMetrics({
+    sessionStore: rawSessionStore,
+    daemonStore,
+    registry: deps.workerRegistry,
+  });
+
   // Wrap session store to emit events on status updates (for WebSocket streaming)
   const sessionStore: SessionStore = {
     ...rawSessionStore,
@@ -152,6 +160,21 @@ export async function createGatewayApp(deps: GatewayDeps) {
 
   app.openapi(healthRoute, (c) => {
     return c.json({ status: 'healthy', uptime: Date.now() - startTime, version: '0.1.0' }, 200);
+  });
+
+  // --- Metrics (no auth — Prometheus scraper) ---
+
+  app.get('/metrics', async (c) => {
+    const metricsOutput = await metrics.promRegistry.metrics();
+    return c.text(metricsOutput, 200, { 'Content-Type': 'text/plain; charset=utf-8' });
+  });
+
+  // --- HTTP request metrics middleware ---
+
+  app.use('/v1/*', async (c, next) => {
+    const start = Date.now();
+    await next();
+    metrics.recordRequest(c.req.method, c.req.path, c.res.status, Date.now() - start);
   });
 
   // --- Auth routes (login/callback/logout/me — no API key required) ---

@@ -1,0 +1,19 @@
+# Prometheus scrape config for paws
+# VictoriaMetrics uses this to collect metrics from gateway + workers
+
+scrape_configs:
+  - job_name: paws-gateway
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - localhost:4000
+        labels:
+          instance: control-plane
+
+  - job_name: paws-workers
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - 65.108.10.170:3001
+        labels:
+          instance: hetzner-ax42
