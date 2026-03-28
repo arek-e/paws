@@ -16,6 +16,7 @@ COPY packages/proxy/package.json        ./packages/proxy/package.json
 COPY packages/scheduler/package.json      ./packages/scheduler/package.json
 COPY packages/snapshot-store/package.json ./packages/snapshot-store/package.json
 COPY apps/gateway/package.json            ./apps/gateway/package.json
+COPY providers/aws-ec2/package.json     ./providers/aws-ec2/package.json
 COPY apps/worker/package.json           ./apps/worker/package.json
 
 # Install all dependencies (including workspace symlinks).
@@ -27,6 +28,7 @@ COPY packages/firecracker/ ./packages/firecracker/
 COPY packages/proxy/       ./packages/proxy/
 COPY packages/scheduler/       ./packages/scheduler/
 COPY packages/snapshot-store/  ./packages/snapshot-store/
+COPY providers/aws-ec2/        ./providers/aws-ec2/
 
 # Copy gateway source.
 COPY apps/gateway/ ./apps/gateway/
@@ -57,6 +59,7 @@ COPY --from=builder /build/packages/firecracker/ ./packages/firecracker/
 COPY --from=builder /build/packages/proxy/       ./packages/proxy/
 COPY --from=builder /build/packages/scheduler/       ./packages/scheduler/
 COPY --from=builder /build/packages/snapshot-store/  ./packages/snapshot-store/
+COPY --from=builder /build/providers/aws-ec2/        ./providers/aws-ec2/
 
 # Copy gateway source (we run from source with bun, not from the dist bundle,
 # because bun handles TypeScript natively and the workspace imports resolve

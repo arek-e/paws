@@ -15,6 +15,7 @@ COPY packages/proxy/package.json        ./packages/proxy/package.json
 COPY packages/scheduler/package.json    ./packages/scheduler/package.json
 COPY packages/snapshot-store/package.json ./packages/snapshot-store/package.json
 COPY apps/gateway/package.json          ./apps/gateway/package.json
+COPY providers/aws-ec2/package.json     ./providers/aws-ec2/package.json
 COPY apps/worker/package.json           ./apps/worker/package.json
 
 # Install all dependencies.
@@ -26,6 +27,7 @@ COPY packages/firecracker/ ./packages/firecracker/
 COPY packages/proxy/       ./packages/proxy/
 COPY packages/scheduler/       ./packages/scheduler/
 COPY packages/snapshot-store/  ./packages/snapshot-store/
+COPY providers/aws-ec2/        ./providers/aws-ec2/
 
 # Copy worker source.
 COPY apps/worker/ ./apps/worker/
@@ -67,6 +69,7 @@ COPY --from=builder /build/packages/firecracker/ ./packages/firecracker/
 COPY --from=builder /build/packages/proxy/       ./packages/proxy/
 COPY --from=builder /build/packages/scheduler/       ./packages/scheduler/
 COPY --from=builder /build/packages/snapshot-store/  ./packages/snapshot-store/
+COPY --from=builder /build/providers/aws-ec2/        ./providers/aws-ec2/
 COPY --from=builder /build/apps/worker/ ./apps/worker/
 
 # Create directories that the worker uses at runtime.
