@@ -14,7 +14,12 @@ import {
 } from './routes/daemons.js';
 import { fleetOverviewRoute, listWorkersRoute } from './routes/fleet.js';
 import { healthRoute } from './routes/health.js';
-import { cancelSessionRoute, createSessionRoute, getSessionRoute } from './routes/sessions.js';
+import {
+  cancelSessionRoute,
+  createSessionRoute,
+  getSessionRoute,
+  listSessionsRoute,
+} from './routes/sessions.js';
 import { buildSnapshotRoute, listSnapshotsRoute } from './routes/snapshots.js';
 import { receiveWebhookRoute } from './routes/webhooks.js';
 import { createDaemonStore, type DaemonStore } from './store/daemons.js';
@@ -42,6 +47,8 @@ export interface GatewayDeps {
   sessionStore?: SessionStore | undefined;
   daemonStore?: DaemonStore | undefined;
   governance?: GovernanceChecker | undefined;
+  /** Path to dashboard dist/ directory. When set, serves static files + SPA fallback. */
+  dashboardDir?: string | undefined;
 }
 
 const startTime = Date.now();
@@ -98,6 +105,7 @@ export function createGatewayApp(deps: GatewayDeps) {
 
   // --- Auth middleware for all /v1 routes (except webhooks) ---
 
+  app.use('/v1/sessions', authMiddleware(deps.apiKey));
   app.use('/v1/sessions/*', authMiddleware(deps.apiKey));
   app.use('/v1/daemons/*', authMiddleware(deps.apiKey));
   app.use('/v1/fleet/*', authMiddleware(deps.apiKey));
@@ -119,6 +127,12 @@ export function createGatewayApp(deps: GatewayDeps) {
   });
 
   // Handler type assertion needed: z.unknown() output (null | undefined) doesn't satisfy Hono's JSONValue
+  app.openapi(listSessionsRoute, (async (c: any) => {
+    const { limit } = c.req.valid('query');
+    const sessions = sessionStore.listAll(limit ?? 50).map(sessionToJson);
+    return c.json({ sessions }, 200);
+  }) as any);
+
   app.openapi(getSessionRoute, (async (c: any) => {
     const { id } = c.req.valid('param');
     const session = sessionStore.get(id as string);
@@ -423,6 +437,45 @@ export function createGatewayApp(deps: GatewayDeps) {
       description: 'Self-hosted platform for running AI agents in isolated Firecracker microVMs',
     },
   });
+
+  // --- Dashboard static files (opt-in) ---
+
+  if (deps.dashboardDir) {
+    const dir = deps.dashboardDir;
+    // Serve static assets
+    app.get('/assets/*', async (c) => {
+      const path = c.req.path;
+      const file = Bun.file(`${dir}${path}`);
+      if (await file.exists()) {
+        return new Response(file, {
+          headers: { 'Cache-Control': 'public, max-age=31536000, immutable' },
+        });
+      }
+      return c.notFound();
+    });
+
+    // SPA fallback: any non-API route serves index.html
+    app.get('*', async (c) => {
+      const path = c.req.path;
+      // Skip API and known non-dashboard paths
+      if (path.startsWith('/v1/') || path === '/health' || path === '/openapi.json') {
+        return c.notFound();
+      }
+      // Try exact file first (favicon.ico, etc.)
+      const exactFile = Bun.file(`${dir}${path}`);
+      if (await exactFile.exists()) {
+        return new Response(exactFile);
+      }
+      // SPA fallback
+      const indexFile = Bun.file(`${dir}/index.html`);
+      if (await indexFile.exists()) {
+        return new Response(indexFile, {
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        });
+      }
+      return c.notFound();
+    });
+  }
 
   // --- Default validation error handler ---
 

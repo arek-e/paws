@@ -45,6 +45,30 @@ describe('createSessionStore', () => {
     expect(results).toHaveLength(2);
   });
 
+  test('lists all sessions newest first', () => {
+    const store = createSessionStore();
+    store.create('s1', makeRequest());
+    store.create('s2', makeRequest());
+    store.create('s3', makeRequest());
+
+    const results = store.listAll();
+    expect(results).toHaveLength(3);
+    expect(results[0]!.sessionId).toBe('s3');
+    expect(results[2]!.sessionId).toBe('s1');
+  });
+
+  test('listAll respects limit', () => {
+    const store = createSessionStore();
+    store.create('s1', makeRequest());
+    store.create('s2', makeRequest());
+    store.create('s3', makeRequest());
+
+    const results = store.listAll(2);
+    expect(results).toHaveLength(2);
+    expect(results[0]!.sessionId).toBe('s3');
+    expect(results[1]!.sessionId).toBe('s2');
+  });
+
   test('counts active sessions', () => {
     const store = createSessionStore();
     store.create('s1', makeRequest());

@@ -4,6 +4,7 @@ import {
   CreateSessionRequestSchema,
   CreateSessionResponseSchema,
   ErrorResponseSchema,
+  SessionListResponseSchema,
   SessionSchema,
 } from '@paws/types';
 
@@ -32,6 +33,23 @@ export const createSessionRoute = createRoute({
     503: {
       description: 'Capacity exhausted',
       content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+export const listSessionsRoute = createRoute({
+  method: 'get',
+  path: '/v1/sessions',
+  tags: ['Sessions'],
+  request: {
+    query: z.object({
+      limit: z.coerce.number().int().min(1).max(200).default(50).optional(),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'List of sessions',
+      content: { 'application/json': { schema: SessionListResponseSchema } },
     },
   },
 });

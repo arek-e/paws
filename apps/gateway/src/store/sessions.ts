@@ -20,6 +20,7 @@ export interface SessionStore {
   create(sessionId: string, request: CreateSessionRequest, daemonRole?: string): StoredSession;
   get(sessionId: string): StoredSession | undefined;
   updateStatus(sessionId: string, status: Session['status'], result?: Partial<StoredSession>): void;
+  listAll(limit?: number): StoredSession[];
   listByDaemon(role: string, limit?: number): StoredSession[];
   countActiveSessions(): number;
 }
@@ -52,6 +53,10 @@ export function createSessionStore(): SessionStore {
       if (result) {
         Object.assign(session, result);
       }
+    },
+
+    listAll(limit = 50) {
+      return Array.from(sessions.values()).reverse().slice(0, limit);
     },
 
     listByDaemon(role, limit = 10) {
