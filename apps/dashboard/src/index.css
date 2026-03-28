@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+
+html,
+body {
+  @apply bg-zinc-950 text-zinc-100 min-h-screen;
+}

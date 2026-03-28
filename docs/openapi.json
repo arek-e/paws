@@ -1,0 +1,2359 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "paws Gateway API",
+    "version": "0.1.0",
+    "description": "Self-hosted platform for running AI agents in isolated Firecracker microVMs"
+  },
+  "components": {
+    "schemas": {},
+    "parameters": {}
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "responses": {
+          "200": {
+            "description": "Gateway health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "uptime": {
+                      "type": "number"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "uptime",
+                    "version"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessions": {
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "snapshot": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "workload": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "script"
+                        ]
+                      },
+                      "script": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "env": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "default": {}
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "script"
+                    ]
+                  },
+                  "resources": {
+                    "type": "object",
+                    "properties": {
+                      "vcpus": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 8,
+                        "default": 2
+                      },
+                      "memoryMB": {
+                        "type": "integer",
+                        "minimum": 256,
+                        "maximum": 16384,
+                        "default": 4096
+                      }
+                    }
+                  },
+                  "timeoutMs": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "default": 600000
+                  },
+                  "network": {
+                    "type": "object",
+                    "properties": {
+                      "allowOut": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "default": []
+                      },
+                      "credentials": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "object",
+                          "properties": {
+                            "headers": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "headers"
+                          ]
+                        },
+                        "default": {}
+                      }
+                    }
+                  },
+                  "callbackUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "nullable": true
+                    }
+                  }
+                },
+                "required": [
+                  "snapshot",
+                  "workload"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Session created and queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sessionId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "sessionId",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHORIZED",
+                            "FORBIDDEN",
+                            "SESSION_NOT_FOUND",
+                            "DAEMON_NOT_FOUND",
+                            "DAEMON_ALREADY_EXISTS",
+                            "SNAPSHOT_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "CAPACITY_EXHAUSTED",
+                            "RATE_LIMITED",
+                            "VALIDATION_ERROR",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Capacity exhausted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHORIZED",
+                            "FORBIDDEN",
+                            "SESSION_NOT_FOUND",
+                            "DAEMON_NOT_FOUND",
+                            "DAEMON_ALREADY_EXISTS",
+                            "SNAPSHOT_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "CAPACITY_EXHAUSTED",
+                            "RATE_LIMITED",
+                            "VALIDATION_ERROR",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessions/{id}": {
+      "get": {
+        "tags": [
+          "Sessions"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sessionId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "running",
+                        "completed",
+                        "failed",
+                        "timeout",
+                        "cancelled"
+                      ]
+                    },
+                    "exitCode": {
+                      "type": "integer"
+                    },
+                    "stdout": {
+                      "type": "string"
+                    },
+                    "stderr": {
+                      "type": "string"
+                    },
+                    "output": {
+                      "nullable": true
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "completedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "durationMs": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "exclusiveMinimum": true
+                    },
+                    "worker": {
+                      "type": "string"
+                    },
+                    "metadata": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "nullable": true
+                      }
+                    }
+                  },
+                  "required": [
+                    "sessionId",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHORIZED",
+                            "FORBIDDEN",
+                            "SESSION_NOT_FOUND",
+                            "DAEMON_NOT_FOUND",
+                            "DAEMON_ALREADY_EXISTS",
+                            "SNAPSHOT_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "CAPACITY_EXHAUSTED",
+                            "RATE_LIMITED",
+                            "VALIDATION_ERROR",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Sessions"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sessionId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "cancelled"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "sessionId",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHORIZED",
+                            "FORBIDDEN",
+                            "SESSION_NOT_FOUND",
+                            "DAEMON_NOT_FOUND",
+                            "DAEMON_ALREADY_EXISTS",
+                            "SNAPSHOT_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "CAPACITY_EXHAUSTED",
+                            "RATE_LIMITED",
+                            "VALIDATION_ERROR",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/daemons": {
+      "post": {
+        "tags": [
+          "Daemons"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "description": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "snapshot": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "trigger": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "webhook"
+                            ]
+                          },
+                          "events": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "minItems": 1
+                          },
+                          "secret": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "events"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "schedule"
+                            ]
+                          },
+                          "cron": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "cron"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "watch"
+                            ]
+                          },
+                          "condition": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "intervalMs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "default": 60000
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "condition"
+                        ]
+                      }
+                    ]
+                  },
+                  "workload": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "script"
+                        ]
+                      },
+                      "script": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "env": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "default": {}
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "script"
+                    ]
+                  },
+                  "resources": {
+                    "type": "object",
+                    "properties": {
+                      "vcpus": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 8,
+                        "default": 2
+                      },
+                      "memoryMB": {
+                        "type": "integer",
+                        "minimum": 256,
+                        "maximum": 16384,
+                        "default": 4096
+                      }
+                    }
+                  },
+                  "network": {
+                    "type": "object",
+                    "properties": {
+                      "allowOut": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "default": []
+                      },
+                      "credentials": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "object",
+                          "properties": {
+                            "headers": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "headers"
+                          ]
+                        },
+                        "default": {}
+                      }
+                    }
+                  },
+                  "governance": {
+                    "type": "object",
+                    "properties": {
+                      "maxActionsPerHour": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true
+                      },
+                      "requiresApproval": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "default": []
+                      },
+                      "auditLog": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "role",
+                  "snapshot",
+                  "trigger",
+                  "workload"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Daemon registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "active"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "role",
+                    "status",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHORIZED",
+                            "FORBIDDEN",
+                            "SESSION_NOT_FOUND",
+                            "DAEMON_NOT_FOUND",
+                            "DAEMON_ALREADY_EXISTS",
+                            "SNAPSHOT_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "CAPACITY_EXHAUSTED",
+                            "RATE_LIMITED",
+                            "VALIDATION_ERROR",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Daemon already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHORIZED",
+                            "FORBIDDEN",
+                            "SESSION_NOT_FOUND",
+                            "DAEMON_NOT_FOUND",
+                            "DAEMON_ALREADY_EXISTS",
+                            "SNAPSHOT_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "CAPACITY_EXHAUSTED",
+                            "RATE_LIMITED",
+                            "VALIDATION_ERROR",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Daemons"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of daemons",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "daemons": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "role": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "paused",
+                              "stopped"
+                            ]
+                          },
+                          "trigger": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "webhook"
+                                    ]
+                                  },
+                                  "events": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "minItems": 1
+                                  },
+                                  "secret": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "events"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "schedule"
+                                    ]
+                                  },
+                                  "cron": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "cron"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "watch"
+                                    ]
+                                  },
+                                  "condition": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "intervalMs": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "exclusiveMinimum": true,
+                                    "default": 60000
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "condition"
+                                ]
+                              }
+                            ]
+                          },
+                          "stats": {
+                            "type": "object",
+                            "properties": {
+                              "totalInvocations": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "lastInvokedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "avgDurationMs": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "exclusiveMinimum": true
+                              }
+                            },
+                            "required": [
+                              "totalInvocations"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "role",
+                          "description",
+                          "status",
+                          "trigger",
+                          "stats"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "daemons"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/daemons/{role}": {
+      "get": {
+        "tags": [
+          "Daemons"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "role",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daemon detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "paused",
+                        "stopped"
+                      ]
+                    },
+                    "trigger": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "webhook"
+                              ]
+                            },
+                            "events": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "minItems": 1
+                            },
+                            "secret": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "events"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "schedule"
+                              ]
+                            },
+                            "cron": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "cron"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "watch"
+                              ]
+                            },
+                            "condition": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "intervalMs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "exclusiveMinimum": true,
+                              "default": 60000
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "condition"
+                          ]
+                        }
+                      ]
+                    },
+                    "stats": {
+                      "type": "object",
+                      "properties": {
+                        "totalInvocations": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "lastInvokedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "avgDurationMs": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "exclusiveMinimum": true
+                        }
+                      },
+                      "required": [
+                        "totalInvocations"
+                      ]
+                    },
+                    "governance": {
+                      "type": "object",
+                      "properties": {
+                        "maxActionsPerHour": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "exclusiveMinimum": true
+                        },
+                        "requiresApproval": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "default": []
+                        },
+                        "auditLog": {
+                          "type": "boolean",
+                          "default": true
+                        }
+                      }
+                    },
+                    "recentSessions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "sessionId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "triggeredAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "running",
+                              "completed",
+                              "failed",
+                              "timeout",
+                              "cancelled"
+                            ]
+                          },
+                          "durationMs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true
+                          }
+                        },
+                        "required": [
+                          "sessionId",
+                          "triggeredAt",
+                          "status"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "role",
+                    "description",
+                    "status",
+                    "trigger",
+                    "stats",
+                    "governance",
+                    "recentSessions"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Daemon not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHORIZED",
+                            "FORBIDDEN",
+                            "SESSION_NOT_FOUND",
+                            "DAEMON_NOT_FOUND",
+                            "DAEMON_ALREADY_EXISTS",
+                            "SNAPSHOT_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "CAPACITY_EXHAUSTED",
+                            "RATE_LIMITED",
+                            "VALIDATION_ERROR",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Daemons"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "role",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "trigger": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "webhook"
+                            ]
+                          },
+                          "events": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "minItems": 1
+                          },
+                          "secret": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "events"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "schedule"
+                            ]
+                          },
+                          "cron": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "cron"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "watch"
+                            ]
+                          },
+                          "condition": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "intervalMs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "default": 60000
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "condition"
+                        ]
+                      }
+                    ]
+                  },
+                  "workload": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "script"
+                        ]
+                      },
+                      "script": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "env": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "default": {}
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "script"
+                    ]
+                  },
+                  "resources": {
+                    "type": "object",
+                    "properties": {
+                      "vcpus": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 8,
+                        "default": 2
+                      },
+                      "memoryMB": {
+                        "type": "integer",
+                        "minimum": 256,
+                        "maximum": 16384,
+                        "default": 4096
+                      }
+                    }
+                  },
+                  "network": {
+                    "type": "object",
+                    "properties": {
+                      "allowOut": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "default": []
+                      },
+                      "credentials": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "object",
+                          "properties": {
+                            "headers": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "headers"
+                          ]
+                        },
+                        "default": {}
+                      }
+                    }
+                  },
+                  "governance": {
+                    "type": "object",
+                    "properties": {
+                      "maxActionsPerHour": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true
+                      },
+                      "requiresApproval": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "default": []
+                      },
+                      "auditLog": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Daemon updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "paused",
+                        "stopped"
+                      ]
+                    },
+                    "trigger": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "webhook"
+                              ]
+                            },
+                            "events": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "minItems": 1
+                            },
+                            "secret": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "events"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "schedule"
+                              ]
+                            },
+                            "cron": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "cron"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "watch"
+                              ]
+                            },
+                            "condition": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "intervalMs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "exclusiveMinimum": true,
+                              "default": 60000
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "condition"
+                          ]
+                        }
+                      ]
+                    },
+                    "stats": {
+                      "type": "object",
+                      "properties": {
+                        "totalInvocations": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "lastInvokedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "avgDurationMs": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "exclusiveMinimum": true
+                        }
+                      },
+                      "required": [
+                        "totalInvocations"
+                      ]
+                    },
+                    "governance": {
+                      "type": "object",
+                      "properties": {
+                        "maxActionsPerHour": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "exclusiveMinimum": true
+                        },
+                        "requiresApproval": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "default": []
+                        },
+                        "auditLog": {
+                          "type": "boolean",
+                          "default": true
+                        }
+                      }
+                    },
+                    "recentSessions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "sessionId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "triggeredAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "running",
+                              "completed",
+                              "failed",
+                              "timeout",
+                              "cancelled"
+                            ]
+                          },
+                          "durationMs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true
+                          }
+                        },
+                        "required": [
+                          "sessionId",
+                          "triggeredAt",
+                          "status"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "role",
+                    "description",
+                    "status",
+                    "trigger",
+                    "stats",
+                    "governance",
+                    "recentSessions"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Daemon not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHORIZED",
+                            "FORBIDDEN",
+                            "SESSION_NOT_FOUND",
+                            "DAEMON_NOT_FOUND",
+                            "DAEMON_ALREADY_EXISTS",
+                            "SNAPSHOT_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "CAPACITY_EXHAUSTED",
+                            "RATE_LIMITED",
+                            "VALIDATION_ERROR",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Daemons"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "role",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daemon stopped",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "stopped"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "role",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Daemon not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHORIZED",
+                            "FORBIDDEN",
+                            "SESSION_NOT_FOUND",
+                            "DAEMON_NOT_FOUND",
+                            "DAEMON_ALREADY_EXISTS",
+                            "SNAPSHOT_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "CAPACITY_EXHAUSTED",
+                            "RATE_LIMITED",
+                            "VALIDATION_ERROR",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks/{role}": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "role",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Webhook accepted, session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accepted": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "sessionId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "accepted",
+                    "sessionId"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Daemon not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHORIZED",
+                            "FORBIDDEN",
+                            "SESSION_NOT_FOUND",
+                            "DAEMON_NOT_FOUND",
+                            "DAEMON_ALREADY_EXISTS",
+                            "SNAPSHOT_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "CAPACITY_EXHAUSTED",
+                            "RATE_LIMITED",
+                            "VALIDATION_ERROR",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHORIZED",
+                            "FORBIDDEN",
+                            "SESSION_NOT_FOUND",
+                            "DAEMON_NOT_FOUND",
+                            "DAEMON_ALREADY_EXISTS",
+                            "SNAPSHOT_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "CAPACITY_EXHAUSTED",
+                            "RATE_LIMITED",
+                            "VALIDATION_ERROR",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/fleet": {
+      "get": {
+        "tags": [
+          "Fleet"
+        ],
+        "responses": {
+          "200": {
+            "description": "Fleet overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalWorkers": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "healthyWorkers": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "totalCapacity": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "usedCapacity": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "queuedSessions": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "activeDaemons": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "activeSessions": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "totalWorkers",
+                    "healthyWorkers",
+                    "totalCapacity",
+                    "usedCapacity",
+                    "queuedSessions",
+                    "activeDaemons",
+                    "activeSessions"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/fleet/workers": {
+      "get": {
+        "tags": [
+          "Fleet"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of workers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "workers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "healthy",
+                              "degraded",
+                              "unhealthy"
+                            ]
+                          },
+                          "capacity": {
+                            "type": "object",
+                            "properties": {
+                              "maxConcurrent": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "exclusiveMinimum": true
+                              },
+                              "running": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "queued": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "available": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": [
+                              "maxConcurrent",
+                              "running",
+                              "queued",
+                              "available"
+                            ]
+                          },
+                          "snapshot": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "exclusiveMinimum": true
+                              },
+                              "ageMs": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "version",
+                              "ageMs"
+                            ]
+                          },
+                          "uptime": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status",
+                          "capacity",
+                          "snapshot",
+                          "uptime"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "workers"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/snapshots": {
+      "get": {
+        "tags": [
+          "Snapshots"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of snapshots",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "snapshots": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "size": {
+                            "type": "object",
+                            "properties": {
+                              "disk": {
+                                "type": "string"
+                              },
+                              "memory": {
+                                "type": "string"
+                              },
+                              "total": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "disk",
+                              "memory",
+                              "total"
+                            ]
+                          },
+                          "config": {
+                            "type": "object",
+                            "properties": {
+                              "vcpus": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 8,
+                                "default": 2
+                              },
+                              "memoryMB": {
+                                "type": "integer",
+                                "minimum": 256,
+                                "maximum": 16384,
+                                "default": 4096
+                              }
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "version",
+                          "createdAt",
+                          "size",
+                          "config"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "snapshots"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/snapshots/{id}/build": {
+      "post": {
+        "tags": [
+          "Snapshots"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "base": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "setup": {
+                    "type": "string"
+                  },
+                  "resources": {
+                    "type": "object",
+                    "properties": {
+                      "vcpus": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 8,
+                        "default": 2
+                      },
+                      "memoryMB": {
+                        "type": "integer",
+                        "minimum": 256,
+                        "maximum": 16384,
+                        "default": 4096
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "base",
+                  "setup"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Snapshot build started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "snapshotId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "building",
+                        "ready",
+                        "failed"
+                      ]
+                    },
+                    "jobId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "snapshotId",
+                    "status",
+                    "jobId"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHORIZED",
+                            "FORBIDDEN",
+                            "SESSION_NOT_FOUND",
+                            "DAEMON_NOT_FOUND",
+                            "DAEMON_ALREADY_EXISTS",
+                            "SNAPSHOT_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "CAPACITY_EXHAUSTED",
+                            "RATE_LIMITED",
+                            "VALIDATION_ERROR",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/snapshots/builds/{jobId}": {
+      "get": {
+        "tags": [
+          "Snapshots"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "jobId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Build job status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "jobId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "snapshotId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "building",
+                        "ready",
+                        "failed"
+                      ]
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "completedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "jobId",
+                    "snapshotId",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Build job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNAUTHORIZED",
+                            "FORBIDDEN",
+                            "SESSION_NOT_FOUND",
+                            "DAEMON_NOT_FOUND",
+                            "DAEMON_ALREADY_EXISTS",
+                            "SNAPSHOT_NOT_FOUND",
+                            "WORKER_NOT_FOUND",
+                            "CAPACITY_EXHAUSTED",
+                            "RATE_LIMITED",
+                            "VALIDATION_ERROR",
+                            "INTERNAL_ERROR"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

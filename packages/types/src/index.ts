@@ -52,6 +52,7 @@ export {
   CreateSessionRequestSchema,
   CreateSessionResponseSchema,
   ResourcesSchema,
+  SessionListResponseSchema,
   SessionSchema,
   SessionStatus,
   WorkloadSchema,
@@ -62,6 +63,7 @@ export type {
   CreateSessionResponse,
   Resources,
   Session,
+  SessionListResponse,
   Workload,
 } from './session.js';
 

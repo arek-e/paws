@@ -1,0 +1,145 @@
+import { useMemo } from 'react';
+import { useParams } from 'react-router';
+
+import { getSession } from '../api/client.js';
+import { StatusBadge } from '../components/StatusBadge.js';
+import { Terminal } from '../components/Terminal.js';
+import { usePolling } from '../hooks/usePolling.js';
+import { useWebSocket } from '../hooks/useWebSocket.js';
+
+function formatDuration(ms: number | undefined): string {
+  if (ms === undefined) return '-';
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
+function formatTimestamp(ts: string | undefined): string {
+  if (!ts) return '-';
+  return new Date(ts).toLocaleString();
+}
+
+const TERMINAL_STATUSES = new Set(['completed', 'failed', 'timeout', 'cancelled']);
+
+export function SessionDetail() {
+  const { id } = useParams<{ id: string }>();
+
+  const session = usePolling(() => getSession(id!), 3000);
+
+  const isTerminal = session.data ? TERMINAL_STATUSES.has(session.data.status) : false;
+
+  // WebSocket for live streaming (only when not terminal)
+  const apiKey = typeof window !== 'undefined' ? (localStorage.getItem('paws_api_key') ?? '') : '';
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl =
+    !isTerminal && id
+      ? `${wsProtocol}//${window.location.host}/v1/sessions/${id}/stream?token=${encodeURIComponent(apiKey)}`
+      : null;
+  const ws = useWebSocket(wsUrl);
+
+  // Merge terminal lines from session data + websocket messages
+  const terminalLines = useMemo(() => {
+    const lines: { stream: 'stdout' | 'stderr'; text: string }[] = [];
+
+    // From completed session data
+    if (session.data?.stdout) {
+      for (const line of session.data.stdout.split('\n')) {
+        lines.push({ stream: 'stdout', text: line });
+      }
+    }
+    if (session.data?.stderr) {
+      for (const line of session.data.stderr.split('\n')) {
+        lines.push({ stream: 'stderr', text: line });
+      }
+    }
+
+    // From live websocket
+    if (!isTerminal) {
+      for (const msg of ws.messages) {
+        if (msg.type === 'output') {
+          lines.push({ stream: msg.stream, text: msg.data });
+        }
+      }
+    }
+
+    return lines;
+  }, [session.data?.stdout, session.data?.stderr, ws.messages, isTerminal]);
+
+  if (!id) return <p className="text-zinc-400">No session ID provided.</p>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <h1 className="text-lg font-semibold">Session</h1>
+        <code className="text-sm text-zinc-400 font-mono">{id}</code>
+      </div>
+
+      {session.loading && !session.data ? (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 animate-pulse h-32" />
+      ) : session.error ? (
+        <div className="bg-red-400/10 border border-red-400/20 rounded-lg p-4 text-red-400 text-sm">
+          Failed to load session: {session.error.message}
+        </div>
+      ) : session.data ? (
+        <>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <p className="text-zinc-500 text-xs">Status</p>
+                <div className="mt-1">
+                  <StatusBadge status={session.data.status} />
+                </div>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Worker</p>
+                <p className="mt-1 text-zinc-300">{session.data.worker ?? '-'}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Duration</p>
+                <p className="mt-1 text-zinc-300">{formatDuration(session.data.durationMs)}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-xs">Started</p>
+                <p className="mt-1 text-zinc-300">{formatTimestamp(session.data.startedAt)}</p>
+              </div>
+              {session.data.exitCode !== undefined && (
+                <div>
+                  <p className="text-zinc-500 text-xs">Exit Code</p>
+                  <p
+                    className={`mt-1 ${session.data.exitCode === 0 ? 'text-emerald-400' : 'text-red-400'}`}
+                  >
+                    {session.data.exitCode}
+                  </p>
+                </div>
+              )}
+              {session.data.completedAt && (
+                <div>
+                  <p className="text-zinc-500 text-xs">Completed</p>
+                  <p className="mt-1 text-zinc-300">{formatTimestamp(session.data.completedAt)}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
+                Output
+              </h2>
+              {!isTerminal && (
+                <span
+                  className={`inline-flex items-center gap-1 text-xs ${ws.connected ? 'text-emerald-400' : 'text-zinc-500'}`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${ws.connected ? 'bg-emerald-400' : 'bg-zinc-600'}`}
+                  />
+                  {ws.connected ? 'live' : 'disconnected'}
+                </span>
+              )}
+            </div>
+            <Terminal lines={terminalLines} />
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}

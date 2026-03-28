@@ -27,7 +27,13 @@ const discovery = {
   },
 };
 
-const app = createGatewayApp({ apiKey: API_KEY, discovery });
+const DASHBOARD_DIR = process.env['DASHBOARD_DIR'] ?? '';
+
+const app = createGatewayApp({
+  apiKey: API_KEY,
+  discovery,
+  ...(DASHBOARD_DIR && { dashboardDir: DASHBOARD_DIR }),
+});
 
 const workerMode = WORKER_URL ? `static (${WORKER_URL})` : 'k8s pod-watch';
 
@@ -38,6 +44,7 @@ console.log(`
 
 Listening on :${PORT}
 Worker discovery: ${workerMode}
+Dashboard: ${DASHBOARD_DIR ? `serving from ${DASHBOARD_DIR}` : 'disabled (set DASHBOARD_DIR)'}
 OpenAPI spec: http://localhost:${PORT}/openapi.json
 `);
 

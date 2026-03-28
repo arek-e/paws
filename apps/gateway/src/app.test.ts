@@ -93,6 +93,53 @@ describe('POST /v1/sessions', () => {
   });
 });
 
+describe('GET /v1/sessions', () => {
+  test('returns empty list when no sessions', async () => {
+    const app = createApp();
+    const res = await app.request('/v1/sessions', { headers: AUTH });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.sessions).toEqual([]);
+  });
+
+  test('lists sessions after creation', async () => {
+    const app = createApp();
+    await app.request('/v1/sessions', {
+      method: 'POST',
+      headers: JSON_HEADERS,
+      body: JSON.stringify({
+        snapshot: 'test',
+        workload: { type: 'script', script: 'echo hi' },
+      }),
+    });
+
+    const res = await app.request('/v1/sessions', { headers: AUTH });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.sessions).toHaveLength(1);
+    expect(body.sessions[0].sessionId).toBeDefined();
+  });
+
+  test('respects limit query param', async () => {
+    const app = createApp();
+    for (let i = 0; i < 3; i++) {
+      await app.request('/v1/sessions', {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify({
+          snapshot: 'test',
+          workload: { type: 'script', script: 'echo hi' },
+        }),
+      });
+    }
+
+    const res = await app.request('/v1/sessions?limit=2', { headers: AUTH });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.sessions).toHaveLength(2);
+  });
+});
+
 describe('GET /v1/sessions/:id', () => {
   test('returns session after creation', async () => {
     const app = createApp();

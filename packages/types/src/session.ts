@@ -77,6 +77,13 @@ export const SessionSchema = z.object({
 export type Session = z.infer<typeof SessionSchema>;
 
 /** Cancel session response */
+/** List sessions response */
+export const SessionListResponseSchema = z.object({
+  sessions: z.array(SessionSchema),
+});
+
+export type SessionListResponse = z.infer<typeof SessionListResponseSchema>;
+
 export const CancelSessionResponseSchema = z.object({
   sessionId: IdSchema,
   status: z.literal('cancelled'),
