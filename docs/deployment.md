@@ -100,7 +100,7 @@ echo "Your API key: $API_KEY"
 DASHBOARD_DIR=apps/dashboard/dist \
 API_KEY=$API_KEY \
 PORT=4000 \
-bun run apps/gateway/src/server.ts
+bun run apps/control-plane/src/server.ts
 ```
 
 #### With OIDC (optional)
@@ -116,13 +116,13 @@ docker compose up -d
 
 # Start gateway with OIDC
 OIDC_ISSUER=http://localhost:5556/dex \
-OIDC_CLIENT_ID=paws-gateway \
+OIDC_CLIENT_ID=paws-control-plane \
 OIDC_CLIENT_SECRET=paws-dex-secret-changeme \
 AUTH_SECRET=$(openssl rand -hex 32) \
 DASHBOARD_DIR=apps/dashboard/dist \
 API_KEY=$API_KEY \
 PORT=4000 \
-bun run apps/gateway/src/server.ts
+bun run apps/control-plane/src/server.ts
 ```
 
 #### Expose with Cloudflare Tunnel
@@ -144,7 +144,7 @@ cloudflared tunnel run paws
 #### Systemd service
 
 ```bash
-cat > /etc/systemd/system/paws-gateway.service << 'EOF'
+cat > /etc/systemd/system/paws-control-plane.service << 'EOF'
 [Unit]
 Description=paws gateway (control plane)
 After=network.target
@@ -156,7 +156,7 @@ WorkingDirectory=/opt/paws
 Environment=PORT=4000
 Environment=DASHBOARD_DIR=apps/dashboard/dist
 EnvironmentFile=/opt/paws/.env
-ExecStart=/usr/local/bin/bun run apps/gateway/src/server.ts
+ExecStart=/usr/local/bin/bun run apps/control-plane/src/server.ts
 Restart=always
 RestartSec=5
 
@@ -169,14 +169,14 @@ cat > /opt/paws/.env << EOF
 API_KEY=your-api-key-here
 # OIDC (optional)
 # OIDC_ISSUER=http://localhost:5556/dex
-# OIDC_CLIENT_ID=paws-gateway
+# OIDC_CLIENT_ID=paws-control-plane
 # OIDC_CLIENT_SECRET=paws-dex-secret-changeme
 # AUTH_SECRET=$(openssl rand -hex 32)
 EOF
 chmod 600 /opt/paws/.env
 
-systemctl enable paws-gateway
-systemctl start paws-gateway
+systemctl enable paws-control-plane
+systemctl start paws-control-plane
 ```
 
 ### 2. Provision Worker Nodes (Bare Metal)
@@ -211,7 +211,7 @@ The gateway discovers workers via the `WORKER_URL` env var or K8s pod watching. 
 # On the control plane, restart gateway with worker URL
 WORKER_URL=http://<worker-ip>:3000 \
 # ... other env vars ...
-bun run apps/gateway/src/server.ts
+bun run apps/control-plane/src/server.ts
 ```
 
 #### Systemd service
