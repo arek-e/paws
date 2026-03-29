@@ -7,8 +7,8 @@ import WaitlistForm from '@/components/WaitlistForm';
 import CodeTabs from '@/components/CodeTabs';
 import CopyButton from '@/components/CopyButton';
 
-const title = 'paws — Protected Agent Workflow System';
-const description = 'Zero-trust credential injection for AI agents. Secrets never enter the sandbox — they are injected at the network layer by a per-VM TLS MITM proxy.';
+const title = 'paws — Secure infrastructure for AI agents';
+const description = 'Self-hosted or managed. Zero-trust by default. Your secrets never enter the sandbox.';
 ---
 
 <html lang="en" class="dark">
@@ -74,11 +74,10 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
           <div class="absolute" style="top: 1.4em; left: 2.6em; width: 0.6em; height: 0.2em; animation: cat-blink 4s ease-in-out infinite;"></div>
         </div>
         <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-zinc-50 tracking-tight leading-[1.15] max-w-[720px] mx-auto mb-6">
-          Your agent should have <span class="text-emerald-400">nothing worth stealing</span>
+          Secure infrastructure for <span class="text-emerald-400">AI agents</span>
         </h1>
         <p class="text-lg text-zinc-400 max-w-[560px] mx-auto mb-12 leading-relaxed">
-          Zero-trust credential injection for AI agents. Secrets never enter the sandbox —
-          they're injected at the network layer by a per-VM TLS proxy.
+          Self-hosted or managed. Zero-trust by default. Your secrets never enter the sandbox.
         </p>
         <div class="flex flex-col items-center gap-6">
           <WaitlistForm client:load />

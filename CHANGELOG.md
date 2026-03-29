@@ -12,7 +12,7 @@
 - **No Cloudflare required** — TLS via HTTP-01 challenge. Domain and DNS configured after install, not before.
 - **Label-based subdomains** — `s-abc-frontend.fleet.dev` instead of `s-abc-3000.fleet.dev`. 12 hex chars for collision safety to ~420k concurrent sessions.
 - **Forwarded headers** — Pangolin passes `Remote-User`, `Remote-Email`, `Remote-Name` to apps inside VMs when using SSO auth.
-- **paws acronym** — Protected Agent Workflow System.
+- **paws acronym** — Secure infrastructure for AI agents.
 
 ### Changed
 

@@ -1,24 +1,25 @@
 import { useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router';
+import { Link, Outlet, useLocation } from '@tanstack/react-router';
 
 import { VersionBadge } from './UpdateBanner.js';
 
 function SidebarLink({ to, label, onClick }: { to: string; label: string; onClick?: () => void }) {
   return (
-    <NavLink
+    <Link
       to={to}
-      end
       onClick={onClick}
-      className={({ isActive }) =>
-        `block px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-          isActive
-            ? 'bg-zinc-800 text-emerald-400'
-            : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50'
-        }`
-      }
+      activeOptions={{ exact: true }}
+      activeProps={{
+        className:
+          'block px-4 py-1.5 rounded-md text-sm font-medium transition-colors bg-zinc-800 text-emerald-400',
+      }}
+      inactiveProps={{
+        className:
+          'block px-4 py-1.5 rounded-md text-sm font-medium transition-colors text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50',
+      }}
     >
       {label}
-    </NavLink>
+    </Link>
   );
 }
 
@@ -33,8 +34,10 @@ function SectionLabel({ children }: { children: string }) {
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
+      <SidebarLink to="/" label="Topology" onClick={onNavigate} />
+
       <SectionLabel>Infrastructure</SectionLabel>
-      <SidebarLink to="/" label="Fleet" onClick={onNavigate} />
+      <SidebarLink to="/fleet" label="Fleet" onClick={onNavigate} />
       <SidebarLink to="/servers" label="Servers" onClick={onNavigate} />
       <SidebarLink to="/snapshots" label="Snapshots" onClick={onNavigate} />
       <SidebarLink to="/tunnels" label="Tunnels" onClick={onNavigate} />
@@ -68,7 +71,7 @@ async function handleLogout() {
 export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
-  const isFullBleed = location.pathname === '/topology';
+  const isFullBleed = location.pathname === '/' || location.pathname === '/topology';
 
   return (
     <div className="flex flex-col md:flex-row h-screen">

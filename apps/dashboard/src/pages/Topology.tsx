@@ -19,9 +19,8 @@ import { useTopologyLayout } from '../components/topology/useTopologyLayout.js';
 import { ControlPlaneNode } from '../components/topology/ControlPlaneNode.js';
 import { WorkerNode } from '../components/topology/WorkerNode.js';
 import { SessionNode } from '../components/topology/SessionNode.js';
-import { ProxyNode } from '../components/topology/ProxyNode.js';
 import { DaemonNode } from '../components/topology/DaemonNode.js';
-import { ExternalNode } from '../components/topology/ExternalNode.js';
+import { ExposedPortNode } from '../components/topology/ExposedPortNode.js';
 import type { FleetOverview, Worker, Session } from '@paws/types';
 import { useEffect } from 'react';
 
@@ -29,9 +28,8 @@ const nodeTypes: NodeTypes = {
   controlPlane: ControlPlaneNode,
   worker: WorkerNode,
   session: SessionNode,
-  proxy: ProxyNode,
   daemon: DaemonNode,
-  external: ExternalNode,
+  exposedPort: ExposedPortNode,
 };
 
 interface DaemonItem {
@@ -66,11 +64,14 @@ function TopologyCanvas() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutEdges);
   const { fitView } = useReactFlow();
 
-  // Update nodes/edges when layout changes from new data
+  // Update nodes/edges when data changes (compare by length + IDs to avoid infinite loops)
+  const nodeKey = layoutNodes.map((n) => n.id).join(',');
+  const edgeKey = layoutEdges.map((e) => e.id).join(',');
   useEffect(() => {
     setNodes(layoutNodes);
     setEdges(layoutEdges);
-  }, [layoutNodes, layoutEdges, setNodes, setEdges]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by nodeKey/edgeKey to avoid infinite loop
+  }, [nodeKey, edgeKey]);
 
   const handleFitView = useCallback(() => {
     fitView({ padding: 0.2, duration: 300 });

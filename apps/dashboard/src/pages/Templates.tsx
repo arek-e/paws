@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import { getTemplates, deployTemplate, type DaemonTemplate } from '../api/client.js';
 import { usePolling } from '../hooks/usePolling.js';
@@ -45,7 +45,7 @@ function DeployForm({ template, onClose }: { template: DaemonTemplate; onClose: 
     setError(null);
     try {
       await deployTemplate(template.id, { role, snapshot });
-      navigate('/daemons');
+      navigate({ to: '/daemons' });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

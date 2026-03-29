@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 
-import { Fleet } from '../pages/Fleet.js';
+import { Topology } from '../pages/Topology.js';
 
 export function FirstRunRedirect() {
   const navigate = useNavigate();
@@ -29,5 +29,5 @@ export function FirstRunRedirect() {
     );
   }
 
-  return <Fleet />;
+  return <Topology />;
 }

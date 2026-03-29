@@ -4,10 +4,10 @@
 
 # paws
 
-**Protected Agent Workflow System**
+**Secure infrastructure for AI agents**
 
-Self-hosted zero-trust infrastructure for AI agents.
-Secrets never enter the sandbox.
+Self-hosted or managed. Zero-trust by default.
+Your secrets never enter the sandbox.
 
 [![CI](https://github.com/arek-e/paws/actions/workflows/ci.yml/badge.svg)](https://github.com/arek-e/paws/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/arek-e/paws)](LICENSE)

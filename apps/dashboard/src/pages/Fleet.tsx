@@ -116,7 +116,14 @@ export function Fleet() {
    > ^ <`}</pre>
             <p className="text-zinc-500 text-sm">No workers connected.</p>
             <p className="text-zinc-600 text-xs mt-1">
-              Run <code className="text-zinc-500">scripts/setup-worker.sh</code> on a bare metal box
+              Add a server from{' '}
+              <a href="/servers" className="text-emerald-500 hover:text-emerald-400">
+                Servers
+              </a>{' '}
+              or run the{' '}
+              <a href="/setup" className="text-emerald-500 hover:text-emerald-400">
+                setup wizard
+              </a>
             </p>
           </div>
         )}

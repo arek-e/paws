@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import { CredentialsStep } from '../components/setup/CredentialsStep.js';
 import { FirstRunStep } from '../components/setup/FirstRunStep.js';

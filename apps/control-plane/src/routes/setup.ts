@@ -222,7 +222,7 @@ export function createSetupRoutes(deps: SetupDeps) {
           // Create security group
           const sgResult = await ec2.createSecurityGroup(
             `paws-worker-${id.slice(0, 8)}`,
-            'paws worker — SSH + worker API',
+            'paws worker - SSH and worker API',
           );
           if (sgResult.isErr()) {
             throw new Error(`Failed to create security group: ${sgResult.error.message}`);

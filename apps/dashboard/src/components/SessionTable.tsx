@@ -1,5 +1,5 @@
 import type { Session } from '@paws/types';
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import { StatusBadge } from './StatusBadge.js';
 

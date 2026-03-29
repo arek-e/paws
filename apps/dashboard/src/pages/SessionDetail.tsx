@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useParams } from 'react-router';
+import { useParams } from '@tanstack/react-router';
 
 import { getSession } from '../api/client.js';
 import { BrowserView } from '../components/BrowserView.js';
@@ -22,9 +22,9 @@ function formatTimestamp(ts: string | undefined): string {
 const TERMINAL_STATUSES = new Set(['completed', 'failed', 'timeout', 'cancelled']);
 
 export function SessionDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams({ strict: false }) as { id: string };
 
-  const session = usePolling(() => getSession(id!), 3000);
+  const session = usePolling(() => getSession(id), 3000);
 
   const isTerminal = session.data ? TERMINAL_STATUSES.has(session.data.status) : false;
 

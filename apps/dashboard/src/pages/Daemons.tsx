@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link } from '@tanstack/react-router';
 
 import { getDaemons } from '../api/client.js';
 import { StatusBadge } from '../components/StatusBadge.js';
