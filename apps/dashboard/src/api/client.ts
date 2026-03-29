@@ -306,3 +306,59 @@ export async function validateServer(id: string): Promise<ValidationResult> {
   if (!res.ok) throw new Error(`Failed to validate server: ${res.status}`);
   return (await res.json()) as ValidationResult;
 }
+
+// --- Provisioning ---
+
+export interface ProviderField {
+  name: string;
+  label: string;
+  type: 'text' | 'password' | 'select';
+  placeholder?: string;
+  options?: { value: string; label: string }[];
+  hint?: string;
+}
+
+export interface Provider {
+  name: string;
+  label: string;
+  description: string;
+  fields: ProviderField[];
+}
+
+export interface ProvisionStatus {
+  serverId: string;
+  name: string;
+  ip: string;
+  status: string;
+  provider: string;
+  error?: string;
+  createdAt: string;
+}
+
+export async function getProviders(): Promise<Provider[]> {
+  const res = await fetch('/v1/provisioning/providers', { headers: apiKeyHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch providers: ${res.status}`);
+  const body = (await res.json()) as { providers: Provider[] };
+  return body.providers;
+}
+
+export async function provisionServer(body: Record<string, string>): Promise<{ serverId: string }> {
+  const res = await fetch('/v1/provisioning/provision', {
+    method: 'POST',
+    headers: apiKeyHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(
+      (data as { error?: { message?: string } }).error?.message ?? `Server error: ${res.status}`,
+    );
+  }
+  return (await res.json()) as { serverId: string };
+}
+
+export async function getProvisioningStatus(id: string): Promise<ProvisionStatus> {
+  const res = await fetch(`/v1/provisioning/${id}/status`, { headers: apiKeyHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch provisioning status: ${res.status}`);
+  return (await res.json()) as ProvisionStatus;
+}

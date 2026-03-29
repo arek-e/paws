@@ -9,6 +9,7 @@ import { SessionDetail } from './pages/SessionDetail.js';
 import { Sessions } from './pages/Sessions.js';
 import { Setup } from './pages/Setup.js';
 import { Snapshots } from './pages/Snapshots.js';
+import { Provision } from './pages/Provision.js';
 import { Tunnels } from './pages/Tunnels.js';
 
 export function App() {
@@ -22,6 +23,7 @@ export function App() {
             <Route path="snapshots" element={<Snapshots />} />
             <Route path="tunnels" element={<Tunnels />} />
             <Route path="servers" element={<Servers />} />
+            <Route path="provision" element={<Provision />} />
             <Route path="setup" element={<Setup />} />
             <Route path="sessions" element={<Sessions />} />
             <Route path="sessions/:id" element={<SessionDetail />} />

@@ -51,6 +51,7 @@ import { receiveWebhookRoute } from './routes/webhooks.js';
 import { createDaemonStore, type DaemonStore } from './store/daemons.js';
 import { createSnapshotConfigStore } from './store/snapshot-configs.js';
 import { createSessionStore, type SessionStore, type StoredSession } from './store/sessions.js';
+import { createProvisioningRoutes } from './routes/provisioning.js';
 import { createSetupRoutes } from './routes/setup.js';
 import { createServerStore, type ServerStore } from './store/servers.js';
 import { createWorkerClient } from './worker-client.js';
@@ -291,6 +292,8 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   app.use('/v1/pangolin', authMiddleware(authConfig));
   app.use('/v1/servers', authMiddleware(authConfig));
   app.use('/v1/servers/*', authMiddleware(authConfig));
+  app.use('/v1/provisioning', authMiddleware(authConfig));
+  app.use('/v1/provisioning/*', authMiddleware(authConfig));
 
   // Snapshot config store — hoisted so mergeSnapshotDomains can use it in session dispatch
   const snapshotConfigStore = createSnapshotConfigStore();
@@ -994,6 +997,21 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       workerRegistry: deps.workerRegistry,
     });
     app.route('/', serverRoutes);
+  }
+
+  // --- Provisioning routes (dashboard one-click provisioning) ---
+
+  {
+    const provisioningRoutes = createProvisioningRoutes({
+      serverStore: deps.serverStore ?? createServerStore(),
+      provisioner: {
+        start: async () => {
+          /* no-op until provisioner deps are wired */
+        },
+      },
+      upgradeWebSocket: deps.upgradeWebSocket,
+    });
+    app.route('/', provisioningRoutes);
   }
 
   // --- WebSocket routes (require Bun runtime) ---
