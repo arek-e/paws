@@ -37,6 +37,7 @@ const PANGOLIN_EMAIL_WORKER = process.env['PANGOLIN_EMAIL'] ?? '';
 const PANGOLIN_PASSWORD_WORKER = process.env['PANGOLIN_PASSWORD'] ?? '';
 const PANGOLIN_ORG_ID_WORKER = process.env['PANGOLIN_ORG_ID'] ?? '';
 const PANGOLIN_SITE_ID = process.env['PANGOLIN_SITE_ID'] ?? '';
+const PANGOLIN_DOMAIN_ID = process.env['PANGOLIN_DOMAIN_ID'] ?? '';
 const PANGOLIN_BASE_DOMAIN = process.env['PANGOLIN_BASE_DOMAIN'] ?? '';
 const WORKER_EXTERNAL_URL = process.env['WORKER_EXTERNAL_URL'] ?? '';
 
@@ -51,6 +52,7 @@ if (PANGOLIN_API_URL_WORKER && PANGOLIN_ORG_ID_WORKER && PANGOLIN_SITE_ID && PAN
     password: PANGOLIN_PASSWORD_WORKER || undefined,
     orgId: PANGOLIN_ORG_ID_WORKER,
     siteId: PANGOLIN_SITE_ID,
+    domainId: PANGOLIN_DOMAIN_ID,
     baseDomain: PANGOLIN_BASE_DOMAIN,
   });
 }

@@ -10,8 +10,10 @@ export interface PangolinResourceConfig {
   password?: string | undefined;
   /** Pangolin organization ID */
   orgId: string;
-  /** This worker's Pangolin site ID */
+  /** This worker's Pangolin site ID (numeric, for target attachment) */
   siteId: string;
+  /** Pangolin domain ID for the base domain (from GET /org/{orgId}/domains) */
+  domainId: string;
   /** Base domain for generated URLs (e.g., "fleet.tpops.dev") */
   baseDomain: string;
 }
@@ -36,7 +38,7 @@ export interface ExposedTunnel {
  * a subdomain to a host:port. When a session ends, resources are cleaned up.
  */
 export function createPangolinResourceManager(config: PangolinResourceConfig) {
-  const { apiUrl, apiKey, email, password, orgId, siteId, baseDomain } = config;
+  const { apiUrl, apiKey, email, password, orgId, siteId, domainId, baseDomain } = config;
 
   let sessionCookie = '';
 
@@ -95,10 +97,9 @@ export function createPangolinResourceManager(config: PangolinResourceConfig) {
   async function cleanupTunnels(tunnels: ExposedTunnel[]): Promise<void> {
     for (const tunnel of tunnels) {
       try {
-        const res = await authFetch(
-          `${apiUrl}/org/${orgId}/site/${siteId}/resource/${tunnel.resourceId}`,
-          { method: 'DELETE' },
-        );
+        const res = await authFetch(`${apiUrl}/resource/${tunnel.resourceId}`, {
+          method: 'DELETE',
+        });
         if (!res.ok && res.status !== 404) {
           console.error(`pangolin: failed to delete resource ${tunnel.resourceId}: ${res.status}`);
         }
@@ -137,29 +138,56 @@ export function createPangolinResourceManager(config: PangolinResourceConfig) {
           const sub = subdomain(sessionId, portConfig.port);
           const fullDomain = `${sub}.${baseDomain}`;
 
-          const res = await authFetch(`${apiUrl}/org/${orgId}/site/${siteId}/resource`, {
-            method: 'POST',
+          // Step 1: Create resource (subdomain + domain)
+          const createRes = await authFetch(`${apiUrl}/org/${orgId}/resource`, {
+            method: 'PUT',
             body: JSON.stringify({
+              name: `paws-${sub}`,
               subdomain: sub,
-              fullDomain,
-              target: hostPort,
-              protocol: portConfig.protocol ?? 'http',
+              domainId,
+              http: true,
+              protocol: 'tcp',
             }),
           });
 
-          if (!res.ok) {
-            const text = await res.text().catch(() => '');
+          if (!createRes.ok) {
+            const text = await createRes.text().catch(() => '');
             throw new Error(
-              `Pangolin resource creation failed for port ${portConfig.port}: ${res.status} ${text}`,
+              `Pangolin resource creation failed for port ${portConfig.port}: ${createRes.status} ${text}`,
             );
           }
 
-          const body = (await res.json()) as { data: { resourceId: string } };
+          const createBody = (await createRes.json()) as {
+            data: { resourceId: string | number };
+          };
+          const resourceId = String(createBody.data.resourceId);
+
+          // Step 2: Add target (site + host + port)
+          const targetRes = await authFetch(`${apiUrl}/resource/${resourceId}/target`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              siteId: Number(siteId),
+              ip: 'localhost',
+              port: hostPort,
+              method: portConfig.protocol === 'https' ? 'https' : 'http',
+            }),
+          });
+
+          if (!targetRes.ok) {
+            const text = await targetRes.text().catch(() => '');
+            // Clean up the resource we just created
+            await authFetch(`${apiUrl}/resource/${resourceId}`, { method: 'DELETE' }).catch(
+              () => {},
+            );
+            throw new Error(
+              `Pangolin target creation failed for port ${portConfig.port}: ${targetRes.status} ${text}`,
+            );
+          }
 
           tunnels.push({
             port: portConfig.port,
             hostPort,
-            resourceId: body.data.resourceId,
+            resourceId,
             publicUrl: `https://${fullDomain}`,
             label: portConfig.label,
           });
