@@ -1,3 +1,5 @@
+import { Link } from 'react-router';
+
 import { getDaemons } from '../api/client.js';
 import { StatusBadge } from '../components/StatusBadge.js';
 import { usePolling } from '../hooks/usePolling.js';
@@ -124,7 +126,10 @@ export function Daemons() {
    > ^ <`}</pre>
           <p className="text-zinc-500 text-sm">No daemons registered yet.</p>
           <p className="text-zinc-600 text-xs mt-1">
-            Create a daemon with <code className="text-zinc-500">POST /v1/daemons</code>
+            <Link to="/templates" className="text-emerald-400 hover:text-emerald-300">
+              Browse templates
+            </Link>{' '}
+            or create a daemon with <code className="text-zinc-500">POST /v1/daemons</code>
           </p>
         </div>
       )}

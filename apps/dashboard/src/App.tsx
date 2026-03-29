@@ -10,6 +10,7 @@ import { Sessions } from './pages/Sessions.js';
 import { Setup } from './pages/Setup.js';
 import { Snapshots } from './pages/Snapshots.js';
 import { Provision } from './pages/Provision.js';
+import { Templates } from './pages/Templates.js';
 import { Tunnels } from './pages/Tunnels.js';
 
 export function App() {
@@ -20,6 +21,7 @@ export function App() {
           <Route element={<Layout />}>
             <Route index element={<Fleet />} />
             <Route path="daemons" element={<Daemons />} />
+            <Route path="templates" element={<Templates />} />
             <Route path="snapshots" element={<Snapshots />} />
             <Route path="tunnels" element={<Tunnels />} />
             <Route path="servers" element={<Servers />} />

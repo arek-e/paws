@@ -32,6 +32,7 @@ import {
 } from './routes/daemons.js';
 import { costSummaryRoute, fleetOverviewRoute, listWorkersRoute } from './routes/fleet.js';
 import { healthRoute } from './routes/health.js';
+import { listTemplatesRoute, getTemplateRoute, deployTemplateRoute } from './routes/templates.js';
 import {
   cancelSessionRoute,
   createSessionRoute,
@@ -49,6 +50,7 @@ import { buildSnapshotRoute, listSnapshotsRoute } from './routes/snapshots.js';
 import { createServerRoutes } from './routes/servers.js';
 import { receiveWebhookRoute } from './routes/webhooks.js';
 import { createDaemonStore, type DaemonStore } from './store/daemons.js';
+import { createTemplateStore } from './store/templates.js';
 import { createSnapshotConfigStore } from './store/snapshot-configs.js';
 import { createSessionStore, type SessionStore, type StoredSession } from './store/sessions.js';
 import { createProvisioningRoutes } from './routes/provisioning.js';
@@ -294,6 +296,8 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   app.use('/v1/servers/*', authMiddleware(authConfig));
   app.use('/v1/provisioning', authMiddleware(authConfig));
   app.use('/v1/provisioning/*', authMiddleware(authConfig));
+  app.use('/v1/templates', authMiddleware(authConfig));
+  app.use('/v1/templates/*', authMiddleware(authConfig));
 
   // Snapshot config store — hoisted so mergeSnapshotDomains can use it in session dispatch
   const snapshotConfigStore = createSnapshotConfigStore();
@@ -514,6 +518,96 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       );
     }
     return c.json({ role, status: 'stopped' as const }, 200);
+  });
+
+  // --- Templates ---
+
+  const templateStore = createTemplateStore();
+
+  /** Serialize a template for JSON response (strip undefined values from defaults) */
+  function templateToJson(t: import('./store/templates.js').DaemonTemplate) {
+    return {
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      category: t.category,
+      icon: t.icon,
+      defaults: JSON.parse(JSON.stringify(t.defaults)) as Record<string, unknown>,
+    };
+  }
+
+  app.openapi(listTemplatesRoute, (c) => {
+    const { category } = c.req.valid('query');
+    const templates = templateStore.list(category).map(templateToJson);
+    return c.json({ templates }, 200);
+  });
+
+  app.openapi(getTemplateRoute, (c) => {
+    const { id } = c.req.valid('param');
+    const template = templateStore.get(id);
+    if (!template) {
+      return c.json(
+        {
+          error: {
+            code: 'NOT_FOUND' as const,
+            message: `Template '${id}' not found`,
+          },
+        },
+        404,
+      );
+    }
+    return c.json(templateToJson(template), 200);
+  });
+
+  app.openapi(deployTemplateRoute, (c) => {
+    const { id } = c.req.valid('param');
+    const template = templateStore.get(id);
+    if (!template) {
+      return c.json(
+        {
+          error: {
+            code: 'NOT_FOUND' as const,
+            message: `Template '${id}' not found`,
+          },
+        },
+        404,
+      );
+    }
+
+    const body = c.req.valid('json');
+    const role = body.role ?? template.defaults.role ?? template.id;
+    const snapshot = body.snapshot ?? template.defaults.snapshot ?? 'agent-default';
+
+    if (daemonStore.get(role)) {
+      return c.json(
+        {
+          error: {
+            code: 'DAEMON_ALREADY_EXISTS' as const,
+            message: `Daemon '${role}' already exists`,
+          },
+        },
+        409,
+      );
+    }
+
+    // Merge template defaults with overrides
+    const merged = {
+      ...template.defaults,
+      ...body.overrides,
+      role,
+      snapshot,
+    } as import('@paws/types').CreateDaemonRequest;
+
+    const daemon = daemonStore.create(merged);
+    return c.json(
+      {
+        role: daemon.role,
+        status: 'active' as const,
+        createdAt: daemon.createdAt,
+        templateId: id,
+      },
+      201,
+    );
   });
 
   // --- Webhooks (no auth — validated by secret) ---

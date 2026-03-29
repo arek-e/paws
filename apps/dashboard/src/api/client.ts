@@ -362,3 +362,49 @@ export async function getProvisioningStatus(id: string): Promise<ProvisionStatus
   if (!res.ok) throw new Error(`Failed to fetch provisioning status: ${res.status}`);
   return (await res.json()) as ProvisionStatus;
 }
+
+// --- Daemon Templates ---
+
+export interface DaemonTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: 'code-review' | 'devops' | 'security' | 'general';
+  icon: string;
+  defaults: Record<string, unknown>;
+}
+
+export async function getTemplates(category?: string): Promise<DaemonTemplate[]> {
+  const params = category ? `?category=${encodeURIComponent(category)}` : '';
+  const res = await fetch(`/v1/templates${params}`, { headers: apiKeyHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch templates: ${res.status}`);
+  const body = (await res.json()) as { templates: DaemonTemplate[] };
+  return body.templates;
+}
+
+export async function getTemplate(id: string): Promise<DaemonTemplate> {
+  const res = await fetch(`/v1/templates/${encodeURIComponent(id)}`, {
+    headers: apiKeyHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to fetch template: ${res.status}`);
+  return (await res.json()) as DaemonTemplate;
+}
+
+export async function deployTemplate(
+  id: string,
+  overrides?: { role?: string; snapshot?: string; overrides?: Record<string, unknown> },
+): Promise<{ role: string; status: string; createdAt: string; templateId: string }> {
+  const res = await fetch(`/v1/templates/${encodeURIComponent(id)}/deploy`, {
+    method: 'POST',
+    headers: apiKeyHeaders(),
+    body: JSON.stringify(overrides ?? {}),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const msg =
+      (body as { error?: { message?: string } }).error?.message ??
+      `Failed to deploy template: ${res.status}`;
+    throw new Error(msg);
+  }
+  return res.json();
+}

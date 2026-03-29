@@ -67,6 +67,7 @@ export function Layout() {
         <div className="md:hidden border-b border-zinc-800 bg-zinc-950 p-3 space-y-1">
           <SidebarLink to="/" label="Fleet" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/daemons" label="Daemons" onClick={() => setMenuOpen(false)} />
+          <SidebarLink to="/templates" label="Templates" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/snapshots" label="Snapshots" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/tunnels" label="Tunnels" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/servers" label="Servers" onClick={() => setMenuOpen(false)} />
@@ -92,6 +93,7 @@ export function Layout() {
         <nav className="flex-1 p-3 space-y-1">
           <SidebarLink to="/" label="Fleet" />
           <SidebarLink to="/daemons" label="Daemons" />
+          <SidebarLink to="/templates" label="Templates" />
           <SidebarLink to="/snapshots" label="Snapshots" />
           <SidebarLink to="/tunnels" label="Tunnels" />
           <SidebarLink to="/servers" label="Servers" />
