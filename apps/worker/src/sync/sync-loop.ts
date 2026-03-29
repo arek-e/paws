@@ -1,3 +1,4 @@
+import { createLogger } from '@paws/logger';
 import {
   mkdir,
   readFile,
@@ -60,6 +61,8 @@ const defaultSpawn = async (
   return { exitCode, stdout, stderr };
 };
 
+const log = createLogger('sync');
+
 /** Retry delays: 2s, 8s, 32s */
 const RETRY_DELAYS = [2_000, 8_000, 32_000];
 
@@ -113,14 +116,20 @@ export function createSyncLoop(config: SyncConfig, deps?: Partial<SyncDeps>): Sy
 
       if (attempt < RETRY_DELAYS.length) {
         const delay = RETRY_DELAYS[attempt]!;
-        console.warn(
-          `[sync] Download failed for ${fileKey} (attempt ${attempt + 1}/${RETRY_DELAYS.length + 1}), retrying in ${delay}ms: ${result.error.message}`,
-        );
+        log.warn('Download failed, retrying', {
+          fileKey,
+          attempt: attempt + 1,
+          maxAttempts: RETRY_DELAYS.length + 1,
+          delayMs: delay,
+          error: result.error.message,
+        });
         await delaySleep(delay);
       } else {
-        console.error(
-          `[sync] Download failed for ${fileKey} after ${RETRY_DELAYS.length + 1} attempts: ${result.error.message}`,
-        );
+        log.error('Download failed after all attempts', {
+          fileKey,
+          attempts: RETRY_DELAYS.length + 1,
+          error: result.error.message,
+        });
       }
     }
     return false;
@@ -143,9 +152,12 @@ export function createSyncLoop(config: SyncConfig, deps?: Partial<SyncDeps>): Sy
     if (currentTarget && currentTarget !== newDir) {
       try {
         await rm(currentTarget, { recursive: true, force: true });
-        console.info(`[sync] Cleaned up old version dir: ${currentTarget}`);
+        log.info('Cleaned up old version dir', { dir: currentTarget });
       } catch (e) {
-        console.warn(`[sync] Failed to clean up old dir ${currentTarget}: ${e}`);
+        log.warn('Failed to clean up old dir', {
+          dir: currentTarget,
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     }
   }
@@ -159,7 +171,7 @@ export function createSyncLoop(config: SyncConfig, deps?: Partial<SyncDeps>): Sy
       const manifestResult = await store.getManifest(snapshotId);
       if (manifestResult.isErr()) {
         state.lastError = manifestResult.error.message;
-        console.warn(`[sync] Failed to fetch manifest: ${manifestResult.error.message}`);
+        log.warn('Failed to fetch manifest', { error: manifestResult.error.message });
         return;
       }
       const remoteManifest = manifestResult.value;
@@ -171,16 +183,12 @@ export function createSyncLoop(config: SyncConfig, deps?: Partial<SyncDeps>): Sy
 
       // 3. Compare
       if (remoteManifest.version <= localVersion) {
-        console.debug(
-          `[sync] Up to date (local v${localVersion}, remote v${remoteManifest.version})`,
-        );
+        log.debug('Up to date', { localVersion, remoteVersion: remoteManifest.version });
         state.lastError = null;
         return;
       }
 
-      console.info(
-        `[sync] New version available: v${remoteManifest.version} (local: v${localVersion})`,
-      );
+      log.info('New version available', { remoteVersion: remoteManifest.version, localVersion });
 
       // 4. Check disk space (~2x total snapshot size)
       const totalSize = remoteManifest.files.reduce((sum, f) => sum + f.size, 0);
@@ -188,7 +196,7 @@ export function createSyncLoop(config: SyncConfig, deps?: Partial<SyncDeps>): Sy
       if (!hasSpace) {
         const msg = `Insufficient disk space for snapshot v${remoteManifest.version} (need ~${Math.round((totalSize * 2) / 1024 / 1024)}MB)`;
         state.lastError = msg;
-        console.warn(`[sync] ${msg}`);
+        log.warn(msg);
         return;
       }
 
@@ -209,7 +217,7 @@ export function createSyncLoop(config: SyncConfig, deps?: Partial<SyncDeps>): Sy
       if (!allOk) {
         await rm(versionDir, { recursive: true, force: true }).catch(() => {});
         state.lastError = `Download failed for snapshot v${remoteManifest.version}`;
-        console.error(`[sync] ${state.lastError}`);
+        log.error('Download failed for snapshot', { version: remoteManifest.version });
         return;
       }
 
@@ -235,10 +243,10 @@ export function createSyncLoop(config: SyncConfig, deps?: Partial<SyncDeps>): Sy
 
       state.currentVersion = remoteManifest.version;
       state.lastError = null;
-      console.info(`[sync] Updated to v${remoteManifest.version}`);
+      log.info('Updated to new version', { version: remoteManifest.version });
     } catch (e) {
       state.lastError = e instanceof Error ? e.message : String(e);
-      console.error(`[sync] Unexpected error: ${state.lastError}`);
+      log.error('Unexpected error', { error: state.lastError });
     } finally {
       state.syncing = false;
     }

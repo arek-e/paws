@@ -6,8 +6,12 @@
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 
+import { createLogger } from '@paws/logger';
+
 import type { PawsDatabase } from '../db/index.js';
 import { adminUsers, authSessions } from '../db/schema.js';
+
+const log = createLogger('auth');
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -38,7 +42,7 @@ export function createPasswordAuth(db: PawsDatabase) {
         })
         .run();
 
-      console.log(`[auth] Created admin account: ${email}`);
+      log.info('Created admin account', { email });
       return this.createSession(email);
     },
 

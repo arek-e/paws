@@ -165,6 +165,12 @@ export function ServerStep({ onComplete }: ServerStepProps) {
   const [passphrase, setPassphrase] = useState('');
   const [sshPort, setSshPort] = useState('22');
   const [username, setUsername] = useState('root');
+  // Input sanitizers
+  const cleanIp = (v: string) => v.replace(/\s/g, '');
+  const cleanPort = (v: string) => v.replace(/[^0-9]/g, '').slice(0, 5);
+  const cleanUsername = (v: string) => v.replace(/\s/g, '');
+  const cleanName = (v: string) => v.replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 63);
+
   const [testResult, setTestResult] = useState<{
     success: boolean;
     checks: { name: string; status: 'pass' | 'fail'; message: string; ms?: number }[];
@@ -477,7 +483,7 @@ export function ServerStep({ onComplete }: ServerStepProps) {
                 <input
                   type="text"
                   value={serverName}
-                  onChange={(e) => setServerName(e.target.value)}
+                  onChange={(e) => setServerName(cleanName(e.target.value))}
                   placeholder="worker-01"
                   className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
                 />
@@ -488,7 +494,7 @@ export function ServerStep({ onComplete }: ServerStepProps) {
                   <input
                     type="text"
                     value={ip}
-                    onChange={(e) => setIp(e.target.value)}
+                    onChange={(e) => setIp(cleanIp(e.target.value))}
                     placeholder="65.108.x.x"
                     className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
                   />
@@ -499,7 +505,7 @@ export function ServerStep({ onComplete }: ServerStepProps) {
                     <input
                       type="text"
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      onChange={(e) => setUsername(cleanUsername(e.target.value))}
                       placeholder="root"
                       className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
                     />
@@ -508,8 +514,9 @@ export function ServerStep({ onComplete }: ServerStepProps) {
                     <label className="block text-xs text-zinc-400 mb-1">Port</label>
                     <input
                       type="text"
+                      inputMode="numeric"
                       value={sshPort}
-                      onChange={(e) => setSshPort(e.target.value)}
+                      onChange={(e) => setSshPort(cleanPort(e.target.value))}
                       placeholder="22"
                       className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
                     />

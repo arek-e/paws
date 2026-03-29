@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { Hono } from 'hono';
+import { createLogger } from '@paws/logger';
 import {
   BrowserActionSchema,
   CreateSessionRequestSchema,
@@ -22,6 +23,7 @@ export interface AppDeps {
   snapshotBuilderConfig?: SnapshotBuilderConfig | undefined;
 }
 
+const log = createLogger('routes');
 const startTime = Date.now();
 
 /** Create the Hono app with all worker routes */
@@ -298,12 +300,17 @@ export function createSessionApp(deps: AppDeps) {
     // Fire-and-forget build
     void buildSnapshot(snapshotId, parsed.data, deps.snapshotBuilderConfig).then(
       (result) => {
-        console.log(
-          `snapshot build ${snapshotId}: ${result.status}${result.error ? ` — ${result.error}` : ''}`,
-        );
+        log.info('Snapshot build completed', {
+          snapshotId,
+          status: result.status,
+          error: result.error,
+        });
       },
       (err) => {
-        console.error(`snapshot build ${snapshotId} error:`, err);
+        log.error('Snapshot build error', {
+          snapshotId,
+          error: err instanceof Error ? err.message : String(err),
+        });
       },
     );
 

@@ -1,4 +1,7 @@
+import { createLogger } from '@paws/logger';
 import type { PortExposure } from '@paws/types';
+
+const log = createLogger('pangolin');
 
 export interface PangolinResourceConfig {
   /** Pangolin API URL (e.g., http://pangolin:3001/api/v1) */
@@ -107,10 +110,16 @@ export function createPangolinResourceManager(config: PangolinResourceConfig) {
           method: 'DELETE',
         });
         if (!res.ok && res.status !== 404) {
-          console.error(`pangolin: failed to delete resource ${tunnel.resourceId}: ${res.status}`);
+          log.error('Failed to delete resource', {
+            resourceId: tunnel.resourceId,
+            status: res.status,
+          });
         }
       } catch (err) {
-        console.error(`pangolin: error deleting resource ${tunnel.resourceId}:`, err);
+        log.error('Error deleting resource', {
+          resourceId: tunnel.resourceId,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
   }
@@ -216,7 +225,10 @@ export function createPangolinResourceManager(config: PangolinResourceConfig) {
                 pincode: pin,
               }),
             }).catch((err) => {
-              console.error(`pangolin: failed to set PIN for resource ${resourceId}:`, err);
+              log.error('Failed to set PIN for resource', {
+                resourceId,
+                error: err instanceof Error ? err.message : String(err),
+              });
             });
           } else if (accessMode === 'email') {
             const emails = portConfig.allowedEmails ?? [];
@@ -228,10 +240,10 @@ export function createPangolinResourceManager(config: PangolinResourceConfig) {
                 emailWhitelist: emails,
               }),
             }).catch((err) => {
-              console.error(
-                `pangolin: failed to set email whitelist for resource ${resourceId}:`,
-                err,
-              );
+              log.error('Failed to set email whitelist for resource', {
+                resourceId,
+                error: err instanceof Error ? err.message : String(err),
+              });
             });
           }
           // 'sso' is the default — no extra config needed

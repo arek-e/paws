@@ -49,6 +49,7 @@ export interface SshClient {
     username: string;
     password?: string;
     privateKey?: string;
+    passphrase?: string;
   }): Promise<void>;
   exec(command: string): Promise<{ stdout: string; stderr: string; exitCode: number }>;
   /** Execute a command and stream stdout/stderr line-by-line via callback */

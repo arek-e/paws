@@ -312,3 +312,56 @@ the new password.
 
 The script requires access to the control plane's data directory (`DATA_DIR`, defaults to
 `/var/lib/paws/data`). It reads and writes to `paws.db` directly.
+
+### Logging & Observability
+
+paws outputs structured JSON logs (NDJSON) to stdout. Each line includes a timestamp, level,
+component name, message, and structured context:
+
+```json
+{
+  "ts": "2026-03-29T18:00:00.000Z",
+  "level": "info",
+  "component": "autoscaler",
+  "msg": "Scaling up",
+  "workers": 3
+}
+```
+
+**Built-in stack (included in Docker Compose):**
+
+- **Loki** — log aggregation, receives logs from Promtail
+- **Promtail** — scrapes Docker container logs, ships to Loki
+- **Grafana** — query logs via Explore, build dashboards (Loki datasource pre-configured)
+- **VictoriaMetrics** — Prometheus-compatible metrics
+
+Grafana is available at port 3001 (internal). Loki and VictoriaMetrics are internal-only.
+
+**Log level:** Set `LOG_LEVEL` environment variable on the gateway or worker service. Values:
+`debug`, `info` (default), `warn`, `error`.
+
+**Shipping to your own system:** Since paws outputs structured JSON to stdout, you can use any
+Docker log driver to ship logs externally:
+
+```yaml
+# docker-compose.override.yml
+services:
+  gateway:
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: "localhost:24224"
+        tag: "paws.gateway"
+
+  # Or for AWS CloudWatch:
+  gateway:
+    logging:
+      driver: "awslogs"
+      options:
+        awslogs-group: "paws"
+        awslogs-stream: "gateway"
+        awslogs-region: "us-east-1"
+```
+
+Other supported drivers: `syslog`, `gelf` (Graylog), `splunk`, `gcplogs` (GCP), `loki`
+(direct, without Promtail). See [Docker logging drivers](https://docs.docker.com/config/containers/logging/configure/).

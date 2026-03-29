@@ -61,8 +61,14 @@ function listen(server: Server): Promise<{ url: string; port: number }> {
 }
 
 describe('createPangolinDiscovery', () => {
-  // Suppress console output in tests
+  let stdoutLines: string[];
+  // Suppress structured logger output in tests (writes to process.stdout)
   beforeEach(() => {
+    stdoutLines = [];
+    vi.spyOn(process.stdout, 'write').mockImplementation((chunk: unknown) => {
+      if (typeof chunk === 'string') stdoutLines.push(chunk);
+      return true;
+    });
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -182,7 +188,7 @@ describe('createPangolinDiscovery', () => {
     const workers = await discovery.getWorkers();
     expect(workers).toEqual([]); // empty cache initially
 
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('PANGOLIN_API_KEY'));
+    expect(stdoutLines.some((l) => l.includes('PANGOLIN_API_KEY'))).toBe(true);
 
     pangolinApi.close();
   });
@@ -203,7 +209,7 @@ describe('createPangolinDiscovery', () => {
     const workers = await discovery.getWorkers();
     expect(workers).toEqual([]);
 
-    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('500'));
+    expect(stdoutLines.some((l) => l.includes('500'))).toBe(true);
 
     pangolinApi.close();
   });
@@ -224,7 +230,7 @@ describe('createPangolinDiscovery', () => {
     const workers = await discovery.getWorkers();
     expect(workers).toEqual([]);
 
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('malformed JSON'));
+    expect(stdoutLines.some((l) => l.includes('malformed JSON'))).toBe(true);
 
     pangolinApi.close();
   });

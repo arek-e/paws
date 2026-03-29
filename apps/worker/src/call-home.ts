@@ -1,3 +1,7 @@
+import { createLogger } from '@paws/logger';
+
+const log = createLogger('call-home');
+
 export interface CallHomeOpts {
   gatewayUrl: string;
   apiKey: string;
@@ -57,18 +61,20 @@ export function createCallHome(opts: CallHomeOpts): CallHome {
     if (stopped) return;
 
     const url = getWsUrl();
-    console.log(`[call-home] Connecting to ${gatewayUrl}...`);
+    log.info('Connecting to gateway', { gatewayUrl });
 
     try {
       ws = new WebSocket(url);
     } catch (err) {
-      console.error(`[call-home] Failed to create WebSocket:`, err);
+      log.error('Failed to create WebSocket', {
+        error: err instanceof Error ? err.message : String(err),
+      });
       scheduleReconnect();
       return;
     }
 
     ws.onopen = () => {
-      console.log(`[call-home] Connected to gateway`);
+      log.info('Connected to gateway');
       reconnectDelay = 1_000; // reset backoff
 
       // Send first heartbeat immediately
@@ -82,7 +88,7 @@ export function createCallHome(opts: CallHomeOpts): CallHome {
       try {
         const data = JSON.parse(evt.data);
         if (data.type === 'registered') {
-          console.log(`[call-home] Registered as ${data.name}`);
+          log.info('Registered', { name: data.name });
         }
       } catch {
         // Ignore
@@ -92,7 +98,7 @@ export function createCallHome(opts: CallHomeOpts): CallHome {
     ws.onclose = () => {
       cleanup();
       if (!stopped) {
-        console.log(`[call-home] Disconnected, reconnecting in ${reconnectDelay}ms...`);
+        log.info('Disconnected, reconnecting', { delayMs: reconnectDelay });
         scheduleReconnect();
       }
     };

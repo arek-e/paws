@@ -11,6 +11,8 @@ interface StartOpts {
   password?: string;
   /** Private key PEM for SSH auth */
   privateKey?: string;
+  /** Passphrase for encrypted private key */
+  passphrase?: string;
   /** URL the worker should call home to */
   gatewayUrl: string;
   /** API key for worker call-home auth */
@@ -54,7 +56,12 @@ export function createProvisioner(deps: ProvisionerDeps, config?: ProvisionConfi
     ]);
   }
 
-  async function waitForSsh(server: Server, password?: string, privateKey?: string): Promise<void> {
+  async function waitForSsh(
+    server: Server,
+    password?: string,
+    privateKey?: string,
+    passphrase?: string,
+  ): Promise<void> {
     const maxAttempts = 24; // 2 minutes at 5s intervals
     for (let i = 0; i < maxAttempts; i++) {
       try {
@@ -63,6 +70,7 @@ export function createProvisioner(deps: ProvisionerDeps, config?: ProvisionConfi
           username: 'root',
           ...(password ? { password } : {}),
           ...(privateKey ? { privateKey } : {}),
+          ...(passphrase ? { passphrase } : {}),
         });
         return;
       } catch {
@@ -161,12 +169,14 @@ WantedBy=multi-user.target`;
 
   return {
     async start(opts) {
-      const { server, password, privateKey, gatewayUrl, apiKey } = opts;
+      const { server, password, privateKey, passphrase, gatewayUrl, apiKey } = opts;
 
       try {
         // Phase 1: Wait for SSH
         emit(server.id, 'waiting_ssh', 'Waiting for SSH access...');
-        await withTimeout('waiting_ssh', () => waitForSsh(server, password, privateKey));
+        await withTimeout('waiting_ssh', () =>
+          waitForSsh(server, password, privateKey, passphrase),
+        );
         emit(server.id, 'waiting_ssh', 'SSH connected');
 
         // Phase 2: Bootstrap

@@ -1,7 +1,10 @@
+import { createLogger } from '@paws/logger';
 import type { HostProvider } from '@paws/providers';
 
 import type { WorkerDiscovery } from './discovery/index.js';
 import type { WorkerRegistry } from './discovery/registry.js';
+
+const log = createLogger('autoscaler');
 
 export interface AutoscalerConfig {
   provider: HostProvider;
@@ -171,7 +174,7 @@ ${newtSetup}
     if (lastKnownWorkers.length + pendingProvisions >= maxWorkers) return;
 
     const name = `paws-worker-${Date.now()}`;
-    console.log(`[autoscaler] Scaling UP: ${reason} → provisioning ${name}`);
+    log.info('Scaling UP', { reason, name });
 
     pendingProvisions++;
     lastScaleTime = Date.now();
@@ -187,9 +190,9 @@ ${newtSetup}
 
     if (result.isOk()) {
       lastScaleEvent.hostId = result.value.id;
-      console.log(`[autoscaler] Provisioned ${name} (${result.value.id})`);
+      log.info('Provisioned host', { name, hostId: result.value.id });
     } else {
-      console.error(`[autoscaler] Failed to provision ${name}:`, result.error.message);
+      log.error('Failed to provision host', { name, error: result.error.message });
     }
 
     pendingProvisions--;
@@ -207,7 +210,7 @@ ${newtSetup}
     // Don't drain a worker that's still running sessions
     if (candidate.capacity.running > 0) return;
 
-    console.log(`[autoscaler] Scaling DOWN: ${reason} → draining ${candidate.name}`);
+    log.info('Scaling DOWN', { reason, worker: candidate.name });
 
     lastScaleTime = Date.now();
     lastScaleEvent = { type: 'down', at: new Date().toISOString(), reason };
@@ -227,12 +230,12 @@ ${newtSetup}
         const deleteResult = await provider.deleteHost(host.id);
         if (deleteResult.isOk()) {
           lastScaleEvent.hostId = host.id;
-          console.log(`[autoscaler] Deleted host ${host.id} (${host.name})`);
+          log.info('Deleted host', { hostId: host.id, name: host.name });
         } else {
-          console.error(
-            `[autoscaler] Failed to delete host ${host.id}:`,
-            deleteResult.error.message,
-          );
+          log.error('Failed to delete host', {
+            hostId: host.id,
+            error: deleteResult.error.message,
+          });
         }
       }
     }
@@ -272,9 +275,7 @@ ${newtSetup}
 
   return {
     start() {
-      console.log(
-        `[autoscaler] Started (${provider.name}, ${minWorkers}-${maxWorkers} workers, poll ${pollIntervalMs}ms)`,
-      );
+      log.info('Started', { provider: provider.name, minWorkers, maxWorkers, pollIntervalMs });
       timer = setInterval(() => void evaluate(), pollIntervalMs);
       if (typeof timer.unref === 'function') timer.unref();
     },
@@ -284,7 +285,7 @@ ${newtSetup}
         clearInterval(timer);
         timer = null;
       }
-      console.log('[autoscaler] Stopped');
+      log.info('Stopped');
     },
 
     status(): ScalingStatus {

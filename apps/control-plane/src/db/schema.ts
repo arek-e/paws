@@ -94,3 +94,32 @@ export const buildJobs = sqliteTable('build_jobs', {
   completedAt: text('completed_at'),
   error: text('error'),
 });
+
+// --- OAuth (MCP authorization) ---
+
+export const oauthClients = sqliteTable('oauth_clients', {
+  clientId: text('client_id').primaryKey(),
+  clientSecret: text('client_secret'),
+  redirectUris: text('redirect_uris').notNull(), // JSON array
+  clientName: text('client_name'),
+  issuedAt: integer('issued_at').notNull(),
+});
+
+export const oauthAuthCodes = sqliteTable('oauth_auth_codes', {
+  code: text('code').primaryKey(),
+  clientId: text('client_id').notNull(),
+  codeChallenge: text('code_challenge').notNull(),
+  redirectUri: text('redirect_uri').notNull(),
+  scopes: text('scopes'),
+  userEmail: text('user_email').notNull(),
+  expiresAt: integer('expires_at').notNull(),
+});
+
+export const oauthTokens = sqliteTable('oauth_tokens', {
+  token: text('token').primaryKey(),
+  tokenType: text('token_type').notNull(), // 'access' | 'refresh'
+  clientId: text('client_id').notNull(),
+  userEmail: text('user_email').notNull(),
+  scopes: text('scopes'),
+  expiresAt: integer('expires_at').notNull(),
+});

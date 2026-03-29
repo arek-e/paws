@@ -1,7 +1,11 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
+import { createLogger } from '@paws/logger';
+
 import * as schema from './schema.js';
+
+const log = createLogger('db');
 
 export { schema };
 
@@ -127,8 +131,32 @@ export function createDatabase(dbPath: string) {
         completed_at TEXT,
         error TEXT
       );
+      CREATE TABLE IF NOT EXISTS oauth_clients (
+        client_id TEXT PRIMARY KEY,
+        client_secret TEXT,
+        redirect_uris TEXT NOT NULL,
+        client_name TEXT,
+        issued_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS oauth_auth_codes (
+        code TEXT PRIMARY KEY,
+        client_id TEXT NOT NULL,
+        code_challenge TEXT NOT NULL,
+        redirect_uri TEXT NOT NULL,
+        scopes TEXT,
+        user_email TEXT NOT NULL,
+        expires_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS oauth_tokens (
+        token TEXT PRIMARY KEY,
+        token_type TEXT NOT NULL,
+        client_id TEXT NOT NULL,
+        user_email TEXT NOT NULL,
+        scopes TEXT,
+        expires_at INTEGER NOT NULL
+      );
     `);
-    console.log('[db] Created database tables');
+    log.info('Created database tables');
   }
 
   return db;

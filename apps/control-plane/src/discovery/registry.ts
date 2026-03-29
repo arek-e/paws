@@ -1,6 +1,9 @@
+import { createLogger } from '@paws/logger';
 import type { Worker } from '@paws/types';
 
 import type { WorkerDiscovery } from './index.js';
+
+const log = createLogger('registry');
 
 const HEARTBEAT_TIMEOUT_MS = 30_000;
 
@@ -49,7 +52,7 @@ export function createWorkerRegistry(): WorkerRegistry {
         connectedAt: now,
         lastHeartbeat: now,
       });
-      console.log(`[registry] Worker registered: ${name} (${url})`);
+      log.info('Worker registered', { name, url });
     },
 
     heartbeat(name, health) {
@@ -61,7 +64,7 @@ export function createWorkerRegistry(): WorkerRegistry {
 
     unregister(name) {
       workers.delete(name);
-      console.log(`[registry] Worker unregistered: ${name}`);
+      log.info('Worker unregistered', { name });
     },
 
     get(name) {

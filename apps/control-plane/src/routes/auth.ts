@@ -2,6 +2,10 @@ import { Hono } from 'hono';
 import { deleteCookie, setCookie } from 'hono/cookie';
 import { getAuth, oidcAuthMiddleware, processOAuthCallback, revokeSession } from '@hono/oidc-auth';
 
+import { createLogger } from '@paws/logger';
+
+const log = createLogger('auth');
+
 /** Auth routes for OIDC login flow (browser-based, not OpenAPI) */
 export function createAuthRoutes() {
   const app = new Hono();
@@ -37,7 +41,7 @@ export function createAuthRoutes() {
     try {
       return await processOAuthCallback(c);
     } catch (err) {
-      console.error('[auth] Callback error:', err);
+      log.error('Callback error', { error: String(err) });
       return c.redirect('/auth/login');
     }
   });

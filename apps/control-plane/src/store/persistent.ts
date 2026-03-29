@@ -1,8 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
+import { createLogger } from '@paws/logger';
+
 import type { DaemonStore, StoredDaemon } from './daemons.js';
 import { createDaemonStore } from './daemons.js';
+
+const log = createLogger('store');
 
 /** Wrap a daemon store with JSON file persistence */
 export function createPersistentDaemonStore(filePath: string): DaemonStore {
@@ -32,9 +36,9 @@ export function createPersistentDaemonStore(filePath: string): DaemonStore {
           }
         }
       }
-      console.log(`[store] Loaded ${data.length} daemons from ${filePath}`);
+      log.info('Loaded daemons', { count: data.length, filePath });
     } catch (err) {
-      console.error(`[store] Failed to load daemons from ${filePath}:`, err);
+      log.error('Failed to load daemons', { filePath, error: String(err) });
     }
   }
 
@@ -47,7 +51,7 @@ export function createPersistentDaemonStore(filePath: string): DaemonStore {
       writeFileSync(tmpPath, JSON.stringify(inner.list(), null, 2));
       renameSync(tmpPath, filePath);
     } catch (err) {
-      console.error(`[store] Failed to save daemons:`, err);
+      log.error('Failed to save daemons', { error: String(err) });
     }
   }
 

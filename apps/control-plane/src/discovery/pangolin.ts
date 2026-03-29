@@ -1,4 +1,7 @@
+import { createLogger } from '@paws/logger';
 import type { Worker } from '@paws/types';
+
+const log = createLogger('pangolin');
 
 /**
  * Pangolin API discovery — polls Pangolin's site list to find connected workers.
@@ -103,7 +106,7 @@ export function createPangolinDiscovery(opts: PangolinDiscoveryOptions) {
     for (const siteId of previousSiteIds) {
       if (!currentSiteIds.has(siteId) && !disconnectTimestamps.has(siteId)) {
         disconnectTimestamps.set(siteId, now);
-        console.log(`pangolin: worker ${siteId} disconnected, removing after grace period`);
+        log.info('Worker disconnected, removing after grace period', { siteId });
       }
     }
 
@@ -121,7 +124,7 @@ export function createPangolinDiscovery(opts: PangolinDiscoveryOptions) {
       if (now - disconnectTime > disconnectGraceMs) {
         disconnectTimestamps.delete(siteId);
         workerToSiteId.delete(w.name);
-        console.log(`pangolin: worker ${siteId} grace period expired, removed from fleet`);
+        log.info('Worker grace period expired, removed from fleet', { siteId });
         return false;
       }
       return true;
@@ -144,7 +147,7 @@ export function createPangolinDiscovery(opts: PangolinDiscoveryOptions) {
       const existed = cachedWorkers.some((c) => c.name === w.name);
       if (!existed) {
         const siteId = workerToSiteId.get(w.name) ?? w.name;
-        console.log(`pangolin: discovered worker ${siteId} at ${w.name}`);
+        log.info('Discovered worker', { siteId, url: w.name });
       }
     }
 
@@ -166,12 +169,12 @@ export function createPangolinDiscovery(opts: PangolinDiscoveryOptions) {
       const cookies = res.headers.getSetCookie?.() ?? [];
       sessionCookie = cookies.map((c) => c.split(';')[0]).join('; ');
       if (res.ok) {
-        console.log('pangolin: session login successful');
+        log.info('Session login successful');
       } else {
-        console.error(`pangolin: login failed with status ${res.status}`);
+        log.error('Login failed', { status: res.status });
       }
     } catch (err) {
-      console.error('pangolin: login request failed', err);
+      log.error('Login request failed', { error: String(err) });
     }
   }
 
@@ -194,7 +197,7 @@ export function createPangolinDiscovery(opts: PangolinDiscoveryOptions) {
 
     // On 401, try re-login (session expired) and retry once
     if (res.status === 401 && email && password) {
-      console.log('pangolin: session expired, re-authenticating...');
+      log.info('Session expired, re-authenticating');
       await login();
       res = await fetch(url, {
         headers: buildHeaders(),
@@ -203,14 +206,14 @@ export function createPangolinDiscovery(opts: PangolinDiscoveryOptions) {
     }
 
     if (res.status === 401) {
-      console.error(
-        'pangolin: API returned 401 — check credentials (PANGOLIN_API_KEY or PANGOLIN_EMAIL/PASSWORD)',
+      log.error(
+        'API returned 401 — check credentials (PANGOLIN_API_KEY or PANGOLIN_EMAIL/PASSWORD)',
       );
       throw new Error('Pangolin API authentication failed');
     }
 
     if (!res.ok) {
-      console.warn(`pangolin: API returned ${res.status}, keeping cached fleet state`);
+      log.warn('API error, keeping cached fleet state', { status: res.status });
       throw new Error(`Pangolin API error: ${res.status}`);
     }
 
@@ -218,12 +221,12 @@ export function createPangolinDiscovery(opts: PangolinDiscoveryOptions) {
     try {
       body = (await res.json()) as PangolinSitesResponse;
     } catch {
-      console.error('pangolin: API returned malformed JSON, keeping cached fleet state');
+      log.error('API returned malformed JSON, keeping cached fleet state');
       throw new Error('Pangolin API returned malformed JSON');
     }
 
     if (!Array.isArray(body.data?.sites)) {
-      console.error('pangolin: API response missing data.sites array, keeping cached fleet state');
+      log.error('API response missing data.sites array, keeping cached fleet state');
       throw new Error('Pangolin API response missing data.sites array');
     }
 

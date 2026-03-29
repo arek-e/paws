@@ -189,23 +189,90 @@ export function createSetupRoutes(deps: SetupDeps) {
     // Fire-and-forget provisioning (background)
     void (async () => {
       try {
+        let sshPassword: string | undefined;
+        let sshPrivateKey: string | undefined;
+        let sshPassphrase: string | undefined;
+
+        if (body.provider === 'manual') {
+          sshPassword = body.password;
+          sshPrivateKey = body.privateKey;
+          sshPassphrase = body.passphrase;
+        } else if (body.provider === 'aws-ec2') {
+          // Phase 0: Launch EC2 instance
+          const { createAwsEc2Provider } = await import('@paws/provider-aws-ec2');
+
+          const ec2 = createAwsEc2Provider({
+            region: body.region,
+            defaultImageId: '', // Will use default Ubuntu AMI
+            credentials: {
+              accessKeyId: body.awsAccessKey,
+              secretAccessKey: body.awsSecretKey,
+            },
+          });
+
+          serverStore.update(id, { status: 'provisioning' });
+
+          // Create key pair for SSH access
+          const keyPairResult = await ec2.createKeyPair(`paws-${id.slice(0, 8)}`);
+          if (keyPairResult.isErr()) {
+            throw new Error(`Failed to create key pair: ${keyPairResult.error.message}`);
+          }
+          sshPrivateKey = keyPairResult.value.privateKey;
+
+          // Create security group
+          const sgResult = await ec2.createSecurityGroup(
+            `paws-worker-${id.slice(0, 8)}`,
+            'paws worker — SSH + worker API',
+          );
+          if (sgResult.isErr()) {
+            throw new Error(`Failed to create security group: ${sgResult.error.message}`);
+          }
+
+          // Launch instance
+          const hostResult = await ec2.createHost({
+            name: server.name,
+            serverType: 'c7i.xlarge',
+            sshKeys: [keyPairResult.value.keyPairId],
+          });
+          if (hostResult.isErr()) {
+            throw new Error(`Failed to launch EC2 instance: ${hostResult.error.message}`);
+          }
+
+          const instanceId = hostResult.value.id;
+          serverStore.update(id, { providerServerId: instanceId });
+
+          // Wait for IP
+          const readyResult = await ec2.waitForReady(instanceId);
+          if (readyResult.isErr()) {
+            throw new Error(`EC2 instance failed to start: ${readyResult.error.message}`);
+          }
+
+          server.ip = readyResult.value.ip;
+          serverStore.update(id, { ip: server.ip });
+        }
+
+        // Phase 1+: SSH bootstrap (works for both manual and EC2)
         await provisioner.start({
           server,
-          ...(body.provider === 'manual'
-            ? {
-                password: body.password,
-                privateKey: body.privateKey,
-                passphrase: body.passphrase,
-              }
-            : {}),
+          password: sshPassword,
+          privateKey: sshPrivateKey,
+          passphrase: sshPassphrase,
           gatewayUrl: process.env['GATEWAY_URL'] ?? 'http://localhost:4000',
           apiKey: process.env['API_KEY'] ?? '',
         });
         serverStore.update(id, { status: 'ready' });
       } catch (err) {
+        // Sanitize error — never leak credentials in error messages
+        let message = err instanceof Error ? err.message : String(err);
+        // Strip anything that looks like a key/secret/token
+        message = message.replace(/(?:AKIA|sk-|ghp_|gho_)[A-Za-z0-9/+=]{10,}/g, '[REDACTED]');
+        message = message.replace(
+          /-----BEGIN[^-]*-----[\s\S]*?-----END[^-]*-----/g,
+          '[REDACTED KEY]',
+        );
         serverStore.update(id, {
           status: 'error',
-          error: err instanceof Error ? err.message : String(err),
+          error: message,
         });
       }
     })();

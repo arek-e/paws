@@ -1,3 +1,4 @@
+import { createLogger } from '@paws/logger';
 import { createPortPool } from '@paws/firecracker';
 
 import { createCallHome } from './call-home.js';
@@ -131,8 +132,9 @@ if (SNAPSHOT_SYNC_ENABLED) {
     tempDir: `${SNAPSHOT_DIR}/../.downloading`,
   });
 
+  const log = createLogger('server');
   syncLoop.start();
-  console.log('Snapshot sync: enabled (polling every %dms)', SNAPSHOT_SYNC_INTERVAL_MS);
+  log.info('Snapshot sync enabled', { pollIntervalMs: SNAPSHOT_SYNC_INTERVAL_MS });
 }
 
 const app = createSessionApp({

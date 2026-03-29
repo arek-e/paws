@@ -5,6 +5,10 @@
  * Covers: resources (tunnels), sites, domains, users, identity providers.
  */
 
+import { createLogger } from '@paws/logger';
+
+const log = createLogger('pangolin-admin');
+
 export interface PangolinAdminConfig {
   apiUrl: string;
   apiKey?: string | undefined;
@@ -107,7 +111,7 @@ export function createPangolinAdmin(config: PangolinAdminConfig) {
 
   // Initialize session if using email/password auth
   if (email && password) {
-    login().catch((err) => console.error('pangolin admin: initial login failed:', err));
+    login().catch((err) => log.error('Initial login failed', { error: String(err) }));
   }
 
   return {

@@ -16,6 +16,7 @@ export function createSshClient(): SshClient {
           username: opts.username,
           ...(opts.password ? { password: opts.password } : {}),
           ...(opts.privateKey ? { privateKey: opts.privateKey } : {}),
+          ...(opts.passphrase ? { passphrase: opts.passphrase } : {}),
           readyTimeout: 30_000,
         });
       });
