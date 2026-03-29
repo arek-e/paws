@@ -52,3 +52,11 @@ function formatTable(rows: Record<string, unknown>[]): string {
 export function printError(message: string): void {
   process.stderr.write(`error: ${message}\n`);
 }
+
+export function printSuccess(message: string): void {
+  process.stdout.write(`✓ ${message}\n`);
+}
+
+export function printInfo(message: string): void {
+  process.stdout.write(`→ ${message}\n`);
+}

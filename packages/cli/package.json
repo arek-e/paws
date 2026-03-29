@@ -19,8 +19,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@inkjs/ui": "^2.0.0",
     "@paws/sdk": "workspace:*",
-    "@paws/types": "workspace:*"
+    "@paws/types": "workspace:*",
+    "ink": "^6.0.0",
+    "react": "^19.1.0"
   },
   "devDependencies": {
     "bun-types": "^1.3.11",

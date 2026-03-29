@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { okAsync, errAsync } from 'neverthrow';
 
-import { runCommand } from './run.js';
+import { runCommand } from './run.js'; // resolves to run.tsx
 import type { PawsClient } from '@paws/sdk';
 import { PawsApiError } from '@paws/sdk';
 

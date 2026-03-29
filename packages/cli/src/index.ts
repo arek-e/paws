@@ -7,8 +7,11 @@ import type { ParsedArgs } from './config.js';
 import { parseArgs, resolveConfig } from './config.js';
 import { daemonsCommand } from './commands/daemons.js';
 import { fleetCommand } from './commands/fleet.js';
+import { loginCommand } from './commands/login.js';
+import { logoutCommand } from './commands/logout.js';
 import { logsCommand } from './commands/logs.js';
 import { runCommand } from './commands/run.js';
+import { serversCommand } from './commands/servers.js';
 import { sessionsCommand } from './commands/sessions.js';
 import { snapshotsCommand } from './commands/snapshots.js';
 import { statusCommand } from './commands/status.js';
@@ -26,9 +29,12 @@ Usage: paws [options] <resource> <action> [args]
 Commands:
   run         create a session and stream output (hero command)
   logs        fetch or stream logs from a session
+  login       authenticate via OAuth (opens browser)
+  logout      clear stored credentials
 
 Resources:
   status      fleet overview with workers and active sessions
+  servers     list, add, add-ec2, test, remove
   sessions    create, get, cancel, wait
   daemons     list, create, get, delete
   fleet       status, workers
@@ -69,9 +75,17 @@ async function main(): Promise<number> {
 
   const pretty = args.flags['pretty'] !== undefined;
 
+  // Commands that don't require authentication
+  if (args.resource === 'login') {
+    return loginCommand(null, args, pretty);
+  }
+  if (args.resource === 'logout') {
+    return logoutCommand();
+  }
+
   let config;
   try {
-    config = resolveConfig({ flags: args.flags, env: process.env });
+    config = await resolveConfig({ flags: args.flags, env: process.env });
   } catch (err) {
     printError(err instanceof Error ? err.message : String(err));
     return 1;
@@ -87,13 +101,14 @@ async function main(): Promise<number> {
     sessions: sessionsCommand,
     daemons: daemonsCommand,
     fleet: fleetCommand,
+    servers: serversCommand,
     snapshots: snapshotsCommand,
   };
 
   const handler = args.resource ? dispatch[args.resource] : undefined;
   if (!handler) {
     printError(
-      `Unknown resource: ${args.resource ?? '(none)'}. Available: sessions, daemons, fleet, snapshots`,
+      `Unknown resource: ${args.resource ?? '(none)'}. Available: login, logout, sessions, daemons, fleet, snapshots`,
     );
     return 1;
   }

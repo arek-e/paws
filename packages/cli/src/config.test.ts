@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { parseArgs, resolveConfig } from './config.js';
 
 describe('resolveConfig', () => {
-  it('resolves from env vars', () => {
-    const config = resolveConfig({
+  it('resolves from env vars', async () => {
+    const config = await resolveConfig({
       flags: {},
       env: { PAWS_URL: 'http://localhost:4000', PAWS_API_KEY: 'key-123' },
     });
@@ -12,8 +12,8 @@ describe('resolveConfig', () => {
     expect(config.apiKey).toBe('key-123');
   });
 
-  it('flags take precedence over env vars', () => {
-    const config = resolveConfig({
+  it('flags take precedence over env vars', async () => {
+    const config = await resolveConfig({
       flags: { url: 'http://flag-url', 'api-key': 'flag-key' },
       env: { PAWS_URL: 'http://env-url', PAWS_API_KEY: 'env-key' },
     });
@@ -21,20 +21,20 @@ describe('resolveConfig', () => {
     expect(config.apiKey).toBe('flag-key');
   });
 
-  it('throws when url is missing', () => {
-    expect(() => resolveConfig({ flags: {}, env: { PAWS_API_KEY: 'key' } })).toThrow(
+  it('throws when url is missing', async () => {
+    await expect(resolveConfig({ flags: {}, env: { PAWS_API_KEY: 'key' } })).rejects.toThrow(
       'Missing gateway URL',
     );
   });
 
-  it('throws when api key is missing', () => {
-    expect(() => resolveConfig({ flags: {}, env: { PAWS_URL: 'http://localhost' } })).toThrow(
-      'Missing API key',
-    );
+  it('throws when api key is missing', async () => {
+    await expect(
+      resolveConfig({ flags: {}, env: { PAWS_URL: 'http://localhost' } }),
+    ).rejects.toThrow('Missing API key');
   });
 
-  it('uses flag url with env api key', () => {
-    const config = resolveConfig({
+  it('uses flag url with env api key', async () => {
+    const config = await resolveConfig({
       flags: { url: 'http://flag-url' },
       env: { PAWS_API_KEY: 'env-key' },
     });

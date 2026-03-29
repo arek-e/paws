@@ -1,7 +1,12 @@
 /**
- * Resolve CLI configuration from flags and environment variables.
- * Flags take precedence over env vars.
+ * Resolve CLI configuration from flags, environment variables, or stored credentials.
+ *
+ * Priority:
+ * 1. --api-key flag / PAWS_API_KEY env var
+ * 2. ~/.paws/credentials.json (from `paws login`)
  */
+
+import { loadAndRefreshCredentials } from './auth.js';
 
 export interface CliConfig {
   url: string;
@@ -13,15 +18,34 @@ export interface ResolveConfigOptions {
   env: Record<string, string | undefined>;
 }
 
-export function resolveConfig(options: ResolveConfigOptions): CliConfig {
+export async function resolveConfig(options: ResolveConfigOptions): Promise<CliConfig> {
   const url = options.flags['url'] ?? options.env['PAWS_URL'];
   const apiKey = options.flags['api-key'] ?? options.env['PAWS_API_KEY'];
 
+  // If explicit API key provided, use it
+  if (url && apiKey) {
+    return { url, apiKey };
+  }
+
+  // Try stored credentials from `paws login` (with automatic token refresh)
+  const creds = await loadAndRefreshCredentials();
+  if (creds) {
+    return {
+      url: url ?? creds.url,
+      apiKey: apiKey ?? creds.accessToken,
+    };
+  }
+
+  // No credentials at all
   if (!url) {
-    throw new Error('Missing gateway URL. Set --url or PAWS_URL environment variable.');
+    throw new Error(
+      'Missing gateway URL. Set --url, PAWS_URL, or run `paws login --url <server-url>`.',
+    );
   }
   if (!apiKey) {
-    throw new Error('Missing API key. Set --api-key or PAWS_API_KEY environment variable.');
+    throw new Error(
+      'Missing API key. Set --api-key, PAWS_API_KEY, or run `paws login --url <server-url>`.',
+    );
   }
 
   return { url, apiKey };
