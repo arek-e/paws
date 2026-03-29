@@ -176,6 +176,42 @@ services:
       - ./infra/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
       - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
 
+  # ── LiteLLM (LLM Proxy — optional) ────────────────────────────────────────
+  # Enables model routing, cost tracking, rate limiting, and multi-provider
+  # support. When enabled, the per-VM proxy forwards LLM calls through LiteLLM
+  # instead of directly to Anthropic/OpenAI/etc.
+  #
+  # Enable: set LITELLM_ENABLED=true in .env
+  # Config: config/litellm/config.yaml
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: paws-litellm
+    restart: unless-stopped
+    profiles:
+      - litellm
+    networks:
+      - paws
+    expose:
+      - '4001'
+    environment:
+      LITELLM_MASTER_KEY: '${LITELLM_MASTER_KEY:-sk-paws-litellm}'
+      DATABASE_URL: 'sqlite:///data/litellm.db'
+      LITELLM_LOG: 'INFO'
+    volumes:
+      - ./config/litellm:/app/config:ro
+      - litellm-data:/data
+    command:
+      - '--config'
+      - '/app/config/config.yaml'
+      - '--port'
+      - '4001'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:4001/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
 networks:
   paws:
     driver: bridge
@@ -184,5 +220,6 @@ volumes:
   dex-data:
   gateway-data:
   letsencrypt-data:
+  litellm-data:
   vm-data:
   grafana-data:

@@ -1,0 +1,65 @@
+# /\_/\
+# ( o.o )  paws LiteLLM proxy config
+#  > ^ <
+#
+# LiteLLM routes LLM API calls from agents to the right provider.
+# The per-VM MITM proxy injects credentials and forwards to LiteLLM,
+# which handles model routing, fallbacks, cost tracking, and rate limits.
+#
+# Docs: https://docs.litellm.ai/docs/proxy/configs
+#
+# Add your models below. API keys are set via environment variables
+# in docker-compose.yml or .env — never hardcode them here.
+
+model_list:
+  # Anthropic Claude (direct API)
+  - model_name: claude-sonnet
+    litellm_params:
+      model: anthropic/claude-sonnet-4-20250514
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: claude-opus
+    litellm_params:
+      model: anthropic/claude-opus-4-20250514
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: claude-haiku
+    litellm_params:
+      model: anthropic/claude-haiku-4-5-20251001
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  # OpenAI (uncomment to enable)
+  # - model_name: gpt-4o
+  #   litellm_params:
+  #     model: openai/gpt-4o
+  #     api_key: os.environ/OPENAI_API_KEY
+
+  # AWS Bedrock (uncomment to enable)
+  # - model_name: claude-bedrock
+  #   litellm_params:
+  #     model: bedrock/anthropic.claude-sonnet-4-20250514-v1:0
+  #     aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
+  #     aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
+  #     aws_region_name: us-east-1
+
+  # Azure OpenAI (uncomment to enable)
+  # - model_name: gpt-4o-azure
+  #   litellm_params:
+  #     model: azure/gpt-4o
+  #     api_base: os.environ/AZURE_API_BASE
+  #     api_key: os.environ/AZURE_API_KEY
+  #     api_version: "2024-02-15-preview"
+
+# Default model when no specific model requested
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+  num_retries: 2
+  request_timeout: 300
+  # Cost tracking
+  success_callback: ['prometheus']
+
+# Rate limits (per-key)
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL

@@ -43,6 +43,20 @@ export interface ExecutorConfig {
   pangolinResources?: PangolinResourceManager | undefined;
   /** Fallback worker URL when Pangolin is not configured (e.g., "http://65.108.10.170") */
   workerExternalUrl?: string | undefined;
+  /** LLM gateway — routes provider API calls through an external proxy (LiteLLM, OpenRouter, etc.) */
+  llmGateway?: LlmGateway | undefined;
+}
+
+/** LLM gateway plugin — intercepts LLM API calls and routes through an external proxy */
+export interface LlmGateway {
+  /** Display name (e.g., "LiteLLM", "OpenRouter") */
+  name: string;
+  /** Base URL of the gateway (e.g., "http://litellm:4001", "https://openrouter.ai/api") */
+  url: string;
+  /** API key for the gateway */
+  apiKey: string;
+  /** Which provider domains this gateway handles */
+  domains: string[];
 }
 
 /** Result of a completed session */
@@ -179,7 +193,7 @@ export function createExecutor(config: ExecutorConfig) {
         // 6. Spawn TLS proxy
         proxyHandle = createProxy({
           listen: { host: allocation.hostIp, port: 8080 },
-          domains: networkConfigToDomains(network),
+          domains: networkConfigToDomains(network, config.llmGateway),
           ca: { cert: ca.cert, key: ca.key },
         });
         await proxyHandle.start();
@@ -404,6 +418,7 @@ export type Executor = ReturnType<typeof createExecutor>;
 /** Convert NetworkConfig (from @paws/types) to proxy-native domains map */
 function networkConfigToDomains(
   network: NetworkConfig,
+  gateway?: LlmGateway,
 ): Record<string, import('@paws/proxy').DomainEntry> {
   const domains: Record<string, import('@paws/proxy').DomainEntry> = {};
 
@@ -416,6 +431,24 @@ function networkConfigToDomains(
   for (const domain of network.allowOut) {
     if (!(domain in domains)) {
       domains[domain] = {};
+    }
+  }
+
+  // If an LLM gateway is configured, override matching domains to route through it.
+  // The proxy terminates TLS from the VM, then forwards to the gateway URL instead
+  // of the real provider. The gateway handles model routing, cost tracking, etc.
+  if (gateway) {
+    for (const domain of gateway.domains) {
+      domains[domain] = {
+        headers: {
+          Authorization: `Bearer ${gateway.apiKey}`,
+          // Preserve existing credential headers (merged, gateway key takes priority)
+          ...(domains[domain]?.headers ?? {}),
+          // Override Authorization with gateway key
+          ...(gateway.apiKey ? { Authorization: `Bearer ${gateway.apiKey}` } : {}),
+        },
+        target: gateway.url,
+      };
     }
   }
 

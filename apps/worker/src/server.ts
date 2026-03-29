@@ -57,6 +57,39 @@ if (PANGOLIN_API_URL_WORKER && PANGOLIN_ORG_ID_WORKER && PANGOLIN_SITE_ID && PAN
   });
 }
 
+// LLM gateway plugin (optional — routes LLM API calls through an external proxy)
+const LLM_GATEWAY_NAME = process.env['LLM_GATEWAY'] ?? '';
+const LLM_GATEWAY_URL = process.env['LLM_GATEWAY_URL'] ?? '';
+const LLM_GATEWAY_KEY = process.env['LLM_GATEWAY_KEY'] ?? '';
+
+// Built-in gateway presets
+const GATEWAY_PRESETS: Record<string, { url: string; domains: string[] }> = {
+  litellm: {
+    url: LLM_GATEWAY_URL || 'http://litellm:4001',
+    domains: ['api.anthropic.com', 'api.openai.com'],
+  },
+  openrouter: {
+    url: LLM_GATEWAY_URL || 'https://openrouter.ai/api',
+    domains: ['api.anthropic.com', 'api.openai.com'],
+  },
+  custom: {
+    url: LLM_GATEWAY_URL,
+    domains: (process.env['LLM_GATEWAY_DOMAINS'] ?? 'api.anthropic.com,api.openai.com')
+      .split(',')
+      .map((d) => d.trim()),
+  },
+};
+
+const llmGateway =
+  LLM_GATEWAY_NAME && LLM_GATEWAY_KEY
+    ? {
+        name: LLM_GATEWAY_NAME,
+        url: GATEWAY_PRESETS[LLM_GATEWAY_NAME]?.url ?? LLM_GATEWAY_URL,
+        apiKey: LLM_GATEWAY_KEY,
+        domains: GATEWAY_PRESETS[LLM_GATEWAY_NAME]?.domains ?? GATEWAY_PRESETS['custom']!.domains,
+      }
+    : undefined;
+
 const executor = createExecutor({
   snapshotDir: SNAPSHOT_DIR,
   snapshotBaseDir: SNAPSHOT_BASE_DIR,
@@ -67,6 +100,7 @@ const executor = createExecutor({
   portPool,
   pangolinResources,
   workerExternalUrl: WORKER_EXTERNAL_URL || undefined,
+  llmGateway,
 });
 
 let syncLoop: SyncLoop | undefined;
@@ -153,6 +187,7 @@ Snapshot: ${SNAPSHOT_DIR}
 Worker: ${WORKER_NAME}
 Snapshot sync: ${SNAPSHOT_SYNC_ENABLED ? 'enabled' : 'disabled'}
 Port exposure: ${portExposureStatus}
+LLM gateway: ${llmGateway ? `${llmGateway.name} (${llmGateway.url})` : 'direct (set LLM_GATEWAY + LLM_GATEWAY_KEY)'}
 Call-home: ${GATEWAY_URL ? `${GATEWAY_URL}` : 'disabled (set GATEWAY_URL + API_KEY)'}
 `);
 
