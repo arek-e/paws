@@ -137,6 +137,58 @@ real-time streaming), Kamal (secret adapters, zero-agent philosophy).
 
 ---
 
+## v3.0 — Agent Operations Platform
+
+**Goal:** Close competitive gaps and double down on what makes paws unique: governance, daemons,
+self-hosted, zero-trust. Positioning: not a sandbox API — a self-hosted agent operations platform.
+
+**Competitive context:** E2B (market leader, 500M+ sandboxes), Daytona ($24M Series A, Docker-based),
+Blaxel (25ms resume, perpetual sandboxes), Microsandbox (network-layer secrets, closest to paws),
+Sprites (checkpoint/restore). paws wins on: full platform, governance, self-hosted, daemons.
+
+### Tier 1 — Double down on what's unique (4-6 weeks)
+
+| #   | What                                                                                        | Status |
+| --- | ------------------------------------------------------------------------------------------- | ------ |
+| 49  | GitHub App integration (#39) — PR opened → daemon triggers → agent reviews → posts comment  | ⬜     |
+| 50  | Secret adapter pattern (#42) — 1Password, Vault, Infisical, env resolution                  | ⬜     |
+| 51  | In-session checkpoints — branch/rollback during execution, not just pre-session snapshots   | ⬜     |
+| 52  | Computer use (ship it) — Xvfb + Chromium in snapshot, wire to browser routes/dashboard      | ⬜     |
+| 53  | MCP protocol handling — actual stdio subprocess + SSE connections (foundation already done) | ⬜     |
+
+### Tier 2 — Close competitive gaps (6-12 weeks)
+
+| #   | What                                                                                   | Status |
+| --- | -------------------------------------------------------------------------------------- | ------ |
+| 54  | Persistent volumes per daemon — state survives between sessions (git repos, databases) | ⬜     |
+| 55  | Webhook marketplace — Linear, Slack, Discord, PagerDuty triggers beyond GitHub         | ⬜     |
+| 56  | SOC2 Type II — start the process, 6-9 month timeline                                   | ⬜     |
+| 57  | Observability dashboard — session replays, cost breakdowns, LLM token usage charts     | ⬜     |
+| 58  | Fleet animation — canvas-based hero animation showing live agent orchestration         | ⬜     |
+
+### Tier 3 — Expand the platform (12+ weeks)
+
+| #   | What                                                                               | Status |
+| --- | ---------------------------------------------------------------------------------- | ------ |
+| 59  | Multi-agent orchestration — daemons that spawn other daemons, lead agent pattern   | ⬜     |
+| 60  | Template marketplace — community-contributed daemon configs with one-click install | ⬜     |
+| 61  | Agent framework adapters — LangChain, CrewAI, AutoGen, Mastra integration          | ⬜     |
+| 62  | SSH key management (#43) — first-class entities in dashboard, encrypted storage    | ⬜     |
+| 63  | Git provider abstraction (#44) — GitHub/GitLab/Bitbucket/Gitea support             | ⬜     |
+
+### What NOT to build
+
+- **Faster cold starts** — sub-second from snapshots is good enough. Don't chase Blaxel's 25ms.
+- **Cloud hosting / managed service** — too early. Self-hosted is the moat. Cloud comes after PMF.
+- **More SDKs** — JS + Python covers 95% of agent developers. Don't spread thin.
+- **GPU support** — agents call LLM APIs, they don't need GPUs. Leave this to Modal.
+
+**v3.0 deliverable:** paws is the obvious choice for teams that want to self-host AI agent
+infrastructure with governance, zero-trust secrets, and a full dashboard. GitHub App integration
+is the activation loop. Secret adapters unlock enterprise. Computer use catches the market wave.
+
+---
+
 ## Design Principles (carry through all versions)
 
 1. **Zero secrets in the VM** — never compromise on this
@@ -144,3 +196,5 @@ real-time streaming), Kamal (secret adapters, zero-agent philosophy).
 3. **Spec-first API** — OpenAPI spec generated from code, SDKs follow
 4. **Provider-agnostic** — core never imports provider-specific code
 5. **Cat-themed** — ASCII cats in CLI output, cat puns in docs, good vibes
+6. **Self-hosted first** — deploy on your own infra, no vendor lock-in
+7. **Governance built-in** — rate limits, approval gates, audit log are core, not add-ons
