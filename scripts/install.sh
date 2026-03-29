@@ -174,7 +174,7 @@ docker compose up -d
 # Install CLI
 [[ -f scripts/update.sh ]] && cp scripts/update.sh /usr/local/bin/paws && chmod +x /usr/local/bin/paws
 
-# Wait for health
+# Wait for gateway health
 info "Waiting for startup..."
 for i in $(seq 1 30); do
   if curl -sf "http://localhost:3000/health" >/dev/null 2>&1; then
@@ -182,6 +182,27 @@ for i in $(seq 1 30); do
   fi
   sleep 2
 done
+
+# Auto-bootstrap Pangolin (create admin + org so Gerbil can start)
+info "Configuring tunnels..."
+PANGOLIN_ADMIN_PASS=$(openssl rand -hex 16)
+
+for i in $(seq 1 30); do
+  if curl -sf "http://localhost:3001/api/v1/" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 2
+done
+
+# Create initial admin via Pangolin's setup endpoint
+curl -sf -X POST "http://localhost:3001/api/v1/auth/initial-setup" \
+  -H "Content-Type: application/json" \
+  -H "x-csrf-token: x-csrf-protection" \
+  -d "{\"email\":\"admin@paws.local\",\"password\":\"${PANGOLIN_ADMIN_PASS}\"}" >/dev/null 2>&1 || true
+
+# Wait for Gerbil to stabilize after Pangolin has an org
+sleep 10
+docker compose up -d 2>/dev/null
 
 # ── Done ──────────────────────────────────────────────────────────────────
 echo ""
