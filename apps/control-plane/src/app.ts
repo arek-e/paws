@@ -253,9 +253,10 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
   // Setup status — no auth, dashboard checks this on load
   app.get('/v1/setup/status', (c) => {
+    const hasDaemons = daemonStore.list().length > 0;
     return c.json({
-      isFirstRun: passwordAuth.isFirstRun(),
       needsAccount: passwordAuth.isFirstRun(),
+      needsOnboarding: !passwordAuth.isFirstRun() && !hasDaemons,
       oidcAvailable: oidcEnabled,
     });
   });

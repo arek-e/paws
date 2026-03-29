@@ -20,6 +20,10 @@ export function App() {
     <AuthGate>
       <BrowserRouter>
         <Routes>
+          {/* Setup wizard — full screen, no sidebar */}
+          <Route path="setup" element={<Setup />} />
+
+          {/* Main app with sidebar layout */}
           <Route element={<Layout />}>
             <Route index element={<FirstRunRedirect />} />
             <Route path="daemons" element={<Daemons />} />
@@ -31,7 +35,6 @@ export function App() {
             <Route path="sessions" element={<Sessions />} />
             <Route path="sessions/:id" element={<SessionDetail />} />
             <Route path="audit" element={<AuditLog />} />
-            <Route path="setup" element={<Setup />} />
           </Route>
         </Routes>
       </BrowserRouter>

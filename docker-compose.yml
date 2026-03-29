@@ -40,6 +40,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.control-plane
+      args:
+        PAWS_VERSION: '${PAWS_VERSION:-0.5.2}'
     container_name: paws-control-plane
     restart: unless-stopped
     networks:

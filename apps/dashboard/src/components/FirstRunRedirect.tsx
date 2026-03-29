@@ -1,23 +1,24 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 
 import { Fleet } from '../pages/Fleet.js';
 
 export function FirstRunRedirect() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    fetch('/v1/setup/status')
+    fetch('/v1/setup/status', { credentials: 'include' })
       .then((res) => res.json())
-      .then((data: { isFirstRun: boolean }) => {
-        if (data.isFirstRun) {
+      .then((data: { needsOnboarding: boolean }) => {
+        if (data.needsOnboarding && location.pathname === '/') {
           navigate('/setup', { replace: true });
         }
         setChecked(true);
       })
       .catch(() => setChecked(true));
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   if (!checked) {
     return (
