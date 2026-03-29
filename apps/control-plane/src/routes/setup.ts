@@ -5,6 +5,7 @@ import { z } from '@hono/zod-openapi';
 
 import type { CredentialStore } from '@paws/credentials';
 import type { CredentialProvider } from '@paws/credentials';
+import { createAwsEc2Provider } from '@paws/provider-aws-ec2';
 import type { Provisioner, Server } from '@paws/provisioner';
 import type { UpgradeWebSocket } from 'hono/ws';
 
@@ -199,8 +200,6 @@ export function createSetupRoutes(deps: SetupDeps) {
           sshPassphrase = body.passphrase;
         } else if (body.provider === 'aws-ec2') {
           // Phase 0: Launch EC2 instance
-          const { createAwsEc2Provider } = await import('@paws/provider-aws-ec2');
-
           serverStore.update(id, { status: 'provisioning' });
 
           // Resolve latest Ubuntu 24.04 AMI for this region
@@ -310,6 +309,7 @@ export function createSetupRoutes(deps: SetupDeps) {
         });
         serverStore.update(id, { status: 'ready' });
       } catch (err) {
+        console.error(`[setup] Server ${id} provisioning failed:`, err);
         // Sanitize error — never leak credentials in error messages
         let message = err instanceof Error ? err.message : String(err);
         // Strip anything that looks like a key/secret/token
