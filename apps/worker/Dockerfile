@@ -8,6 +8,9 @@ FROM oven/bun:1.3.9-alpine AS builder
 
 WORKDIR /build
 
+# Install build deps for native modules (better-sqlite3 needs python3 + make + g++)
+RUN apk add --no-cache python3 make g++
+
 # Copy entire repo (filtered by .dockerignore — no tests, docs, node_modules).
 COPY . .
 
