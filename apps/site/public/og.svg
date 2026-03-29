@@ -19,7 +19,7 @@
   <text x="100" y="350" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="64" font-weight="700" fill="#fafafa" letter-spacing="-1">paws</text>
 
   <!-- Full name -->
-  <text x="100" y="395" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" fill="#a1a1aa">Protected Agent Workspace Sandboxes</text>
+  <text x="100" y="395" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" fill="#a1a1aa">Protected Agent Workflow System</text>
 
   <!-- Tagline -->
   <text x="100" y="440" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" fill="#71717a">Zero-trust credential injection for AI agents</text>

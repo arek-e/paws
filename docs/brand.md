@@ -232,7 +232,7 @@ NO ACTIVE KITTENS
 
 ### Tagline Options (ranked)
 
-1. **"Protected Agent Workspace Sandboxes"** — the acronym, the identity
+1. **"Protected Agent Workflow System"** — the acronym, the identity
 2. **"Zero-trust credential injection for AI agents."** — the technical pitch
 3. **"Your agent doesn't need your API keys."** — the human pitch
 4. **"Secrets stay on the host. Agents stay in the box."** — uses cat vocabulary

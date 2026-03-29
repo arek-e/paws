@@ -1,4 +1,4 @@
-# paws — Protected Agent Workspace Sandboxes
+# paws — Protected Agent Workflow System
 
 Zero-trust credential injection for AI agents. Secrets never enter the sandbox — they're injected at
 the network layer by a per-VM TLS MITM proxy. Agents run in ephemeral Firecracker microVMs with

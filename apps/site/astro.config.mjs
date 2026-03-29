@@ -7,7 +7,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'paws',
-      tagline: 'Protected Agent Workspace Sandboxes',
+      tagline: 'Protected Agent Workflow System',
       logo: {
         dark: '/src/assets/logo-dark.svg',
         light: '/src/assets/logo-light.svg',

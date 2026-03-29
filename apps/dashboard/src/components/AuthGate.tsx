@@ -153,7 +153,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           </pre>
           <h1 className="mt-4 text-xl font-semibold text-zinc-100">paws</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            {isCreating ? 'Create your admin account' : 'Protected Agent Workspace Sandboxes'}
+            {isCreating ? 'Create your admin account' : 'Protected Agent Workflow System'}
           </p>
         </div>
 

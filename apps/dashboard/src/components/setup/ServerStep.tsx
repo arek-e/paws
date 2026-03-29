@@ -53,14 +53,26 @@ function AwsLogo() {
   return (
     <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
       <rect width="32" height="32" rx="6" fill="#232F3E" />
+      <text
+        x="16"
+        y="15"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fill="white"
+        fontSize="9"
+        fontWeight="bold"
+        fontFamily="system-ui, sans-serif"
+      >
+        AWS
+      </text>
       <path
-        d="M10 18.5c0 .8.3 1.3.8 1.7.5.3 1.2.5 2 .5.6 0 1.1-.1 1.6-.3.5-.2.9-.5 1.2-.9V18c-.4.1-.8.2-1.2.3-.4.1-.8.1-1.2.1-.5 0-.9-.1-1.1-.2-.3-.2-.4-.4-.4-.8v-.2h4v-1c0-.9-.2-1.5-.7-2-.5-.5-1.1-.7-2-.7-.8 0-1.5.3-2 .8-.5.6-.7 1.3-.7 2.2v2zm2.5-3.3c.3 0 .6.1.7.3.2.2.3.5.3.8v.2h-2.1c0-.4.1-.7.3-.9.2-.3.5-.4.8-.4z"
-        fill="#FF9900"
+        d="M9 19.5 Q16 22 23 19.5"
+        stroke="#FF9900"
+        strokeWidth="1.5"
+        fill="none"
+        strokeLinecap="round"
       />
-      <path
-        d="M18 20.7c1.2-.4 2.2-1 2.9-1.7-.1-.1-.2-.2-.3-.4l-.3-.4c-.5.5-1.2.9-2 1.3-.8.3-1.6.5-2.5.5-1.2 0-2.2-.3-3-.8-.8-.5-1.2-1.3-1.2-2.3h.1c.9.4 2 .6 3.1.6 1 0 1.8-.2 2.5-.5.7-.3 1-.8 1-1.4 0-.5-.2-.8-.7-1.1-.4-.3-1.1-.4-2-.4-.7 0-1.3.1-1.8.3-.5.2-.9.4-1.2.7l-.6-.8c.4-.4 1-.7 1.6-.9.7-.2 1.4-.4 2.1-.4 1.1 0 2 .2 2.7.6.7.4 1 1 1 1.7 0 .5-.2 1-.6 1.3-.4.4-1 .6-1.7.8v.1c.8.1 1.5.4 2 .9.5.4.8 1 .8 1.7 0 .4-.1.8-.3 1.1z"
-        fill="#FF9900"
-      />
+      <path d="M21 18.5 L23 19.5 L21 20.5" fill="#FF9900" />
     </svg>
   );
 }
@@ -83,13 +95,29 @@ function CommandIcon() {
   );
 }
 
-const PROVIDERS: { id: Provider; label: string; desc: string; icon: () => JSX.Element }[] = [
+interface ProviderInfo {
+  id: Provider;
+  label: string;
+  desc: string;
+  icon: () => React.JSX.Element;
+}
+
+const MANUAL_PROVIDERS: ProviderInfo[] = [
   {
     id: 'ssh',
-    label: 'Connect a server',
-    desc: 'SSH into any server with /dev/kvm',
+    label: 'Connect via SSH',
+    desc: 'Enter IP + password, we handle the rest',
     icon: SshIcon,
   },
+  {
+    id: 'command',
+    label: 'Run a command',
+    desc: 'Copy a script and run it yourself',
+    icon: CommandIcon,
+  },
+];
+
+const CLOUD_PROVIDERS: ProviderInfo[] = [
   {
     id: 'hetzner',
     label: 'Hetzner Dedicated',
@@ -102,13 +130,24 @@ const PROVIDERS: { id: Provider; label: string; desc: string; icon: () => JSX.El
     desc: 'Launch an instance with KVM support',
     icon: AwsLogo,
   },
-  {
-    id: 'command',
-    label: 'Run a command',
-    desc: 'Copy a script and run it yourself',
-    icon: CommandIcon,
-  },
 ];
+
+function ProviderCard({ provider, onClick }: { provider: ProviderInfo; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-3 p-4 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-emerald-500/50 hover:bg-zinc-800/50 transition-all text-left group"
+    >
+      <div className="text-zinc-400 group-hover:text-emerald-400 transition-colors shrink-0">
+        <provider.icon />
+      </div>
+      <div>
+        <p className="text-sm font-medium text-zinc-200">{provider.label}</p>
+        <p className="text-xs text-zinc-500 mt-0.5">{provider.desc}</p>
+      </div>
+    </button>
+  );
+}
 
 export function ServerStep({ onComplete }: ServerStepProps) {
   const [provider, setProvider] = useState<Provider>(null);
@@ -121,6 +160,16 @@ export function ServerStep({ onComplete }: ServerStepProps) {
   const [ip, setIp] = useState('');
   const [password, setPassword] = useState('');
   const [serverName, setServerName] = useState('');
+  const [authMethod, setAuthMethod] = useState<'password' | 'privateKey'>('password');
+  const [privateKey, setPrivateKey] = useState('');
+  const [passphrase, setPassphrase] = useState('');
+  const [sshPort, setSshPort] = useState('22');
+  const [username, setUsername] = useState('root');
+  const [testResult, setTestResult] = useState<{
+    success: boolean;
+    checks: { name: string; status: 'pass' | 'fail'; message: string; ms?: number }[];
+  } | null>(null);
+  const [testing, setTesting] = useState(false);
 
   // AWS fields
   const [awsAccessKey, setAwsAccessKey] = useState('');
@@ -142,6 +191,45 @@ export function ServerStep({ onComplete }: ServerStepProps) {
     setChecks((prev) => prev.map((c, i) => (i === index ? { ...c, status: s } : c)));
   }
 
+  async function testConnection() {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch('/v1/setup/servers/test-connection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          ip,
+          port: parseInt(sshPort, 10) || 22,
+          username: username || 'root',
+          authMethod,
+          ...(authMethod === 'password'
+            ? { password }
+            : { privateKey, passphrase: passphrase || undefined }),
+        }),
+      });
+      const data = (await res.json()) as {
+        success: boolean;
+        checks: { name: string; status: 'pass' | 'fail'; message: string; ms?: number }[];
+      };
+      setTestResult(data);
+    } catch {
+      setTestResult({
+        success: false,
+        checks: [
+          {
+            name: 'network',
+            status: 'fail',
+            message: 'Request failed — is the control plane running?',
+          },
+        ],
+      });
+    } finally {
+      setTesting(false);
+    }
+  }
+
   async function startProvisioning() {
     setStatus('provisioning');
     setError(null);
@@ -149,7 +237,17 @@ export function ServerStep({ onComplete }: ServerStepProps) {
 
     let body: Record<string, unknown>;
     if (provider === 'ssh') {
-      body = { provider: 'manual', name: serverName || 'worker-1', ip, password };
+      body = {
+        provider: 'manual',
+        name: serverName || 'worker-1',
+        ip,
+        authMethod,
+        username: username || 'root',
+        port: parseInt(sshPort, 10) || 22,
+        ...(authMethod === 'password'
+          ? { password }
+          : { privateKey, passphrase: passphrase || undefined }),
+      };
     } else if (provider === 'aws') {
       body = {
         provider: 'aws-ec2',
@@ -224,7 +322,7 @@ export function ServerStep({ onComplete }: ServerStepProps) {
     }
   }
 
-  // Provider selection cards
+  // Provider selection — two groups
   if (!provider) {
     return (
       <div>
@@ -234,22 +332,30 @@ export function ServerStep({ onComplete }: ServerStepProps) {
           <code className="text-zinc-400">/dev/kvm</code> (bare metal or nested virtualization).
         </p>
 
-        <div className="grid grid-cols-2 gap-3">
-          {PROVIDERS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setProvider(p.id)}
-              className="flex flex-col items-center gap-3 p-5 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-emerald-500/50 hover:bg-zinc-800/50 transition-all text-center group"
-            >
-              <div className="text-zinc-400 group-hover:text-emerald-400 transition-colors">
-                <p.icon />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-zinc-200">{p.label}</p>
-                <p className="text-xs text-zinc-500 mt-0.5">{p.desc}</p>
-              </div>
-            </button>
-          ))}
+        <div className="space-y-5">
+          <div>
+            <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
+              Bring your own server
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              {MANUAL_PROVIDERS.map((p) => (
+                <ProviderCard key={p.id} provider={p} onClick={() => setProvider(p.id)} />
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-zinc-800" />
+
+          <div>
+            <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
+              Auto-provision
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              {CLOUD_PROVIDERS.map((p) => (
+                <ProviderCard key={p.id} provider={p} onClick={() => setProvider(p.id)} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -376,37 +482,167 @@ export function ServerStep({ onComplete }: ServerStepProps) {
                   className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
                 />
               </div>
-              <div>
-                <label className="block text-xs text-zinc-400 mb-1">IP address</label>
-                <input
-                  type="text"
-                  value={ip}
-                  onChange={(e) => setIp(e.target.value)}
-                  placeholder="65.108.x.x"
-                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1">IP address / hostname</label>
+                  <input
+                    type="text"
+                    value={ip}
+                    onChange={(e) => setIp(e.target.value)}
+                    placeholder="65.108.x.x"
+                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs text-zinc-400 mb-1">User</label>
+                    <input
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="root"
+                      className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-zinc-400 mb-1">Port</label>
+                    <input
+                      type="text"
+                      value={sshPort}
+                      onChange={(e) => setSshPort(e.target.value)}
+                      placeholder="22"
+                      className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+                    />
+                  </div>
+                </div>
               </div>
+
+              {/* Auth method tabs */}
               <div>
-                <label className="block text-xs text-zinc-400 mb-1">Root password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="SSH password"
-                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
-                />
-                <p className="text-xs text-zinc-600 mt-1">
-                  Used once for setup. We install our own SSH key and discard this.
-                </p>
+                <label className="block text-xs text-zinc-400 mb-2">Authentication</label>
+                <div className="flex gap-1 p-0.5 bg-zinc-900 border border-zinc-800 rounded-lg mb-3">
+                  <button
+                    onClick={() => setAuthMethod('password')}
+                    className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      authMethod === 'password'
+                        ? 'bg-zinc-700 text-zinc-100'
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    Password
+                  </button>
+                  <button
+                    onClick={() => setAuthMethod('privateKey')}
+                    className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      authMethod === 'privateKey'
+                        ? 'bg-zinc-700 text-zinc-100'
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    Private Key
+                  </button>
+                </div>
+
+                {authMethod === 'password' ? (
+                  <div>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="SSH password"
+                      className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+                    />
+                    <p className="text-xs text-zinc-600 mt-1">
+                      Used to connect and run the bootstrap script. Not stored after setup.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-zinc-400">Private key (PEM)</span>
+                        <label className="text-xs text-emerald-500 hover:text-emerald-400 cursor-pointer">
+                          Upload file
+                          <input
+                            type="file"
+                            accept=".pem,.key,.pub,*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                file.text().then((text) => setPrivateKey(text));
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                      <textarea
+                        value={privateKey}
+                        onChange={(e) => setPrivateKey(e.target.value)}
+                        placeholder={
+                          '-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----'
+                        }
+                        rows={4}
+                        className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 font-mono resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-zinc-400 mb-1">
+                        Passphrase <span className="text-zinc-600">(optional)</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={passphrase}
+                        onChange={(e) => setPassphrase(e.target.value)}
+                        placeholder="Key passphrase"
+                        className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+                      />
+                    </div>
+                    <p className="text-xs text-zinc-600">
+                      Accepts OpenSSH and PEM formats. Used to connect and run the bootstrap script.
+                      Not stored after setup.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
-            <button
-              onClick={startProvisioning}
-              disabled={!ip || !password}
-              className="mt-5 w-full py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-500 disabled:opacity-40 transition-colors"
-            >
-              Connect & Bootstrap
-            </button>
+            {/* Test result */}
+            {testResult && (
+              <div
+                className={`mt-3 p-3 rounded-lg border ${testResult.success ? 'bg-emerald-900/20 border-emerald-800' : 'bg-red-900/20 border-red-800'}`}
+              >
+                {testResult.checks.map((ch, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <span className={ch.status === 'pass' ? 'text-emerald-400' : 'text-red-400'}>
+                      {ch.status === 'pass' ? '✓' : '✗'}
+                    </span>
+                    <span className={ch.status === 'pass' ? 'text-emerald-300' : 'text-red-300'}>
+                      {ch.message}
+                    </span>
+                    {ch.ms !== undefined && (
+                      <span className="text-zinc-600 text-xs">{ch.ms}ms</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={testConnection}
+                disabled={!ip || (authMethod === 'password' ? !password : !privateKey) || testing}
+                className="flex-1 py-2.5 bg-zinc-800 text-zinc-300 text-sm font-medium rounded-lg hover:bg-zinc-700 disabled:opacity-40 transition-colors"
+              >
+                {testing ? 'Testing...' : 'Test Connection'}
+              </button>
+              <button
+                onClick={startProvisioning}
+                disabled={!ip || (authMethod === 'password' ? !password : !privateKey)}
+                className="flex-1 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-500 disabled:opacity-40 transition-colors"
+              >
+                Connect & Bootstrap
+              </button>
+            </div>
           </>
         ) : (
           <>
