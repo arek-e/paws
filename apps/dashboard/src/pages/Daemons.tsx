@@ -8,6 +8,9 @@ interface Daemon {
   status: 'active' | 'paused' | 'stopped';
   trigger: { type: string; cron?: string; events?: string[] };
   stats: { totalInvocations: number; lastInvokedAt?: string; avgDurationMs?: number };
+  network?: {
+    expose?: Array<{ port: number; label?: string }>;
+  };
 }
 
 function formatDuration(ms?: number): string {
@@ -83,6 +86,20 @@ export function Daemons() {
                 <TriggerBadge trigger={d.trigger} />
               </div>
               {d.description && <p className="text-xs text-zinc-400 mb-3">{d.description}</p>}
+              {d.network?.expose && d.network.expose.length > 0 && (
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs text-zinc-500">Exposed ports:</span>
+                  {d.network.expose.map((ep) => (
+                    <span
+                      key={ep.port}
+                      className="px-1.5 py-0.5 text-xs font-mono rounded bg-emerald-400/10 text-emerald-400 border border-emerald-400/20"
+                    >
+                      :{ep.port}
+                      {ep.label ? ` ${ep.label}` : ''}
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-6 text-xs">
                 <div>
                   <span className="text-zinc-500">Invocations</span>

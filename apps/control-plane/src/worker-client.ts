@@ -22,6 +22,7 @@ export interface WorkerSessionResult {
   durationMs?: number;
   completedAt?: string;
   worker?: string;
+  exposedPorts?: Array<{ port: number; url: string; label?: string }>;
 }
 
 export interface WorkerClient {

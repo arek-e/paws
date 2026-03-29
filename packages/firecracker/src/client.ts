@@ -118,6 +118,24 @@ export function createFirecrackerClient(socketPath: string, options: { request?:
     putNetworkInterface(config: NetworkInterfaceConfig): ResultAsync<void, FirecrackerError> {
       return apiCall('PUT', `/network-interfaces/${config.iface_id}`, config).map(() => undefined);
     },
+
+    /** Create a full VM snapshot (VM must be paused first) */
+    createSnapshot(config: {
+      snapshotType: 'Full' | 'Diff';
+      snapshotPath: string;
+      memFilePath: string;
+    }): ResultAsync<void, FirecrackerError> {
+      return apiCall(
+        'PUT',
+        '/snapshot/create',
+        {
+          snapshot_type: config.snapshotType,
+          snapshot_path: config.snapshotPath,
+          mem_file_path: config.memFilePath,
+        },
+        FirecrackerErrorCode.API_ERROR,
+      ).map(() => undefined);
+    },
   };
 }
 

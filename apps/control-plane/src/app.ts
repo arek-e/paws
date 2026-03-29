@@ -135,6 +135,7 @@ function sessionToJson(s: StoredSession) {
     ...(s.metadata !== undefined && { metadata: s.metadata }),
     ...(s.resources !== undefined && { resources: s.resources }),
     ...(s.vcpuSeconds !== undefined && { vcpuSeconds: s.vcpuSeconds }),
+    ...(s.exposedPorts !== undefined && { exposedPorts: s.exposedPorts }),
   };
 }
 
@@ -286,15 +287,39 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   app.use('/v1/setup/*', authMiddleware(authConfig));
   app.use('/v1/setup', authMiddleware(authConfig));
 
+  // Snapshot config store — hoisted so mergeSnapshotDomains can use it in session dispatch
+  const snapshotConfigStore = createSnapshotConfigStore();
+
   // --- Sessions ---
+
+  /** Merge snapshot config's requiredDomains into session network allowOut */
+  function mergeSnapshotDomains(
+    request: Parameters<typeof dispatchSession>[4],
+  ): Parameters<typeof dispatchSession>[4] {
+    const config = snapshotConfigStore.get(request.snapshot);
+    if (!config?.requiredDomains?.length) return request;
+
+    const existingAllowOut = request.network?.allowOut ?? [];
+    const merged = [...new Set([...existingAllowOut, ...config.requiredDomains])];
+    return {
+      ...request,
+      network: {
+        ...request.network,
+        allowOut: merged,
+        credentials: request.network?.credentials ?? {},
+        expose: request.network?.expose ?? [],
+      },
+    };
+  }
 
   app.openapi(createSessionRoute, async (c) => {
     const body = c.req.valid('json');
     const sessionId = randomUUID();
     sessionStore.create(sessionId, body);
 
-    // Dispatch to worker (fire-and-forget)
-    dispatchSession(discovery, legacyWorkerClient, sessionStore, sessionId, body);
+    // Merge snapshot requiredDomains into network allowOut before dispatch
+    const enriched = mergeSnapshotDomains(body);
+    dispatchSession(discovery, legacyWorkerClient, sessionStore, sessionId, enriched);
 
     return c.json({ sessionId, status: 'pending' as const }, 202);
   });
@@ -333,6 +358,8 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
             if (workerResult.completedAt !== undefined)
               patch.completedAt = workerResult.completedAt;
             if (workerResult.worker !== undefined) patch.worker = workerResult.worker;
+            if (workerResult.exposedPorts !== undefined)
+              patch.exposedPorts = workerResult.exposedPorts;
             sessionStore.updateStatus(id, workerResult.status as StoredSession['status'], patch);
           }
         }
@@ -815,8 +842,6 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   });
 
   // --- Snapshot Configs ---
-
-  const snapshotConfigStore = createSnapshotConfigStore();
 
   app.openapi(listSnapshotConfigsRoute, (c) => {
     return c.json({ configs: snapshotConfigStore.list() }, 200);

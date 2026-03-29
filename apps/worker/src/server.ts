@@ -90,7 +90,17 @@ if (SNAPSHOT_SYNC_ENABLED) {
   console.log('Snapshot sync: enabled (polling every %dms)', SNAPSHOT_SYNC_INTERVAL_MS);
 }
 
-const app = createSessionApp({ executor, semaphore, workerName: WORKER_NAME, syncLoop });
+const app = createSessionApp({
+  executor,
+  semaphore,
+  workerName: WORKER_NAME,
+  syncLoop,
+  snapshotBuilderConfig: {
+    snapshotBaseDir: SNAPSHOT_BASE_DIR,
+    outputDir: SNAPSHOT_BASE_DIR,
+    sshKeyPath: SSH_KEY_PATH,
+  },
+});
 const startTime = Date.now();
 
 // Call-home: register with gateway via WebSocket

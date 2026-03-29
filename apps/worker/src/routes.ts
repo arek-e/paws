@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
 import { Hono } from 'hono';
-import { CreateSessionRequestSchema } from '@paws/types';
+import { CreateSessionRequestSchema, SnapshotBuildRequestSchema } from '@paws/types';
 
+import { buildSnapshot, type SnapshotBuilderConfig } from './build/snapshot-builder.js';
 import { createWorkerMetrics } from './metrics.js';
 import type { Executor } from './session/executor.js';
 import type { Semaphore } from './semaphore.js';
@@ -13,6 +14,8 @@ export interface AppDeps {
   semaphore: Semaphore;
   workerName: string;
   syncLoop?: SyncLoop | undefined;
+  /** Config for snapshot builder (optional — needed for build endpoint) */
+  snapshotBuilderConfig?: SnapshotBuilderConfig | undefined;
 }
 
 const startTime = Date.now();
@@ -161,6 +164,61 @@ export function createSessionApp(deps: AppDeps) {
     return c.json(
       { error: { code: 'SESSION_NOT_FOUND', message: `Session ${id} not found` } },
       404,
+    );
+  });
+
+  // Build a snapshot (fire-and-forget, returns 202)
+  app.post('/v1/snapshots/:id/build', async (c) => {
+    if (!deps.snapshotBuilderConfig) {
+      return c.json(
+        {
+          error: {
+            code: 'NOT_CONFIGURED',
+            message: 'Snapshot builder not configured on this worker',
+          },
+        },
+        501,
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Invalid JSON body' } }, 400);
+    }
+
+    const parsed = SnapshotBuildRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json(
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: parsed.error.issues.map((i) => i.message).join(', '),
+          },
+        },
+        400,
+      );
+    }
+
+    const snapshotId = c.req.param('id');
+    const jobId = (body as Record<string, unknown>)['jobId'] as string | undefined;
+
+    // Fire-and-forget build
+    void buildSnapshot(snapshotId, parsed.data, deps.snapshotBuilderConfig).then(
+      (result) => {
+        console.log(
+          `snapshot build ${snapshotId}: ${result.status}${result.error ? ` — ${result.error}` : ''}`,
+        );
+      },
+      (err) => {
+        console.error(`snapshot build ${snapshotId} error:`, err);
+      },
+    );
+
+    return c.json(
+      { snapshotId, status: 'building', jobId: jobId ?? `build-${randomUUID().slice(0, 8)}` },
+      202,
     );
   });
 

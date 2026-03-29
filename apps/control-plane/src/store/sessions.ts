@@ -18,6 +18,8 @@ export interface StoredSession {
   resources?: { vcpus: number; memoryMB: number } | undefined;
   /** Cost in vCPU-seconds — computed on completion */
   vcpuSeconds?: number | undefined;
+  /** Ports exposed from the VM via Pangolin tunnel */
+  exposedPorts?: Array<{ port: number; url: string; label?: string | undefined }> | undefined;
 }
 
 export interface SessionStore {
