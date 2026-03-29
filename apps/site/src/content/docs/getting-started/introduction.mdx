@@ -1,0 +1,63 @@
+---
+title: Introduction
+description: Protected Agent Workspace Sandboxes — zero-trust credential injection for AI agents.
+---
+
+import { Card, CardGrid, Code } from '@astrojs/starlight/components';
+
+**paws** (Protected Agent Workspace Sandboxes) provides zero-trust credential injection for AI agents.
+Secrets never enter the sandbox — they're injected at the network layer by a per-VM TLS MITM proxy.
+
+<Code code="curl -fsSL https://getpaws.dev/install.sh | bash" lang="bash" title="Install paws" />
+
+## Why paws?
+
+Your agent should have **nothing worth stealing**. When an AI agent runs inside a paws sandbox:
+
+- There are **no API keys** in environment variables, files, or memory
+- The VM is **ephemeral** — destroyed when the session ends
+- Network access is limited to **allowlisted domains only**
+- Credentials are **injected at the network layer** by a per-VM TLS proxy
+
+<CardGrid>
+  <Card title="Zero secrets in the VM" icon="approve-check">
+    API keys never enter the sandbox. A per-VM TLS proxy injects credentials at the network layer.
+    If compromised, there's nothing to steal.
+  </Card>
+  <Card title="Sub-second boot" icon="rocket">
+    Firecracker memory snapshots restore VMs in under a second. Each session gets a fresh, ephemeral
+    microVM.
+  </Card>
+  <Card title="Port exposure" icon="external">
+    Agents run fullstack apps, users access them via Pangolin tunnel URLs with per-port access
+    control: SSO, PIN, or email whitelist.
+  </Card>
+  <Card title="Agent harness" icon="puzzle">
+    Claude Code pre-installed. Provide a prompt and constraints, the workload is auto-generated.
+    More frameworks coming.
+  </Card>
+</CardGrid>
+
+## How it works
+
+```
+Agent in VM: curl https://api.anthropic.com/v1/messages
+  |
+  |-- VM resolves api.anthropic.com (real IP)
+  |-- iptables DNAT rewrites destination --> per-VM proxy
+  |-- Proxy terminates TLS, reads SNI
+  |
+  |-- Domain in allowlist?
+  |   |-- YES: inject x-api-key header, forward to real API
+  |   |-- NO:  drop connection (TCP RST)
+  |
+  |-- Agent sees normal HTTPS response
+       Never saw the API key. Not in env, not in memory, not on disk.
+```
+
+## Next steps
+
+- [Installation](/getting-started/install/) — get paws running on your server
+- [Quick Start](/getting-started/quickstart/) — run your first sandboxed agent session
+- [Architecture](/concepts/architecture/) — understand the control plane + worker model
+- [Security Model](/concepts/security/) — deep dive into the zero-trust design
