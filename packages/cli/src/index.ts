@@ -7,6 +7,8 @@ import type { ParsedArgs } from './config.js';
 import { parseArgs, resolveConfig } from './config.js';
 import { daemonsCommand } from './commands/daemons.js';
 import { fleetCommand } from './commands/fleet.js';
+import { logsCommand } from './commands/logs.js';
+import { runCommand } from './commands/run.js';
 import { sessionsCommand } from './commands/sessions.js';
 import { snapshotsCommand } from './commands/snapshots.js';
 import { statusCommand } from './commands/status.js';
@@ -20,6 +22,10 @@ const HELP = `
  > ^ <   zero-trust credential injection for AI agents
 
 Usage: paws [options] <resource> <action> [args]
+
+Commands:
+  run         create a session and stream output (hero command)
+  logs        fetch or stream logs from a session
 
 Resources:
   status      fleet overview with workers and active sessions
@@ -36,9 +42,11 @@ Global options:
   --version         Show version
 
 Examples:
+  paws run --snapshot agent-latest --prompt "Review this PR"
+  paws run --snapshot claude-code --script ./agent-script.sh --no-wait
+  paws logs ses_abc123 --follow
   paws sessions create --snapshot agent-latest --script "echo hello"
   paws sessions get ses_abc123
-  paws sessions wait ses_abc123 --timeout 60000
   paws fleet status --pretty
   paws daemons list
 `;
@@ -73,6 +81,8 @@ async function main(): Promise<number> {
 
   type CommandHandler = (client: PawsClient, args: ParsedArgs, pretty: boolean) => Promise<number>;
   const dispatch: Record<string, CommandHandler> = {
+    run: runCommand,
+    logs: logsCommand,
     status: statusCommand,
     sessions: sessionsCommand,
     daemons: daemonsCommand,

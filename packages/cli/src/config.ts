@@ -37,10 +37,16 @@ export interface ParsedArgs {
   action: string | undefined;
   positional: string | undefined;
   flags: Record<string, string>;
+  /** Flags that can appear multiple times (e.g. --env KEY=VAL --env KEY2=VAL2) */
+  multiFlags?: Record<string, string[]>;
 }
+
+/** Flags that support multiple values (--env can be repeated) */
+const MULTI_VALUE_FLAGS = new Set(['env']);
 
 export function parseArgs(argv: string[]): ParsedArgs {
   const flags: Record<string, string> = {};
+  const multiFlags: Record<string, string[]> = {};
   const positionals: string[] = [];
 
   let i = 0;
@@ -54,6 +60,10 @@ export function parseArgs(argv: string[]): ParsedArgs {
         flags[key] = 'true';
       } else {
         flags[key] = next;
+        if (MULTI_VALUE_FLAGS.has(key)) {
+          if (!multiFlags[key]) multiFlags[key] = [];
+          multiFlags[key].push(next);
+        }
         i++;
       }
     } else {
@@ -67,5 +77,6 @@ export function parseArgs(argv: string[]): ParsedArgs {
     action: positionals[1],
     positional: positionals[2],
     flags,
+    multiFlags,
   };
 }
