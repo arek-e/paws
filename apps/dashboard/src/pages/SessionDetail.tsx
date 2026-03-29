@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useParams } from 'react-router';
 
 import { getSession } from '../api/client.js';
+import { BrowserView } from '../components/BrowserView.js';
 import { StatusBadge } from '../components/StatusBadge.js';
 import { Terminal } from '../components/Terminal.js';
 import { usePolling } from '../hooks/usePolling.js';
@@ -180,6 +181,15 @@ export function SessionDetail() {
                 ))}
               </div>
             </div>
+          )}
+
+          {session.data.browser?.enabled && (
+            <BrowserView
+              sessionId={id!}
+              width={session.data.browser.width ?? 1280}
+              height={session.data.browser.height ?? 720}
+              active={!isTerminal}
+            />
           )}
 
           <div>

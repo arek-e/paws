@@ -2,6 +2,19 @@ export { AgentConfigSchema, AgentFramework, generateAgentScript } from './agent.
 export type { AgentConfig } from './agent.js';
 
 export {
+  BrowserActionResultSchema,
+  BrowserActionSchema,
+  BrowserConfigSchema,
+  ScreenshotResponseSchema,
+} from './browser.js';
+export type {
+  BrowserAction,
+  BrowserActionResult,
+  BrowserConfig,
+  ScreenshotResponse,
+} from './browser.js';
+
+export {
   DurationMsSchema,
   IdSchema,
   MetadataSchema,

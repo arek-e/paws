@@ -22,6 +22,7 @@ import { createGovernanceChecker } from './governance.js';
 import { createControlPlaneMetrics } from './metrics.js';
 import { authMiddleware, type AuthConfig } from './middleware/auth.js';
 import { createAuthRoutes } from './routes/auth.js';
+import { browserActionRoute, browserScreenshotRoute } from './routes/browser.js';
 import { registerWorkerWebSocket } from './routes/worker-ws.js';
 import {
   createDaemonRoute,
@@ -152,6 +153,7 @@ function sessionToJson(s: StoredSession) {
     ...(s.metadata !== undefined && { metadata: s.metadata }),
     ...(s.resources !== undefined && { resources: s.resources }),
     ...(s.vcpuSeconds !== undefined && { vcpuSeconds: s.vcpuSeconds }),
+    ...(s.browser !== undefined && { browser: s.browser }),
     ...(s.exposedPorts !== undefined && { exposedPorts: s.exposedPorts }),
   };
 }
@@ -583,6 +585,115 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     });
     return c.json({ sessionId: id, status: 'cancelled' as const }, 200);
   });
+
+  // --- Browser (computer-use) ---
+
+  // eslint-disable-next-line typescript/no-explicit-any -- Hono OpenAPI handler type mismatch
+  app.openapi(browserActionRoute, (async (c: any) => {
+    const { id } = c.req.valid('param');
+    const session = sessionStore.get(id as string);
+    if (!session) {
+      return c.json(
+        { error: { code: 'SESSION_NOT_FOUND' as const, message: `Session ${id} not found` } },
+        404,
+      );
+    }
+    if (!session.browser?.enabled) {
+      return c.json(
+        {
+          error: {
+            code: 'BROWSER_NOT_ENABLED' as const,
+            message: 'Browser/computer-use is not enabled for this session',
+          },
+        },
+        400,
+      );
+    }
+
+    const action = c.req.valid('json');
+
+    // Proxy to worker — find which worker owns this session
+    const workerUrl = session.worker;
+    if (!workerUrl) {
+      return c.json(
+        {
+          error: {
+            code: 'SESSION_NOT_DISPATCHED' as const,
+            message: 'Session has not been dispatched to a worker yet',
+          },
+        },
+        400,
+      );
+    }
+
+    try {
+      const res = await fetch(`${workerUrl}/v1/sessions/${id}/browser/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(action),
+      });
+      const body = await res.json();
+      return c.json(body, res.status as 200);
+    } catch {
+      // Worker unreachable — return stub response
+      return c.json({ success: false, error: 'Worker unreachable' }, 200);
+    }
+    // eslint-disable-next-line typescript/no-explicit-any
+  }) as any);
+
+  // eslint-disable-next-line typescript/no-explicit-any -- Hono OpenAPI handler type mismatch
+  app.openapi(browserScreenshotRoute, (async (c: any) => {
+    const { id } = c.req.valid('param');
+    const session = sessionStore.get(id as string);
+    if (!session) {
+      return c.json(
+        { error: { code: 'SESSION_NOT_FOUND' as const, message: `Session ${id} not found` } },
+        404,
+      );
+    }
+    if (!session.browser?.enabled) {
+      return c.json(
+        {
+          error: {
+            code: 'BROWSER_NOT_ENABLED' as const,
+            message: 'Browser/computer-use is not enabled for this session',
+          },
+        },
+        400,
+      );
+    }
+
+    const workerUrl = session.worker;
+    if (!workerUrl) {
+      return c.json(
+        {
+          error: {
+            code: 'SESSION_NOT_DISPATCHED' as const,
+            message: 'Session has not been dispatched to a worker yet',
+          },
+        },
+        400,
+      );
+    }
+
+    try {
+      const res = await fetch(`${workerUrl}/v1/sessions/${id}/browser/screenshot`);
+      const body = await res.json();
+      return c.json(body, res.status as 200);
+    } catch {
+      // Worker unreachable — return placeholder
+      return c.json(
+        {
+          image: '',
+          width: session.browser.width ?? 1280,
+          height: session.browser.height ?? 720,
+          timestamp: new Date().toISOString(),
+        },
+        200,
+      );
+    }
+    // eslint-disable-next-line typescript/no-explicit-any
+  }) as any);
 
   // --- Daemons ---
 

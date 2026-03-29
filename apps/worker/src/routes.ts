@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
 import { Hono } from 'hono';
-import { CreateSessionRequestSchema, SnapshotBuildRequestSchema } from '@paws/types';
+import {
+  BrowserActionSchema,
+  CreateSessionRequestSchema,
+  SnapshotBuildRequestSchema,
+} from '@paws/types';
 
 import { buildSnapshot, type SnapshotBuilderConfig } from './build/snapshot-builder.js';
 import { createWorkerMetrics } from './metrics.js';
@@ -177,6 +181,81 @@ export function createSessionApp(deps: AppDeps) {
       { error: { code: 'SESSION_NOT_FOUND', message: `Session ${id} not found` } },
       404,
     );
+  });
+
+  // --- Browser (computer-use) ---
+
+  // Execute a browser action in a session's VM
+  app.post('/v1/sessions/:id/browser/action', async (c) => {
+    const id = c.req.param('id');
+
+    // Verify session is active
+    const active = executor.activeSessions.get(id);
+    if (!active) {
+      return c.json(
+        { error: { code: 'SESSION_NOT_FOUND', message: `Session ${id} not found or not running` } },
+        404,
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Invalid JSON body' } }, 400);
+    }
+
+    const parsed = BrowserActionSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json(
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: parsed.error.issues.map((i) => i.message).join(', '),
+          },
+        },
+        400,
+      );
+    }
+
+    const action = parsed.data;
+
+    // Stub implementation — actual Xvfb/Chromium integration deferred
+    // In the future, this will SSH into the VM and execute browser commands
+    if (action.type === 'screenshot') {
+      return c.json({
+        success: true,
+        screenshot: {
+          image: '', // Placeholder — no Xvfb/Chromium yet
+          width: 1280,
+          height: 720,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    return c.json({ success: true });
+  });
+
+  // Take a screenshot of the session's browser
+  app.get('/v1/sessions/:id/browser/screenshot', (c) => {
+    const id = c.req.param('id');
+
+    const active = executor.activeSessions.get(id);
+    if (!active) {
+      return c.json(
+        { error: { code: 'SESSION_NOT_FOUND', message: `Session ${id} not found or not running` } },
+        404,
+      );
+    }
+
+    // Stub implementation — returns empty placeholder
+    return c.json({
+      image: '', // Placeholder — no Xvfb/Chromium yet
+      width: 1280,
+      height: 720,
+      timestamp: new Date().toISOString(),
+    });
   });
 
   // Build a snapshot (fire-and-forget, returns 202)

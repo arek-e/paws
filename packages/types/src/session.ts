@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { BrowserConfigSchema } from './browser.js';
 import {
   DurationMsSchema,
   IdSchema,
@@ -45,6 +46,8 @@ export const CreateSessionRequestSchema = z.object({
   resources: ResourcesSchema.optional(),
   timeoutMs: DurationMsSchema.default(600_000),
   network: NetworkConfigSchema.optional(),
+  /** Browser/computer-use configuration (optional) */
+  browser: BrowserConfigSchema.optional(),
   callbackUrl: z.string().url().optional(),
   metadata: MetadataSchema.optional(),
 });
@@ -97,6 +100,8 @@ export const SessionSchema = z.object({
   resources: ResourcesSchema.optional(),
   /** Cost in vCPU-seconds (vcpus × durationSec) — set on completion */
   vcpuSeconds: z.number().nonnegative().optional(),
+  /** Browser/computer-use configuration for this session */
+  browser: BrowserConfigSchema.optional(),
   /** Ports exposed from the VM via Pangolin tunnel */
   exposedPorts: z.array(ExposedPortSchema).optional(),
 });

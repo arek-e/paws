@@ -1,6 +1,6 @@
 import { desc, eq, inArray } from 'drizzle-orm';
 
-import type { CreateSessionRequest, Session } from '@paws/types';
+import type { BrowserConfig, CreateSessionRequest, Session } from '@paws/types';
 
 import type { PawsDatabase } from '../db/index.js';
 import { sessions as sessionsTable } from '../db/schema.js';
@@ -23,6 +23,8 @@ export interface StoredSession {
   resources?: { vcpus: number; memoryMB: number } | undefined;
   /** Cost in vCPU-seconds — computed on completion */
   vcpuSeconds?: number | undefined;
+  /** Browser/computer-use configuration */
+  browser?: BrowserConfig | undefined;
   /** Ports exposed from the VM via Pangolin tunnel */
   exposedPorts?: Array<{ port: number; url: string; label?: string | undefined }> | undefined;
 }
@@ -51,6 +53,7 @@ export function createSessionStore(): SessionStore {
         resources: request.resources
           ? { vcpus: request.resources.vcpus, memoryMB: request.resources.memoryMB }
           : { vcpus: 2, memoryMB: 4096 }, // defaults match ResourcesSchema
+        browser: request.browser,
       };
       sessions.set(sessionId, session);
       return session;

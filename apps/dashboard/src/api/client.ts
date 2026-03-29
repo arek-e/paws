@@ -1,5 +1,7 @@
 import type {
+  BrowserAction,
   FleetOverview,
+  ScreenshotResponse,
   Session,
   SessionListResponse,
   SnapshotConfig,
@@ -461,4 +463,26 @@ export async function getAuditStats(): Promise<AuditStats> {
   const res = await fetch('/v1/audit/stats', { headers: apiKeyHeaders() });
   if (!res.ok) throw new Error(`Failed to fetch audit stats: ${res.status}`);
   return res.json();
+}
+
+// --- Browser (computer-use) ---
+
+export async function takeBrowserScreenshot(sessionId: string): Promise<ScreenshotResponse> {
+  const res = await fetch(`/v1/sessions/${sessionId}/browser/screenshot`, {
+    headers: apiKeyHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to capture screenshot: ${res.status}`);
+  return res.json();
+}
+
+export async function executeBrowserAction(
+  sessionId: string,
+  action: BrowserAction,
+): Promise<void> {
+  const res = await fetch(`/v1/sessions/${sessionId}/browser/action`, {
+    method: 'POST',
+    headers: apiKeyHeaders(),
+    body: JSON.stringify(action),
+  });
+  if (!res.ok) throw new Error(`Failed to execute browser action: ${res.status}`);
 }
