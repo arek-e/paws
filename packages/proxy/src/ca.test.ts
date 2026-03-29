@@ -7,11 +7,11 @@ import { generateSessionCa } from './ca.js';
  * Mock Bun.file() since vitest runs in Node mode.
  * The generateSessionCa function reads cert/key files via Bun.file().text()
  */
-vi.stubGlobal('Bun', {
+(globalThis as Record<string, unknown>).Bun = {
   file: (path: string) => ({
     text: async () => (path.endsWith('.crt') ? 'MOCK-CERT-PEM' : 'MOCK-KEY-PEM'),
   }),
-});
+};
 
 function createMockExec(): ExecFn & { calls: Array<{ cmd: string; args: readonly string[] }> } {
   const calls: Array<{ cmd: string; args: readonly string[] }> = [];
