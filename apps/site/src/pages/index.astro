@@ -532,6 +532,348 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
       .footer-links a { color: var(--zinc-500); }
       .footer-links a:hover { color: var(--zinc-300); }
 
+      /* Code Examples (tabs) */
+      .code-examples {
+        border-top: 1px solid var(--zinc-800);
+      }
+
+      .tab-switcher {
+        display: flex;
+        gap: 0;
+        border-bottom: 2px solid var(--zinc-800);
+        margin-bottom: 1.5rem;
+      }
+
+      .tab-btn {
+        padding: 0.75rem 1.5rem;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        color: var(--zinc-500);
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: inherit;
+        transition: color 0.15s, border-color 0.15s;
+      }
+
+      .tab-btn:hover { color: var(--zinc-300); }
+
+      .tab-btn.active {
+        color: var(--emerald-400);
+        border-bottom-color: var(--emerald-400);
+      }
+
+      .tab-panel {
+        display: none;
+      }
+
+      .tab-panel.active {
+        display: block;
+      }
+
+      .code-block {
+        background: var(--zinc-900);
+        border: 1px solid var(--zinc-800);
+        border-radius: 12px;
+        padding: 1.5rem;
+        overflow-x: auto;
+      }
+
+      .code-block pre {
+        font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+        font-size: 0.8125rem;
+        line-height: 1.7;
+        color: var(--zinc-300);
+        margin: 0;
+      }
+
+      .code-block .kw { color: #60a5fa; }
+      .code-block .str { color: var(--emerald-400); }
+      .code-block .cm { color: var(--zinc-600); }
+      .code-block .fn { color: #c084fc; }
+      .code-block .pr { color: #fbbf24; }
+      .code-block .op { color: var(--zinc-500); }
+
+      /* Performance Metrics */
+      .metrics-banner {
+        border-top: 1px solid var(--zinc-800);
+        padding: 4rem 0;
+      }
+
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 2rem;
+        text-align: center;
+      }
+
+      .metric-item {
+        padding: 1.5rem 1rem;
+      }
+
+      .metric-value {
+        font-size: clamp(1.75rem, 3vw, 2.5rem);
+        font-weight: 700;
+        color: var(--emerald-400);
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin-bottom: 0.5rem;
+      }
+
+      .metric-label {
+        font-size: 0.8125rem;
+        color: var(--zinc-500);
+        line-height: 1.4;
+      }
+
+      /* Use Cases */
+      .use-cases {
+        border-top: 1px solid var(--zinc-800);
+      }
+
+      .use-case-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+      }
+
+      .use-case-card {
+        padding: 1.5rem;
+        background: var(--zinc-900);
+        border: 1px solid var(--zinc-800);
+        border-radius: 12px;
+        transition: border-color 0.2s;
+      }
+
+      .use-case-card:hover { border-color: var(--zinc-700); }
+
+      .use-case-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .use-case-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: var(--emerald-900);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--emerald-400);
+        flex-shrink: 0;
+      }
+
+      .use-case-icon svg { width: 20px; height: 20px; }
+
+      .use-case-card h3 {
+        color: var(--zinc-50);
+        font-size: 0.9375rem;
+        font-weight: 600;
+      }
+
+      .trigger-badge {
+        display: inline-block;
+        padding: 0.125rem 0.5rem;
+        background: rgba(52, 211, 153, 0.1);
+        border: 1px solid rgba(52, 211, 153, 0.2);
+        border-radius: 9999px;
+        font-size: 0.6875rem;
+        font-weight: 500;
+        color: var(--emerald-400);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.75rem;
+      }
+
+      .use-case-card p {
+        font-size: 0.8125rem;
+        color: var(--zinc-500);
+        line-height: 1.6;
+      }
+
+      /* Comparison Table */
+      .comparison {
+        border-top: 1px solid var(--zinc-800);
+      }
+
+      .comparison-table-wrap {
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid var(--zinc-800);
+      }
+
+      .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8125rem;
+        min-width: 640px;
+      }
+
+      .comparison-table thead th {
+        padding: 1rem 1.25rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--zinc-400);
+        background: var(--zinc-900);
+        border-bottom: 1px solid var(--zinc-800);
+        white-space: nowrap;
+      }
+
+      .comparison-table thead th.col-paws {
+        color: var(--emerald-400);
+        background: rgba(52, 211, 153, 0.05);
+        border-left: 2px solid var(--emerald-400);
+        border-right: 2px solid var(--emerald-400);
+        border-top: 2px solid var(--emerald-400);
+      }
+
+      .comparison-table tbody td {
+        padding: 0.875rem 1.25rem;
+        border-bottom: 1px solid var(--zinc-800);
+        color: var(--zinc-400);
+        vertical-align: top;
+      }
+
+      .comparison-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      .comparison-table tbody td:first-child {
+        color: var(--zinc-300);
+        font-weight: 500;
+      }
+
+      .comparison-table tbody td.col-paws {
+        background: rgba(52, 211, 153, 0.03);
+        border-left: 2px solid var(--emerald-400);
+        border-right: 2px solid var(--emerald-400);
+        color: var(--zinc-200);
+      }
+
+      .comparison-table tbody tr:last-child td.col-paws {
+        border-bottom: 2px solid var(--emerald-400);
+      }
+
+      .cmp-yes { color: var(--emerald-400); }
+      .cmp-no { color: var(--zinc-600); }
+      .cmp-partial { color: #fbbf24; }
+
+      /* Security Deep-Dive */
+      .security-deep-dive {
+        border-top: 1px solid var(--zinc-800);
+      }
+
+      .security-flow {
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 2rem;
+      }
+
+      .sec-box {
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid var(--zinc-800);
+        background: var(--zinc-900);
+        min-width: 200px;
+        flex: 1;
+        max-width: 280px;
+      }
+
+      .sec-box h4 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+      }
+
+      .sec-box ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      .sec-box ul li {
+        font-size: 0.8125rem;
+        color: var(--zinc-400);
+        padding: 0.25rem 0;
+        padding-left: 1.25rem;
+        position: relative;
+      }
+
+      .sec-box ul li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.625rem;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+      }
+
+      .sec-box-vm { border-color: var(--emerald-400); }
+      .sec-box-vm h4 { color: var(--emerald-400); }
+      .sec-box-vm ul li::before { background: var(--emerald-400); }
+
+      .sec-box-proxy { border-color: #60a5fa; }
+      .sec-box-proxy h4 { color: #60a5fa; }
+      .sec-box-proxy ul li::before { background: #60a5fa; }
+
+      .sec-box-api { border-color: #c084fc; }
+      .sec-box-api h4 { color: #c084fc; }
+      .sec-box-api ul li::before { background: #c084fc; }
+
+      .sec-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 0.75rem;
+        color: var(--zinc-600);
+        font-size: 1.5rem;
+        flex-shrink: 0;
+      }
+
+      .sec-blocked {
+        background: var(--zinc-900);
+        border: 1px solid var(--zinc-800);
+        border-radius: 12px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .sec-blocked-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: rgba(239, 68, 68, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ef4444;
+        flex-shrink: 0;
+      }
+
+      .sec-blocked-icon svg { width: 20px; height: 20px; }
+
+      .sec-blocked-text h4 {
+        color: #ef4444;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+      }
+
+      .sec-blocked-text p {
+        font-size: 0.8125rem;
+        color: var(--zinc-500);
+      }
+
       /* Responsive */
       /* Cat animations */
       @keyframes cat-float {
@@ -576,6 +918,13 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
         .steps { grid-template-columns: 1fr; }
 
         .feature-grid { grid-template-columns: 1fr; }
+
+        .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+
+        .use-case-grid { grid-template-columns: 1fr; }
+
+        .security-flow { flex-direction: column; align-items: center; }
+        .sec-arrow { transform: rotate(90deg); padding: 0.5rem 0; }
 
         .nav-links { gap: 1rem; }
 
@@ -695,6 +1044,83 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
       </div>
     </section>
 
+    <!-- Code Examples -->
+    <section class="code-examples" id="code-examples">
+      <div class="container">
+        <p class="section-label">Get started in minutes</p>
+        <h2 class="section-title">Three lines to your first session</h2>
+        <p class="section-desc">
+          Use our SDK from TypeScript, Python, or the CLI. Create a session, submit a workload, get results.
+        </p>
+
+        <div class="tab-switcher" id="code-tabs">
+          <button class="tab-btn active" data-tab="ts">TypeScript</button>
+          <button class="tab-btn" data-tab="py">Python</button>
+          <button class="tab-btn" data-tab="cli">CLI</button>
+        </div>
+
+        <div class="tab-panel active" id="tab-ts">
+          <div class="code-block">
+            <pre><span class="kw">import</span> {'{'} <span class="fn">createClient</span> {'}'} <span class="kw">from</span> <span class="str">'@paws/sdk'</span>;
+
+<span class="kw">const</span> paws <span class="op">=</span> <span class="fn">createClient</span>({'{'} <span class="pr">baseUrl</span>: <span class="str">'https://your-server:4000'</span>, <span class="pr">apiKey</span>: <span class="str">'paws-...'</span> {'}'});
+<span class="kw">const</span> session <span class="op">=</span> <span class="kw">await</span> paws.sessions.<span class="fn">create</span>({'{'}
+  <span class="pr">snapshot</span>: <span class="str">'claude-code'</span>,
+  <span class="pr">workload</span>: {'{'} <span class="pr">type</span>: <span class="str">'script'</span>, <span class="pr">script</span>: <span class="str">'Review this PR and post comments'</span>, <span class="pr">env</span>: {'{'}{'}'}  {'}'},
+{'}'});
+console.<span class="fn">log</span>(session.value.sessionId); <span class="cm">// → "a1b2c3..."</span></pre>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-py">
+          <div class="code-block">
+            <pre><span class="kw">from</span> paws <span class="kw">import</span> <span class="fn">PawsClient</span>
+
+paws <span class="op">=</span> <span class="fn">PawsClient</span>(<span class="pr">base_url</span><span class="op">=</span><span class="str">"https://your-server:4000"</span>, <span class="pr">api_key</span><span class="op">=</span><span class="str">"paws-..."</span>)
+session <span class="op">=</span> paws.sessions.<span class="fn">create</span>(
+    <span class="pr">snapshot</span><span class="op">=</span><span class="str">"claude-code"</span>,
+    <span class="pr">workload</span><span class="op">=</span>{'{'}<span class="str">"type"</span>: <span class="str">"script"</span>, <span class="str">"script"</span>: <span class="str">"Review this PR and post comments"</span>, <span class="str">"env"</span>: {'{'}{'}'}{'}'},
+)
+<span class="fn">print</span>(session.session_id)  <span class="cm"># → "a1b2c3..."</span></pre>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-cli">
+          <div class="code-block">
+            <pre><span class="str">$</span> paws sessions create \
+    <span class="op">--snapshot</span> claude-code \
+    <span class="op">--script</span> <span class="str">"Review this PR and post comments"</span>
+<span class="cm">Session created: a1b2c3...</span>
+<span class="cm">Status: running</span></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Performance Metrics -->
+    <section class="metrics-banner">
+      <div class="container">
+        <div class="metrics-grid">
+          <div class="metric-item">
+            <div class="metric-value">&lt;800ms</div>
+            <div class="metric-label">VM restore from snapshot</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value">5</div>
+            <div class="metric-label">Concurrent VMs per node</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value">Zero</div>
+            <div class="metric-label">Secrets in the sandbox</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value">100%</div>
+            <div class="metric-label">Open source</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Features -->
     <section class="features" id="features">
       <div class="container">
@@ -756,11 +1182,151 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
       </div>
     </section>
 
-    <!-- Architecture -->
-    <section class="architecture" id="architecture">
+    <!-- Use Cases -->
+    <section class="use-cases" id="use-cases">
       <div class="container">
-        <p class="section-label">Architecture</p>
-        <h2 class="section-title">Control plane + worker isolation</h2>
+        <p class="section-label">What people build</p>
+        <h2 class="section-title">Daemons for every workflow</h2>
+        <p class="section-desc">
+          Trigger agents on events, schedules, or API calls. Each runs in its own isolated VM with injected credentials.
+        </p>
+
+        <div class="use-case-grid">
+          <div class="use-case-card">
+            <div class="use-case-header">
+              <div class="use-case-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+              </div>
+              <h3>PR Reviewer</h3>
+            </div>
+            <span class="trigger-badge">webhook</span>
+            <p>Claude Code reviews every PR. Runs in isolated VM, posts comments directly to GitHub. Zero API keys in the sandbox.</p>
+          </div>
+
+          <div class="use-case-card">
+            <div class="use-case-header">
+              <div class="use-case-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <h3>Security Scanner</h3>
+            </div>
+            <span class="trigger-badge">schedule</span>
+            <p>Scheduled weekly scans. Agent audits dependencies, checks for vulnerabilities, files issues automatically.</p>
+          </div>
+
+          <div class="use-case-card">
+            <div class="use-case-header">
+              <div class="use-case-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+              </div>
+              <h3>Deploy Watcher</h3>
+            </div>
+            <span class="trigger-badge">webhook</span>
+            <p>Triggered on push to main. Agent runs deployment script, verifies health, rolls back on failure.</p>
+          </div>
+
+          <div class="use-case-card">
+            <div class="use-case-header">
+              <div class="use-case-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <h3>Issue Triage</h3>
+            </div>
+            <span class="trigger-badge">webhook</span>
+            <p>Webhook on new issues. Agent classifies severity, applies labels, assigns to the right team.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comparison Table -->
+    <section class="comparison" id="comparison">
+      <div class="container">
+        <p class="section-label">How we compare</p>
+        <h2 class="section-title">Built different</h2>
+        <p class="section-desc">
+          paws is the only open-source platform with network-layer credential injection, governance, and a full dashboard.
+        </p>
+
+        <div class="comparison-table-wrap">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th class="col-paws">paws</th>
+                <th>E2B</th>
+                <th>Daytona</th>
+                <th>Microsandbox</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Secret injection</td>
+                <td class="col-paws">Network-layer MITM</td>
+                <td><span class="cmp-no">--</span></td>
+                <td><span class="cmp-no">--</span></td>
+                <td>Network-layer</td>
+              </tr>
+              <tr>
+                <td>Self-hosted</td>
+                <td class="col-paws"><span class="cmp-yes">Yes</span></td>
+                <td>OSS option</td>
+                <td><span class="cmp-partial">Enterprise</span></td>
+                <td><span class="cmp-yes">Yes</span></td>
+              </tr>
+              <tr>
+                <td>Dashboard UI</td>
+                <td class="col-paws"><span class="cmp-yes">Full platform</span></td>
+                <td><span class="cmp-no">--</span></td>
+                <td><span class="cmp-yes">Yes</span></td>
+                <td><span class="cmp-no">--</span></td>
+              </tr>
+              <tr>
+                <td>Governance</td>
+                <td class="col-paws"><span class="cmp-yes">Rate limits, approvals, audit</span></td>
+                <td><span class="cmp-no">--</span></td>
+                <td><span class="cmp-no">--</span></td>
+                <td><span class="cmp-no">--</span></td>
+              </tr>
+              <tr>
+                <td>Isolation</td>
+                <td class="col-paws">Firecracker microVM</td>
+                <td>Firecracker microVM</td>
+                <td>Docker</td>
+                <td>libkrun microVM</td>
+              </tr>
+              <tr>
+                <td>Agent templates</td>
+                <td class="col-paws"><span class="cmp-yes">Yes</span></td>
+                <td><span class="cmp-no">--</span></td>
+                <td><span class="cmp-no">--</span></td>
+                <td><span class="cmp-no">--</span></td>
+              </tr>
+              <tr>
+                <td>Boot time</td>
+                <td class="col-paws">&lt;800ms (snapshot)</td>
+                <td>~150ms</td>
+                <td>~90ms</td>
+                <td>~200ms</td>
+              </tr>
+              <tr>
+                <td>Open source</td>
+                <td class="col-paws"><span class="cmp-yes">Yes</span></td>
+                <td><span class="cmp-yes">Yes</span></td>
+                <td><span class="cmp-partial">Partial</span></td>
+                <td><span class="cmp-yes">Yes</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Security Deep-Dive -->
+    <section class="security-deep-dive" id="architecture">
+      <div class="container">
+        <p class="section-label">Security architecture</p>
+        <h2 class="section-title">Credential injection flow</h2>
         <pre class="mono section-cat-inline">{`  /\\_/\\
  ( o.o )  < in a box!
  |     |
@@ -768,11 +1334,61 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
  |     |
  +-----+`}</pre>
         <p class="section-desc">
-          The control plane holds all secrets and orchestrates sessions. Workers run VMs with nothing worth stealing.
+          Every outbound request from the VM passes through a per-VM TLS proxy. Credentials are injected at the network layer — never exposed inside the sandbox.
         </p>
 
-        <div class="arch-diagram">
-          <pre>
+        <div class="security-flow">
+          <div class="sec-box sec-box-vm">
+            <h4>Agent VM</h4>
+            <ul>
+              <li>SESSION_TOKEN</li>
+              <li>GATEWAY_URL</li>
+              <li>Ephemeral CA cert</li>
+              <li>No API keys</li>
+              <li>No tokens</li>
+            </ul>
+          </div>
+
+          <div class="sec-arrow">&#8594;</div>
+
+          <div class="sec-box sec-box-proxy">
+            <h4>TLS Proxy (per-VM)</h4>
+            <ul>
+              <li>iptables DNAT intercept</li>
+              <li>SNI domain check</li>
+              <li>Allowlist validation</li>
+              <li>+ x-api-key header</li>
+              <li>+ Authorization header</li>
+            </ul>
+          </div>
+
+          <div class="sec-arrow">&#8594;</div>
+
+          <div class="sec-box sec-box-api">
+            <h4>Real API</h4>
+            <ul>
+              <li>api.anthropic.com</li>
+              <li>api.openai.com</li>
+              <li>github.com</li>
+              <li>Receives full credentials</li>
+              <li>Normal HTTPS</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="sec-blocked">
+          <div class="sec-blocked-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          </div>
+          <div class="sec-blocked-text">
+            <h4>Non-allowlisted domains are blocked</h4>
+            <p>Any outbound request to a domain not in the allowlist gets a TCP RST. No cloud metadata endpoint, no lateral movement, no data exfiltration.</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 2rem;">
+          <div class="arch-diagram">
+            <pre>
 <span class="dim">                    API request</span>
 <span class="dim">                        |</span>
 <span class="dim">                        v</span>
@@ -798,6 +1414,7 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
 <span class="dim">            |  |</span> Per-VM, ephemeral <span class="dim">|  |</span>     <span class="dim">at the network layer</span>
 <span class="dim">            |  +-------------------+  |</span>
 <span class="dim">            +-----------------------+</span></pre>
+          </div>
         </div>
       </div>
     </section>
@@ -889,6 +1506,20 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
           btn.disabled = false;
           btn.textContent = 'Join waitlist';
         }
+      });
+
+      // Tab switcher
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      const tabPanels = document.querySelectorAll('.tab-panel');
+
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-tab');
+          tabBtns.forEach(b => b.classList.remove('active'));
+          tabPanels.forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById('tab-' + target).classList.add('active');
+        });
       });
 
       // Footer waitlist link scrolls to top
