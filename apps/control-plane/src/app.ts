@@ -1518,6 +1518,22 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     app.route('/', provisioningRoutes);
   }
 
+  // --- MCP OAuth routes (no auth — handles its own OAuth flow) ---
+
+  if (db && passwordAuth) {
+    const { createOAuthProvider } = await import('./auth/oauth.js');
+    const { createMcpOAuthRoutes } = await import('./routes/mcp-oauth.js');
+
+    const oauthProvider = createOAuthProvider(db, passwordAuth);
+    const issuerUrl =
+      deps.oidc?.externalUrl ??
+      process.env['EXTERNAL_URL'] ??
+      `http://localhost:${process.env['PORT'] ?? '4000'}`;
+
+    const mcpOAuthRoutes = createMcpOAuthRoutes({ oauth: oauthProvider, issuerUrl });
+    app.route('/', mcpOAuthRoutes);
+  }
+
   // --- WebSocket routes (require Bun runtime) ---
 
   if (deps.upgradeWebSocket) {

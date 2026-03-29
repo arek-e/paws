@@ -29,6 +29,8 @@ COPY providers/hetzner-cloud/package.json ./providers/hetzner-cloud/package.json
 COPY providers/hetzner-dedicated/package.json ./providers/hetzner-dedicated/package.json
 COPY providers/aws-ec2/package.json ./providers/aws-ec2/package.json
 COPY packages/integrations/package.json ./packages/integrations/package.json
+COPY packages/logger/package.json      ./packages/logger/package.json
+COPY packages/mcp-server/package.json  ./packages/mcp-server/package.json
 
 # Install all dependencies (1 dev tool may fail on Alpine — non-blocking).
 RUN bun install || true
@@ -45,6 +47,8 @@ COPY packages/credentials/   ./packages/credentials/
 COPY packages/provisioner/   ./packages/provisioner/
 COPY packages/providers/      ./packages/providers/
 COPY packages/integrations/  ./packages/integrations/
+COPY packages/logger/        ./packages/logger/
+COPY packages/mcp-server/    ./packages/mcp-server/
 COPY providers/hetzner-cloud/     ./providers/hetzner-cloud/
 COPY providers/hetzner-dedicated/ ./providers/hetzner-dedicated/
 COPY providers/aws-ec2/           ./providers/aws-ec2/
@@ -86,6 +90,8 @@ COPY --from=builder /build/providers/hetzner-cloud/     ./providers/hetzner-clou
 COPY --from=builder /build/providers/hetzner-dedicated/ ./providers/hetzner-dedicated/
 COPY --from=builder /build/providers/aws-ec2/           ./providers/aws-ec2/
 COPY --from=builder /build/packages/integrations/      ./packages/integrations/
+COPY --from=builder /build/packages/logger/            ./packages/logger/
+COPY --from=builder /build/packages/mcp-server/        ./packages/mcp-server/
 
 # Copy control-plane source.
 COPY --from=builder /build/apps/control-plane/ ./apps/control-plane/
