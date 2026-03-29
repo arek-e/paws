@@ -1482,6 +1482,11 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       .replace(/-----BEGIN[^-]*-----[\s\S]*?-----END[^-]*-----/g, '[REDACTED KEY]');
   }
 
+  // --- Provisioning event bus (pub/sub for streaming to WebSocket clients) ---
+
+  const { createProvisioningEventBus } = await import('./provisioning-events.js');
+  const provisioningEvents = createProvisioningEventBus();
+
   const provisioner = createProvisioner({
     ssh: createSshClient(),
     onEvent: (event) => {
@@ -1493,6 +1498,9 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
         status: event.stage as import('@paws/provisioner').ServerStatus,
         ...(safeError ? { error: safeError } : {}),
       });
+
+      // Broadcast to connected WebSocket clients
+      provisioningEvents.publish(event);
 
       // Emit audit event for provisioning milestones
       auditStore.append({
@@ -1510,15 +1518,25 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     },
   });
 
+  // --- EC2 lifecycle (shared across setup + server routes) ---
+
+  const { createCredentialStore, deriveKey } = await import('@paws/credentials');
+  const encryptionKey = await deriveKey(deps.apiKey);
+
+  const { createEc2Lifecycle } = await import('./ec2-lifecycle.js');
+  const ec2Lifecycle = createEc2Lifecycle({ encryptionKey });
+
   // --- Setup wizard ---
 
   {
-    const { createCredentialStore } = await import('@paws/credentials');
     const setupRoutes = createSetupRoutes({
       serverStore,
       credentialStore: deps.credentialStore ?? createCredentialStore(deps.apiKey),
       provisioner,
       upgradeWebSocket: deps.upgradeWebSocket,
+      encryptionKey,
+      ec2Lifecycle,
+      provisioningEvents,
       createSession: async (prompt) => {
         const sessionId = randomUUID();
         sessionStore.create(sessionId, {
@@ -1555,6 +1573,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     const serverRoutes = createServerRoutes({
       serverStore,
       workerRegistry: deps.workerRegistry,
+      ec2Lifecycle,
     });
     app.route('/', serverRoutes);
   }
@@ -1679,6 +1698,12 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     createLogger('app').error('Unhandled error', { error: String(err) });
     return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } }, 500);
   });
+
+  // --- EC2 state sync (background polling for instance state changes) ---
+
+  const { createEc2Sync } = await import('./ec2-sync.js');
+  const ec2Sync = createEc2Sync({ serverStore, ec2Lifecycle });
+  void ec2Sync.start();
 
   return app;
 }

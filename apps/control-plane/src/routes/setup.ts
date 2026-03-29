@@ -5,11 +5,14 @@ import { z } from '@hono/zod-openapi';
 
 import type { CredentialStore } from '@paws/credentials';
 import type { CredentialProvider } from '@paws/credentials';
+import { encrypt } from '@paws/credentials';
 import { createLogger } from '@paws/logger';
 import { createAwsEc2Provider } from '@paws/provider-aws-ec2';
 import type { Provisioner, Server } from '@paws/provisioner';
 import type { UpgradeWebSocket } from 'hono/ws';
 
+import type { Ec2Lifecycle } from '../ec2-lifecycle.js';
+import type { ProvisioningEventBus } from '../provisioning-events.js';
 import type { ServerStore } from '../store/servers.js';
 
 const log = createLogger('setup');
@@ -25,6 +28,12 @@ export interface SetupDeps {
   upgradeWebSocket?: UpgradeWebSocket | undefined;
   /** For first-run: create a session */
   createSession: (prompt: string) => Promise<{ sessionId: string }>;
+  /** AES-256-GCM key for encrypting AWS credentials at rest */
+  encryptionKey?: Buffer;
+  /** EC2 lifecycle manager for resource cleanup */
+  ec2Lifecycle?: Ec2Lifecycle | undefined;
+  /** Event bus for streaming provisioning events to WebSocket clients */
+  provisioningEvents?: ProvisioningEventBus | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -206,6 +215,21 @@ export function createSetupRoutes(deps: SetupDeps) {
           // Phase 0: Launch EC2 instance
           serverStore.update(id, { status: 'provisioning' });
 
+          // Persist AWS credentials (encrypted) and region so we can manage this server later
+          if (deps.encryptionKey) {
+            const encryptedCreds = encrypt(
+              JSON.stringify({
+                accessKeyId: body.awsAccessKey,
+                secretAccessKey: body.awsSecretKey,
+              }),
+              deps.encryptionKey,
+            );
+            serverStore.update(id, {
+              awsRegion: body.region,
+              awsCredentialsEncrypted: encryptedCreds,
+            });
+          }
+
           slog.info('Resolving Ubuntu AMI', { region: body.region });
           const amiLookup = createAwsEc2Provider({
             region: body.region,
@@ -244,6 +268,7 @@ export function createSetupRoutes(deps: SetupDeps) {
               throw new Error(`Failed to create key pair: ${keyPairResult.error.message}`);
             }
             createdKeyPairName = keyPairName;
+            serverStore.update(id, { awsKeyPairName: keyPairName });
             sshPrivateKey = keyPairResult.value.privateKey;
 
             // Create security group
@@ -257,6 +282,7 @@ export function createSetupRoutes(deps: SetupDeps) {
               throw new Error(`Failed to create security group: ${sgResult.error.message}`);
             }
             createdSecurityGroupId = sgResult.value;
+            serverStore.update(id, { awsSecurityGroupId: sgResult.value });
             slog.info('Created security group', { sgId: sgResult.value });
 
             // Launch instance with security group attached
@@ -362,14 +388,22 @@ export function createSetupRoutes(deps: SetupDeps) {
 
   // --- DELETE /v1/setup/servers/:id ---
 
-  app.delete('/v1/setup/servers/:id', (c) => {
+  app.delete('/v1/setup/servers/:id', async (c) => {
     const id = c.req.param('id');
-    if (!serverStore.delete(id)) {
+    const server = serverStore.get(id);
+    if (!server) {
       return c.json(
         { error: { code: 'SERVER_NOT_FOUND', message: `Server ${id} not found` } },
         404,
       );
     }
+
+    // Clean up AWS resources before deleting from store
+    if (server.provider === 'aws-ec2' && deps.ec2Lifecycle) {
+      await deps.ec2Lifecycle.destroyServer(server);
+    }
+
+    serverStore.delete(id);
     return c.json({ serverId: id, status: 'deleted' }, 200);
   });
 
@@ -381,6 +415,7 @@ export function createSetupRoutes(deps: SetupDeps) {
       '/v1/setup/servers/:id/stream',
       upgrade((c) => {
         const serverId = c.req.param('id')!;
+        let unsubscribe: (() => void) | undefined;
         return {
           onOpen(_evt, ws) {
             const server = serverStore.get(serverId);
@@ -389,6 +424,7 @@ export function createSetupRoutes(deps: SetupDeps) {
               ws.close(4004, 'Not found');
               return;
             }
+            // Send initial status snapshot
             ws.send(
               JSON.stringify({
                 type: 'status',
@@ -399,6 +435,15 @@ export function createSetupRoutes(deps: SetupDeps) {
                 error: server.error,
               }),
             );
+            // Subscribe to live provisioning events
+            if (deps.provisioningEvents) {
+              unsubscribe = deps.provisioningEvents.subscribe(serverId, (event) => {
+                ws.send(JSON.stringify(event));
+              });
+            }
+          },
+          onClose() {
+            unsubscribe?.();
           },
         };
       }),

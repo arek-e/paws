@@ -159,6 +159,21 @@ export function createDatabase(dbPath: string) {
     log.info('Created database tables');
   }
 
+  // Migrations: add columns that may not exist in older databases
+  const addColumnIfMissing = (table: string, column: string, type: string) => {
+    try {
+      raw.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+    } catch {
+      // Column already exists — ignore
+    }
+  };
+
+  // v0.5.3: AWS EC2 resource tracking
+  addColumnIfMissing('servers', 'aws_region', 'TEXT');
+  addColumnIfMissing('servers', 'aws_security_group_id', 'TEXT');
+  addColumnIfMissing('servers', 'aws_key_pair_name', 'TEXT');
+  addColumnIfMissing('servers', 'aws_credentials_encrypted', 'TEXT');
+
   return db;
 }
 

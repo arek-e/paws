@@ -81,6 +81,11 @@ export const servers = sqliteTable('servers', {
   sshPrivateKeyEncrypted: text('ssh_private_key_encrypted').notNull().default(''),
   providerServerId: text('provider_server_id'),
   createdAt: text('created_at').notNull(),
+  // AWS EC2 resource tracking (nullable — only set for aws-ec2 provider)
+  awsRegion: text('aws_region'),
+  awsSecurityGroupId: text('aws_security_group_id'),
+  awsKeyPairName: text('aws_key_pair_name'),
+  awsCredentialsEncrypted: text('aws_credentials_encrypted'),
 });
 
 // --- Build jobs ---

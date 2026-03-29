@@ -24,6 +24,11 @@ export const ServerSchema = z.object({
   sshPrivateKeyEncrypted: z.string(),
   createdAt: z.string().datetime(),
   error: z.string().optional(),
+  // AWS EC2 resource tracking (only set for aws-ec2 provider)
+  awsRegion: z.string().optional(),
+  awsSecurityGroupId: z.string().optional(),
+  awsKeyPairName: z.string().optional(),
+  awsCredentialsEncrypted: z.string().optional(),
 });
 export type Server = z.infer<typeof ServerSchema>;
 

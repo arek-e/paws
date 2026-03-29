@@ -5,6 +5,7 @@ import { OpenAPIHono } from '@hono/zod-openapi';
 import type { Server } from '@paws/provisioner';
 import { ErrorResponseSchema } from '@paws/types';
 
+import type { Ec2Lifecycle } from '../ec2-lifecycle.js';
 import type { ServerStore } from '../store/servers.js';
 import type { WorkerRegistry } from '../discovery/registry.js';
 
@@ -158,6 +159,7 @@ const validateServerRoute = createRoute({
 export interface ServerRouteDeps {
   serverStore: ServerStore;
   workerRegistry?: WorkerRegistry | undefined;
+  ec2Lifecycle?: Ec2Lifecycle | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -225,14 +227,22 @@ export function createServerRoutes(deps: ServerRouteDeps) {
 
   // --- DELETE /v1/servers/:id ---
 
-  app.openapi(deleteServerRoute, (c) => {
+  app.openapi(deleteServerRoute, async (c) => {
     const { id } = c.req.valid('param');
-    if (!serverStore.delete(id)) {
+    const server = serverStore.get(id);
+    if (!server) {
       return c.json(
         { error: { code: 'NOT_FOUND' as const, message: `Server ${id} not found` } },
         404,
       );
     }
+
+    // Clean up AWS resources before deleting from store
+    if (server.provider === 'aws-ec2' && deps.ec2Lifecycle) {
+      await deps.ec2Lifecycle.destroyServer(server);
+    }
+
+    serverStore.delete(id);
     return c.json({ serverId: id, status: 'deleted' as const }, 200);
   });
 

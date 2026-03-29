@@ -53,6 +53,10 @@ function rowToServer(row: ServerRow): Server {
     sshPrivateKeyEncrypted: row.sshPrivateKeyEncrypted,
     providerServerId: row.providerServerId ?? undefined,
     createdAt: row.createdAt,
+    awsRegion: row.awsRegion ?? undefined,
+    awsSecurityGroupId: row.awsSecurityGroupId ?? undefined,
+    awsKeyPairName: row.awsKeyPairName ?? undefined,
+    awsCredentialsEncrypted: row.awsCredentialsEncrypted ?? undefined,
   };
 }
 
@@ -72,6 +76,10 @@ export function createSqliteServerStore(db: PawsDatabase): ServerStore {
           sshPrivateKeyEncrypted: server.sshPrivateKeyEncrypted,
           providerServerId: server.providerServerId ?? null,
           createdAt: server.createdAt,
+          awsRegion: server.awsRegion ?? null,
+          awsSecurityGroupId: server.awsSecurityGroupId ?? null,
+          awsKeyPairName: server.awsKeyPairName ?? null,
+          awsCredentialsEncrypted: server.awsCredentialsEncrypted ?? null,
         })
         .run();
     },
@@ -95,6 +103,12 @@ export function createSqliteServerStore(db: PawsDatabase): ServerStore {
       if (patch.sshPrivateKeyEncrypted !== undefined)
         values['sshPrivateKeyEncrypted'] = patch.sshPrivateKeyEncrypted;
       if (patch.providerServerId !== undefined) values['providerServerId'] = patch.providerServerId;
+      if (patch.awsRegion !== undefined) values['awsRegion'] = patch.awsRegion;
+      if (patch.awsSecurityGroupId !== undefined)
+        values['awsSecurityGroupId'] = patch.awsSecurityGroupId;
+      if (patch.awsKeyPairName !== undefined) values['awsKeyPairName'] = patch.awsKeyPairName;
+      if (patch.awsCredentialsEncrypted !== undefined)
+        values['awsCredentialsEncrypted'] = patch.awsCredentialsEncrypted;
 
       if (Object.keys(values).length > 0) {
         db.update(serversTable).set(values).where(eq(serversTable.id, id)).run();
