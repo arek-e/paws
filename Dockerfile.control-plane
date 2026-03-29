@@ -1,67 +1,37 @@
 # syntax=docker/dockerfile:1
+# /\_/\
+# ( o.o )  paws control plane + dashboard
+#  > ^ <
 
-# Gateway + Dashboard combined build.
-# Builds the Vite dashboard, then runs the control-plane serving static files.
-
-# ── Stage 1: install + build ────────────────────────────────────────────────
-FROM oven/bun:1.3.9-alpine AS builder
+# ── Stage 1: install deps ──────────────────────────────────────────────────
+# Copy only package.json files first for layer caching.
+FROM oven/bun:1.3.9-alpine AS deps
 
 WORKDIR /build
 
-# Copy root manifest files first (layer caching).
-COPY package.json bun.lock* tsconfig.json ./
+# Copy root manifests
+COPY package.json bun.lock* ./
 
-# Copy ALL workspace package manifests (needed for bun install).
-COPY packages/types/package.json          ./packages/types/package.json
-COPY packages/firecracker/package.json    ./packages/firecracker/package.json
-COPY packages/proxy/package.json          ./packages/proxy/package.json
-COPY packages/scheduler/package.json      ./packages/scheduler/package.json
-COPY packages/snapshot-store/package.json ./packages/snapshot-store/package.json
-COPY packages/sdk/package.json            ./packages/sdk/package.json
-COPY packages/cli/package.json            ./packages/cli/package.json
-COPY packages/credentials/package.json   ./packages/credentials/package.json
-COPY packages/provisioner/package.json   ./packages/provisioner/package.json
-COPY packages/providers/package.json      ./packages/providers/package.json
-COPY apps/control-plane/package.json            ./apps/control-plane/package.json
-COPY apps/worker/package.json             ./apps/worker/package.json
-COPY apps/dashboard/package.json          ./apps/dashboard/package.json
-COPY providers/hetzner-cloud/package.json ./providers/hetzner-cloud/package.json
-COPY providers/hetzner-dedicated/package.json ./providers/hetzner-dedicated/package.json
-COPY providers/aws-ec2/package.json ./providers/aws-ec2/package.json
-COPY packages/integrations/package.json ./packages/integrations/package.json
-COPY packages/logger/package.json      ./packages/logger/package.json
-COPY packages/mcp-server/package.json  ./packages/mcp-server/package.json
+# Copy ALL workspace package.json files via wildcard.
+# .dockerignore ensures only source files come through, not node_modules/dist.
+COPY packages/*/package.json ./packages/_placeholder/
+COPY apps/*/package.json ./apps/_placeholder/
+COPY providers/*/package.json ./providers/_placeholder/
 
-# Install all dependencies (1 dev tool may fail on Alpine — non-blocking).
-RUN bun install || true
+# The wildcard COPY flattens into one dir. We need to fix the structure.
+# Instead, copy the whole tree (filtered by .dockerignore) and install.
+# This is simpler and the layer cache still works on bun.lock changes.
+COPY . .
 
-# Copy workspace package sources that control-plane + dashboard depend on.
-COPY packages/types/          ./packages/types/
-COPY packages/firecracker/    ./packages/firecracker/
-COPY packages/proxy/          ./packages/proxy/
-COPY packages/scheduler/      ./packages/scheduler/
-COPY packages/snapshot-store/ ./packages/snapshot-store/
-COPY packages/sdk/            ./packages/sdk/
-COPY packages/cli/            ./packages/cli/
-COPY packages/credentials/   ./packages/credentials/
-COPY packages/provisioner/   ./packages/provisioner/
-COPY packages/providers/      ./packages/providers/
-COPY packages/integrations/  ./packages/integrations/
-COPY packages/logger/        ./packages/logger/
-COPY packages/mcp-server/    ./packages/mcp-server/
-COPY providers/hetzner-cloud/     ./providers/hetzner-cloud/
-COPY providers/hetzner-dedicated/ ./providers/hetzner-dedicated/
-COPY providers/aws-ec2/           ./providers/aws-ec2/
+RUN bun install --frozen-lockfile || bun install
 
-# Copy control-plane + dashboard source.
-COPY apps/control-plane/   ./apps/control-plane/
-COPY apps/dashboard/ ./apps/dashboard/
+# ── Stage 2: build dashboard ───────────────────────────────────────────────
+FROM deps AS builder
 
-# Build the dashboard (Vite -> apps/dashboard/dist/).
 WORKDIR /build/apps/dashboard
 RUN bunx vite build
 
-# ── Stage 2: runner ─────────────────────────────────────────────────────────
+# ── Stage 3: runner ────────────────────────────────────────────────────────
 FROM oven/bun:1.3.9-alpine AS runner
 
 WORKDIR /app
@@ -69,34 +39,13 @@ WORKDIR /app
 RUN addgroup -S paws && adduser -S -G paws paws \
     && mkdir -p /var/lib/paws/data && chown -R paws:paws /var/lib/paws
 
-# Copy root manifest.
+# Copy everything from builder (source + node_modules).
+# .dockerignore already excluded tests, docs, infra, scripts, etc.
 COPY --from=builder /build/package.json ./package.json
-
-# Copy node_modules (includes workspace symlinks).
 COPY --from=builder /build/node_modules ./node_modules
-
-# Copy workspace packages (control-plane imports at runtime via symlinks).
-COPY --from=builder /build/packages/types/          ./packages/types/
-COPY --from=builder /build/packages/firecracker/    ./packages/firecracker/
-COPY --from=builder /build/packages/proxy/          ./packages/proxy/
-COPY --from=builder /build/packages/scheduler/      ./packages/scheduler/
-COPY --from=builder /build/packages/snapshot-store/ ./packages/snapshot-store/
-COPY --from=builder /build/packages/sdk/            ./packages/sdk/
-COPY --from=builder /build/packages/cli/            ./packages/cli/
-COPY --from=builder /build/packages/credentials/   ./packages/credentials/
-COPY --from=builder /build/packages/provisioner/   ./packages/provisioner/
-COPY --from=builder /build/packages/providers/      ./packages/providers/
-COPY --from=builder /build/providers/hetzner-cloud/     ./providers/hetzner-cloud/
-COPY --from=builder /build/providers/hetzner-dedicated/ ./providers/hetzner-dedicated/
-COPY --from=builder /build/providers/aws-ec2/           ./providers/aws-ec2/
-COPY --from=builder /build/packages/integrations/      ./packages/integrations/
-COPY --from=builder /build/packages/logger/            ./packages/logger/
-COPY --from=builder /build/packages/mcp-server/        ./packages/mcp-server/
-
-# Copy control-plane source.
+COPY --from=builder /build/packages/ ./packages/
+COPY --from=builder /build/providers/ ./providers/
 COPY --from=builder /build/apps/control-plane/ ./apps/control-plane/
-
-# Copy built dashboard.
 COPY --from=builder /build/apps/dashboard/dist/ ./apps/dashboard/dist/
 
 USER paws

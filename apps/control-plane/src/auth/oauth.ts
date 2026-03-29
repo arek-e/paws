@@ -78,15 +78,11 @@ export function createOAuthProvider(db: PawsDatabase, passwordAuth: PasswordAuth
   // Clean up expired codes/tokens periodically
   function cleanup() {
     const now = Date.now();
-    db.delete(oauthAuthCodes).where(eq(oauthAuthCodes.expiresAt, 0)).run(); // placeholder — real cleanup below
-    // Delete all expired entries (can't use < with eq, so use raw)
     try {
-      (db as unknown as { $client: { exec: (sql: string) => void } }).$client.exec(
-        `DELETE FROM oauth_auth_codes WHERE expires_at < ${now};
-         DELETE FROM oauth_tokens WHERE expires_at < ${now};`,
-      );
+      db.delete(oauthAuthCodes).where(lt(oauthAuthCodes.expiresAt, now)).run();
+      db.delete(oauthTokens).where(lt(oauthTokens.expiresAt, now)).run();
     } catch {
-      // Ignore cleanup failures
+      // Tables may not exist yet on first run
     }
   }
 

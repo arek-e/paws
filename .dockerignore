@@ -2,35 +2,44 @@
 .git
 .gitignore
 
-# Node/Bun
-node_modules
+# Node/Bun — each stage runs its own bun install
 **/node_modules
-
-# Build artifacts
 **/dist
 **/.turbo
 
-# Test files
+# Test files — not needed in production images
 **/*.test.ts
 **/*.integration.test.ts
 **/vitest.config.ts
 **/vitest.integration.config.ts
+**/__tests__
 
 # IDE and OS
 .vscode
 .idea
 .DS_Store
 *.swp
+**/.claude
 
-# Docs (not needed at runtime)
+# Docs and site — not needed at runtime
 docs/
+apps/site/
 *.md
+!**/package.json
 
-# Infra / scripts (not needed in app images)
+# Infra / scripts — not needed in app images
 infra/
 scripts/
+.github/
+.gstack/
 
 # Docker files themselves
-Dockerfile
-docker-compose.yml
+Dockerfile*
+docker-compose*.yml
 .dockerignore
+
+# Misc
+.env*
+*.log
+coverage/
+.oxlintrc.json
