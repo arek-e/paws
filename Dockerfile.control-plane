@@ -54,6 +54,6 @@ ENV NODE_ENV=production
 EXPOSE 4000
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget -qO- http://localhost:4000/health || exit 1
+  CMD wget -qO- http://localhost:${PORT}/health || exit 1
 
 CMD ["bun", "run", "apps/control-plane/src/server.ts"]

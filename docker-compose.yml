@@ -37,13 +37,7 @@ services:
   # Directly accessible on port 3000 (HTTP). When a domain is configured,
   # Caddy sits in front on 80/443 and proxies to the gateway.
   gateway:
-    build:
-      context: .
-      dockerfile: Dockerfile.control-plane
-      args:
-        PAWS_VERSION: '${PAWS_VERSION:-0.5.2}'
-        PAWS_COMMIT: '${PAWS_COMMIT:-unknown}'
-        PAWS_BUILD_DATE: '${PAWS_BUILD_DATE:-unknown}'
+    image: ghcr.io/arek-e/paws-control-plane:${PAWS_VERSION:-latest}
     container_name: paws-control-plane
     restart: unless-stopped
     networks:

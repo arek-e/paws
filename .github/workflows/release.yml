@@ -47,15 +47,28 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest
 
+      - name: Resolve Dockerfile
+        id: dockerfile
+        run: |
+          APP=${{ matrix.app }}
+          if [ "$APP" = "control-plane" ] && [ -f "Dockerfile.control-plane" ]; then
+            # Use root Dockerfile.control-plane which includes dashboard build
+            echo "path=Dockerfile.control-plane" >> $GITHUB_OUTPUT
+          else
+            echo "path=apps/${APP}/Dockerfile" >> $GITHUB_OUTPUT
+          fi
+
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: apps/${{ matrix.app }}/Dockerfile
+          file: ${{ steps.dockerfile.outputs.path }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             PAWS_VERSION=${{ steps.version.outputs.version }}
+            PAWS_COMMIT=${{ github.sha }}
+            PAWS_BUILD_DATE=${{ github.event.head_commit.timestamp }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

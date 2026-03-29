@@ -119,14 +119,23 @@ do_update() {
   [[ -f "${tmp_dir}/.env.backup" ]] && cp "${tmp_dir}/.env.backup" "${PAWS_DIR}/.env"
   [[ -d "${tmp_dir}/config.backup" ]] && cp -r "${tmp_dir}/config.backup/." "${PAWS_DIR}/config/"
 
+  # Update PAWS_VERSION in .env so docker compose pulls the correct tag
+  if [[ -f "${PAWS_DIR}/.env" ]]; then
+    if grep -q '^PAWS_VERSION=' "${PAWS_DIR}/.env"; then
+      sed -i "s/^PAWS_VERSION=.*/PAWS_VERSION=${target_version}/" "${PAWS_DIR}/.env"
+    else
+      echo "PAWS_VERSION=${target_version}" >> "${PAWS_DIR}/.env"
+    fi
+  fi
+
   # Pull new Docker images
   info "Pulling new images..."
   cd "$PAWS_DIR"
-  docker compose pull 2>/dev/null || true
+  PAWS_VERSION="${target_version}" docker compose pull 2>/dev/null || true
 
   # Restart
   info "Restarting services..."
-  docker compose up -d 2>/dev/null || true
+  PAWS_VERSION="${target_version}" docker compose up -d 2>/dev/null || true
 
   # Cleanup
   rm -rf "$tmp_dir"
@@ -134,7 +143,9 @@ do_update() {
   # Health check
   info "Waiting for health check..."
   sleep 5
-  if curl -sf http://localhost:4000/health >/dev/null 2>&1; then
+  local port
+  port=$(grep -oP '^PORT=\K.*' "${PAWS_DIR}/.env" 2>/dev/null || echo "3000")
+  if curl -sf "http://localhost:${port}/health" >/dev/null 2>&1; then
     ok "Updated to v${target_version}"
   else
     echo -e "${RED}⚠  Services restarted but health check failed. Check: docker compose logs${NC}"
