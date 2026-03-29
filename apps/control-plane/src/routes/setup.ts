@@ -5,11 +5,14 @@ import { z } from '@hono/zod-openapi';
 
 import type { CredentialStore } from '@paws/credentials';
 import type { CredentialProvider } from '@paws/credentials';
+import { createLogger } from '@paws/logger';
 import { createAwsEc2Provider } from '@paws/provider-aws-ec2';
 import type { Provisioner, Server } from '@paws/provisioner';
 import type { UpgradeWebSocket } from 'hono/ws';
 
 import type { ServerStore } from '../store/servers.js';
+
+const log = createLogger('setup');
 
 // ---------------------------------------------------------------------------
 // Deps
@@ -188,6 +191,7 @@ export function createSetupRoutes(deps: SetupDeps) {
     serverStore.create(server);
 
     // Fire-and-forget provisioning (background)
+    const slog = log.child({ serverId: id, provider: body.provider });
     void (async () => {
       try {
         let sshPassword: string | undefined;
@@ -202,7 +206,7 @@ export function createSetupRoutes(deps: SetupDeps) {
           // Phase 0: Launch EC2 instance
           serverStore.update(id, { status: 'provisioning' });
 
-          // Resolve latest Ubuntu 24.04 AMI for this region
+          slog.info('Resolving Ubuntu AMI', { region: body.region });
           const amiLookup = createAwsEc2Provider({
             region: body.region,
             defaultImageId: '', // only used for AMI lookup
@@ -215,6 +219,7 @@ export function createSetupRoutes(deps: SetupDeps) {
           if (amiResult.isErr()) {
             throw new Error(`Failed to resolve Ubuntu AMI: ${amiResult.error.message}`);
           }
+          slog.info('Resolved AMI', { ami: amiResult.value });
 
           const ec2 = createAwsEc2Provider({
             region: body.region,
@@ -233,6 +238,7 @@ export function createSetupRoutes(deps: SetupDeps) {
           try {
             // Create key pair for SSH access
             const keyPairName = `paws-${id.slice(0, 8)}`;
+            slog.info('Creating key pair', { keyPairName });
             const keyPairResult = await ec2.createKeyPair(keyPairName);
             if (keyPairResult.isErr()) {
               throw new Error(`Failed to create key pair: ${keyPairResult.error.message}`);
@@ -241,16 +247,20 @@ export function createSetupRoutes(deps: SetupDeps) {
             sshPrivateKey = keyPairResult.value.privateKey;
 
             // Create security group
+            const sgName = `paws-worker-${id.slice(0, 8)}`;
+            slog.info('Creating security group', { sgName });
             const sgResult = await ec2.createSecurityGroup(
-              `paws-worker-${id.slice(0, 8)}`,
+              sgName,
               'paws worker - SSH and worker API',
             );
             if (sgResult.isErr()) {
               throw new Error(`Failed to create security group: ${sgResult.error.message}`);
             }
             createdSecurityGroupId = sgResult.value;
+            slog.info('Created security group', { sgId: sgResult.value });
 
             // Launch instance with security group attached
+            slog.info('Launching EC2 instance', { instanceType: 'c7i.xlarge' });
             const hostResult = await ec2.createHost({
               name: server.name,
               serverType: 'c7i.xlarge',
@@ -262,6 +272,7 @@ export function createSetupRoutes(deps: SetupDeps) {
             }
             createdInstanceId = hostResult.value.id;
             serverStore.update(id, { providerServerId: createdInstanceId });
+            slog.info('Instance launched, waiting for IP', { instanceId: createdInstanceId });
 
             // Wait for IP
             const readyResult = await ec2.waitForReady(createdInstanceId);
@@ -271,12 +282,23 @@ export function createSetupRoutes(deps: SetupDeps) {
 
             server.ip = readyResult.value.ip;
             serverStore.update(id, { ip: server.ip });
+            slog.info('Instance ready', { ip: server.ip, instanceId: createdInstanceId });
           } catch (ec2Err) {
             // Clean up AWS resources in reverse order (best-effort)
+            slog.warn('EC2 provisioning failed, cleaning up resources', {
+              error: ec2Err instanceof Error ? ec2Err.message : String(ec2Err),
+              instanceId: createdInstanceId,
+              sgId: createdSecurityGroupId,
+              keyPair: createdKeyPairName,
+            });
             if (createdInstanceId) {
               await ec2.deleteHost(createdInstanceId).match(
-                () => {},
-                () => {},
+                () => slog.info('Cleaned up instance', { instanceId: createdInstanceId }),
+                (e) =>
+                  slog.warn('Failed to clean up instance', {
+                    instanceId: createdInstanceId,
+                    error: e.message,
+                  }),
               );
               // Wait briefly for instance to start terminating before deleting SG
               // (SG can't be deleted while an instance is using it)
@@ -284,14 +306,22 @@ export function createSetupRoutes(deps: SetupDeps) {
             }
             if (createdSecurityGroupId) {
               await ec2.deleteSecurityGroup(createdSecurityGroupId).match(
-                () => {},
-                () => {},
+                () => slog.info('Cleaned up security group', { sgId: createdSecurityGroupId }),
+                (e) =>
+                  slog.warn('Failed to clean up security group', {
+                    sgId: createdSecurityGroupId,
+                    error: e.message,
+                  }),
               );
             }
             if (createdKeyPairName) {
               await ec2.deleteKeyPair(createdKeyPairName).match(
-                () => {},
-                () => {},
+                () => slog.info('Cleaned up key pair', { keyPair: createdKeyPairName }),
+                (e) =>
+                  slog.warn('Failed to clean up key pair', {
+                    keyPair: createdKeyPairName,
+                    error: e.message,
+                  }),
               );
             }
             throw ec2Err;
@@ -299,6 +329,7 @@ export function createSetupRoutes(deps: SetupDeps) {
         }
 
         // Phase 1+: SSH bootstrap (works for both manual and EC2)
+        slog.info('Starting SSH bootstrap', { ip: server.ip });
         await provisioner.start({
           server,
           password: sshPassword,
@@ -308,8 +339,8 @@ export function createSetupRoutes(deps: SetupDeps) {
           apiKey: process.env['API_KEY'] ?? '',
         });
         serverStore.update(id, { status: 'ready' });
+        slog.info('Server provisioned successfully');
       } catch (err) {
-        console.error(`[setup] Server ${id} provisioning failed:`, err);
         // Sanitize error — never leak credentials in error messages
         let message = err instanceof Error ? err.message : String(err);
         // Strip anything that looks like a key/secret/token
@@ -318,6 +349,7 @@ export function createSetupRoutes(deps: SetupDeps) {
           /-----BEGIN[^-]*-----[\s\S]*?-----END[^-]*-----/g,
           '[REDACTED KEY]',
         );
+        slog.error('Provisioning failed', { error: message });
         serverStore.update(id, {
           status: 'error',
           error: message,
