@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-import { createServerStore } from './servers.js';
+import { createServerStore, createSqliteServerStore } from './servers.js';
+import { createDatabase } from '../db/index.js';
 import type { Server } from '@paws/provisioner';
 
 // ---------------------------------------------------------------------------
@@ -100,7 +101,7 @@ describe('createServerStore (in-memory)', () => {
   });
 });
 
-describe('createServerStore (file-backed)', () => {
+describe('createSqliteServerStore', () => {
   let dir: string;
 
   beforeEach(() => {
@@ -111,48 +112,79 @@ describe('createServerStore (file-backed)', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('persists servers to file and loads on create', () => {
-    const filePath = join(dir, 'servers.json');
+  function makeStore() {
+    const db = createDatabase(join(dir, 'test.db'));
+    return createSqliteServerStore(db);
+  }
 
-    // Create store, add a server
-    const store1 = createServerStore(filePath);
+  it('creates and retrieves a server', () => {
+    const store = makeStore();
+    store.create(makeServer());
+
+    const retrieved = store.get('550e8400-e29b-41d4-a716-446655440000');
+    expect(retrieved).toBeDefined();
+    expect(retrieved!.name).toBe('worker-01');
+    expect(retrieved!.ip).toBe('10.0.0.1');
+    expect(retrieved!.status).toBe('ready');
+  });
+
+  it('returns undefined for unknown server', () => {
+    const store = makeStore();
+    expect(store.get('nonexistent-id')).toBeUndefined();
+  });
+
+  it('lists all servers', () => {
+    const store = makeStore();
+    store.create(makeServer({ id: 'id-1', name: 'w1' }));
+    store.create(makeServer({ id: 'id-2', name: 'w2' }));
+
+    expect(store.list()).toHaveLength(2);
+  });
+
+  it('updates a server', () => {
+    const store = makeStore();
+    store.create(makeServer());
+
+    const updated = store.update('550e8400-e29b-41d4-a716-446655440000', {
+      status: 'error',
+      error: 'connection lost',
+    });
+
+    expect(updated).toBeDefined();
+    expect(updated!.status).toBe('error');
+    expect(updated!.error).toBe('connection lost');
+    expect(updated!.name).toBe('worker-01');
+  });
+
+  it('update returns undefined for unknown server', () => {
+    const store = makeStore();
+    expect(store.update('nonexistent', { status: 'error' })).toBeUndefined();
+  });
+
+  it('deletes a server', () => {
+    const store = makeStore();
+    store.create(makeServer());
+
+    expect(store.delete('550e8400-e29b-41d4-a716-446655440000')).toBe(true);
+    expect(store.get('550e8400-e29b-41d4-a716-446655440000')).toBeUndefined();
+    expect(store.list()).toHaveLength(0);
+  });
+
+  it('delete returns false for unknown server', () => {
+    const store = makeStore();
+    expect(store.delete('nonexistent')).toBe(false);
+  });
+
+  it('persists across store instances', () => {
+    const dbPath = join(dir, 'persist.db');
+    const db1 = createDatabase(dbPath);
+    const store1 = createSqliteServerStore(db1);
     store1.create(makeServer());
 
-    // Create new store from same file — should load the server
-    const store2 = createServerStore(filePath);
+    // Create new store from same DB file
+    const db2 = createDatabase(dbPath);
+    const store2 = createSqliteServerStore(db2);
     expect(store2.list()).toHaveLength(1);
-    expect(store2.get('550e8400-e29b-41d4-a716-446655440000')).toBeDefined();
-  });
-
-  it('persists updates to file', () => {
-    const filePath = join(dir, 'servers.json');
-    const store1 = createServerStore(filePath);
-    store1.create(makeServer());
-    store1.update('550e8400-e29b-41d4-a716-446655440000', { status: 'error' });
-
-    const store2 = createServerStore(filePath);
-    expect(store2.get('550e8400-e29b-41d4-a716-446655440000')!.status).toBe('error');
-  });
-
-  it('persists deletes to file', () => {
-    const filePath = join(dir, 'servers.json');
-    const store1 = createServerStore(filePath);
-    store1.create(makeServer());
-    store1.delete('550e8400-e29b-41d4-a716-446655440000');
-
-    const store2 = createServerStore(filePath);
-    expect(store2.list()).toHaveLength(0);
-  });
-
-  it('handles corrupt JSON gracefully', () => {
-    const filePath = join(dir, 'corrupt.json');
-    writeFileSync(filePath, 'not valid json!!!');
-    const store = createServerStore(filePath);
-    expect(store.list()).toHaveLength(0);
-  });
-
-  it('handles non-existent file gracefully', () => {
-    const store = createServerStore(join(dir, 'missing.json'));
-    expect(store.list()).toHaveLength(0);
+    expect(store2.get('550e8400-e29b-41d4-a716-446655440000')!.name).toBe('worker-01');
   });
 });

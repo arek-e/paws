@@ -1,6 +1,16 @@
 import { describe, it, expect, vi } from 'vitest';
 
 import { createSessionEvents } from './events.js';
+import type { StoredSession } from './store/sessions.js';
+
+function makeSession(overrides: Partial<StoredSession> = {}): StoredSession {
+  return {
+    sessionId: 'session-1',
+    status: 'pending',
+    request: { snapshot: 'test', workload: { type: 'script', script: 'echo' } },
+    ...overrides,
+  } as StoredSession;
+}
 
 describe('createSessionEvents', () => {
   it('notifies listeners on emit', () => {
@@ -8,11 +18,7 @@ describe('createSessionEvents', () => {
     const listener = vi.fn();
 
     events.on('update', listener);
-    events.emit('update', 'session-1', {
-      sessionId: 'session-1',
-      status: 'running',
-      request: { snapshot: 'test', workload: { type: 'script', script: 'echo' } },
-    } as any);
+    events.emit('update', 'session-1', makeSession({ status: 'running' }));
 
     expect(listener).toHaveBeenCalledTimes(1);
     expect(listener).toHaveBeenCalledWith(
@@ -28,7 +34,7 @@ describe('createSessionEvents', () => {
 
     events.on('update', listener1);
     events.on('update', listener2);
-    events.emit('update', 's1', { sessionId: 's1', status: 'completed' } as any);
+    events.emit('update', 's1', makeSession({ sessionId: 's1', status: 'completed' }));
 
     expect(listener1).toHaveBeenCalledTimes(1);
     expect(listener2).toHaveBeenCalledTimes(1);
@@ -40,7 +46,7 @@ describe('createSessionEvents', () => {
 
     events.on('update', listener);
     events.off('update', listener);
-    events.emit('update', 's1', { sessionId: 's1', status: 'running' } as any);
+    events.emit('update', 's1', makeSession({ sessionId: 's1', status: 'running' }));
 
     expect(listener).not.toHaveBeenCalled();
   });
@@ -54,7 +60,7 @@ describe('createSessionEvents', () => {
 
     events.on('update', badListener);
     events.on('update', goodListener);
-    events.emit('update', 's1', { sessionId: 's1', status: 'running' } as any);
+    events.emit('update', 's1', makeSession({ sessionId: 's1', status: 'running' }));
 
     expect(badListener).toHaveBeenCalledTimes(1);
     expect(goodListener).toHaveBeenCalledTimes(1);
@@ -64,7 +70,7 @@ describe('createSessionEvents', () => {
     const events = createSessionEvents();
     // Should not throw
     expect(() => {
-      events.emit('update', 's1', { sessionId: 's1', status: 'running' } as any);
+      events.emit('update', 's1', makeSession({ sessionId: 's1', status: 'running' }));
     }).not.toThrow();
   });
 
@@ -74,7 +80,7 @@ describe('createSessionEvents', () => {
 
     events.on('update', listener);
     events.on('update', listener);
-    events.emit('update', 's1', { sessionId: 's1', status: 'running' } as any);
+    events.emit('update', 's1', makeSession({ sessionId: 's1', status: 'running' }));
 
     // Set deduplicates — listener should be called once
     expect(listener).toHaveBeenCalledTimes(1);
@@ -83,12 +89,11 @@ describe('createSessionEvents', () => {
   it('passes sessionId and session data to listener', () => {
     const events = createSessionEvents();
     const listener = vi.fn();
-    const sessionData = {
+    const sessionData = makeSession({
       sessionId: 'abc-123',
       status: 'failed',
       exitCode: 1,
-      request: { snapshot: 'test', workload: { type: 'script', script: 'x' } },
-    } as any;
+    });
 
     events.on('update', listener);
     events.emit('update', 'abc-123', sessionData);

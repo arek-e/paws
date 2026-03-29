@@ -219,7 +219,7 @@ describe('daemons', () => {
 
     const result = await c.daemons.update('pr-reviewer', {
       description: 'Updated description',
-    } as any);
+    } as import('@paws/types').UpdateDaemonRequest);
 
     expect(result.isOk()).toBe(true);
     expect(fetch).toHaveBeenCalledWith(

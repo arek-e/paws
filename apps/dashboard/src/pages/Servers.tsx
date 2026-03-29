@@ -130,7 +130,15 @@ function ServerCard({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
           <h3 className="text-sm font-semibold text-zinc-100">{server.name}</h3>
-          <StatusBadge status={(statusMap[server.status] ?? server.status) as any} />
+          <StatusBadge
+            status={
+              (statusMap[server.status] ?? server.status) as
+                | 'healthy'
+                | 'failed'
+                | 'pending'
+                | 'running'
+            }
+          />
         </div>
         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs border bg-zinc-800 text-zinc-400 border-zinc-700">
           {server.provider}

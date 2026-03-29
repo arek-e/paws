@@ -79,6 +79,7 @@ export const servers = sqliteTable('servers', {
   error: text('error'),
   sshPublicKey: text('ssh_public_key').notNull().default(''),
   sshPrivateKeyEncrypted: text('ssh_private_key_encrypted').notNull().default(''),
+  providerServerId: text('provider_server_id'),
   createdAt: text('created_at').notNull(),
 });
 

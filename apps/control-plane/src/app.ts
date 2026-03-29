@@ -17,7 +17,7 @@ import type { GitHubDaemon } from '@paws/integrations';
 import { selectWorker } from '@paws/scheduler';
 
 import type { WorkerRegistry } from './discovery/registry.js';
-import { createBuildStore } from './store/builds.js';
+import { createBuildStore, createSqliteBuildStore } from './store/builds.js';
 import { createGovernanceChecker } from './governance.js';
 import { createControlPlaneMetrics } from './metrics.js';
 import { authMiddleware, type AuthConfig } from './middleware/auth.js';
@@ -51,21 +51,32 @@ import { createServerRoutes } from './routes/servers.js';
 import { receiveWebhookRoute } from './routes/webhooks.js';
 import { listAuditRoute, auditStatsRoute } from './routes/audit.js';
 import { createAuditStore } from './store/audit.js';
-import { createDaemonStore, type DaemonStore } from './store/daemons.js';
+import { createDaemonStore, createSqliteDaemonStore, type DaemonStore } from './store/daemons.js';
 import { createTemplateStore } from './store/templates.js';
-import { createSnapshotConfigStore } from './store/snapshot-configs.js';
-import { createSessionStore, type SessionStore, type StoredSession } from './store/sessions.js';
+import {
+  createSnapshotConfigStore,
+  createSqliteSnapshotConfigStore,
+} from './store/snapshot-configs.js';
+import {
+  createSessionStore,
+  createSqliteSessionStore,
+  type SessionStore,
+  type StoredSession,
+} from './store/sessions.js';
 import { createProvisioningRoutes } from './routes/provisioning.js';
 import { createSetupRoutes } from './routes/setup.js';
-import { createServerStore, type ServerStore } from './store/servers.js';
+import { createServerStore, createSqliteServerStore, type ServerStore } from './store/servers.js';
 import { createWorkerClient } from './worker-client.js';
 import type { CredentialStore } from '@paws/credentials';
+import type { PawsDatabase } from './db/index.js';
 import type { WorkerDiscovery } from './discovery/index.js';
 import type { GovernanceChecker } from './governance.js';
 import type { WorkerClient } from './worker-client.js';
 
 export interface ControlPlaneDeps {
   apiKey: string;
+  /** SQLite database instance. When provided, stores use SQLite instead of in-memory. */
+  db?: PawsDatabase | undefined;
   /**
    * Multi-worker discovery — used when running in K8s or multi-node mode.
    * When provided, sessions are routed to the least-loaded healthy worker.
@@ -147,8 +158,10 @@ function sessionToJson(s: StoredSession) {
 
 /** Create the gateway Hono OpenAPI app with all routes */
 export async function createControlPlaneApp(deps: ControlPlaneDeps) {
-  const rawSessionStore = deps.sessionStore ?? createSessionStore();
-  const daemonStore = deps.daemonStore ?? createDaemonStore();
+  const rawSessionStore =
+    deps.sessionStore ?? (deps.db ? createSqliteSessionStore(deps.db) : createSessionStore());
+  const daemonStore =
+    deps.daemonStore ?? (deps.db ? createSqliteDaemonStore(deps.db) : createDaemonStore());
   const governance = deps.governance ?? createGovernanceChecker();
   const { createSessionEvents } = await import('./events.js');
   const sessionEvents = createSessionEvents();
@@ -197,7 +210,12 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
           if (session.daemonRole && session.vcpuSeconds) {
             const daemon = daemonStore.get(session.daemonRole);
             if (daemon) {
-              daemon.stats.totalVcpuSeconds += session.vcpuSeconds;
+              daemonStore.update(session.daemonRole, {
+                stats: {
+                  ...daemon.stats,
+                  totalVcpuSeconds: daemon.stats.totalVcpuSeconds + session.vcpuSeconds,
+                },
+              });
             }
           }
         }
@@ -248,25 +266,39 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
   // --- Database + Password auth ---
 
-  const { createDatabase } = await import('./db/index.js');
-  const dataDir = process.env['DATA_DIR'] ?? '/var/lib/paws/data';
-  const db = createDatabase(`${dataDir}/paws.db`);
+  let db = deps.db;
+  if (!db) {
+    try {
+      const { createDatabase } = await import('./db/index.js');
+      const dataDir = process.env['DATA_DIR'] ?? '/var/lib/paws/data';
+      db = createDatabase(`${dataDir}/paws.db`);
+    } catch {
+      // bun:sqlite not available (e.g. running under vitest/Node.js) — DB features disabled
+    }
+  }
 
-  const { createPasswordAuth } = await import('./auth/password.js');
-  const passwordAuth = createPasswordAuth(db);
+  // Password auth (requires DB)
+  let passwordAuth: import('./auth/password.js').PasswordAuth | null = null;
+  if (db) {
+    const { createPasswordAuth } = await import('./auth/password.js');
+    passwordAuth = createPasswordAuth(db);
+  }
 
   // Setup status — no auth, dashboard checks this on load
   app.get('/v1/setup/status', (c) => {
     const hasDaemons = daemonStore.list().length > 0;
     return c.json({
-      needsAccount: passwordAuth.isFirstRun(),
-      needsOnboarding: !passwordAuth.isFirstRun() && !hasDaemons,
+      needsAccount: passwordAuth?.isFirstRun() ?? true,
+      needsOnboarding: !(passwordAuth?.isFirstRun() ?? true) && !hasDaemons,
       oidcAvailable: oidcEnabled,
     });
   });
 
   // Create admin account (first run only)
   app.post('/auth/setup', async (c) => {
+    if (!passwordAuth) {
+      return c.json({ error: { code: 'DB_UNAVAILABLE', message: 'Database not available' } }, 503);
+    }
     if (!passwordAuth.isFirstRun()) {
       return c.json(
         { error: { code: 'ALREADY_SETUP', message: 'Admin account already exists' } },
@@ -288,7 +320,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       );
     }
 
-    const token = await passwordAuth.createAdmin(body.email, body.password);
+    const token = await passwordAuth!.createAdmin(body.email, body.password);
     if (!token) {
       return c.json({ error: { code: 'SETUP_FAILED', message: 'Failed to create admin' } }, 500);
     }
@@ -311,7 +343,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       );
     }
 
-    const token = await passwordAuth.login(body.email, body.password);
+    const token = passwordAuth ? await passwordAuth.login(body.email, body.password) : null;
     if (!token) {
       return c.json(
         { error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' } },
@@ -334,7 +366,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       return c.json({ authenticated: false }, 401);
     }
 
-    const session = passwordAuth.validateSession(match[1]);
+    const session = passwordAuth?.validateSession(match[1]);
     if (!session) {
       return c.json({ authenticated: false }, 401);
     }
@@ -431,7 +463,11 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   app.use('/v1/audit', authMiddleware(authConfig));
 
   // Snapshot config store — hoisted so mergeSnapshotDomains can use it in session dispatch
-  const snapshotConfigStore = createSnapshotConfigStore();
+  const snapshotConfigStore = deps.db
+    ? createSqliteSnapshotConfigStore(deps.db)
+    : createSnapshotConfigStore();
+  const serverStore =
+    deps.serverStore ?? (deps.db ? createSqliteServerStore(deps.db) : createServerStore());
 
   // --- Sessions ---
 
@@ -477,12 +513,15 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   });
 
   // Handler type assertion needed: z.unknown() output (null | undefined) doesn't satisfy Hono's JSONValue
+  // eslint-disable-next-line typescript/no-explicit-any -- Hono OpenAPI handler type mismatch with z.unknown()
   app.openapi(listSessionsRoute, (async (c: any) => {
     const { limit } = c.req.valid('query');
     const sessions = sessionStore.listAll(limit ?? 50).map(sessionToJson);
     return c.json({ sessions }, 200);
+    // eslint-disable-next-line typescript/no-explicit-any
   }) as any);
 
+  // eslint-disable-next-line typescript/no-explicit-any -- Hono OpenAPI handler type mismatch with z.unknown()
   app.openapi(getSessionRoute, (async (c: any) => {
     const { id } = c.req.valid('param');
     const session = sessionStore.get(id as string);
@@ -521,6 +560,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     }
 
     return c.json(sessionToJson(sessionStore.get(id as string)!), 200);
+    // eslint-disable-next-line typescript/no-explicit-any
   }) as any);
 
   app.openapi(cancelSessionRoute, (c) => {
@@ -1123,7 +1163,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     return c.json({ snapshots: [] }, 200);
   });
 
-  const buildStore = createBuildStore();
+  const buildStore = deps.db ? createSqliteBuildStore(deps.db) : createBuildStore();
 
   app.openapi(buildSnapshotRoute, (c) => {
     const { id } = c.req.valid('param');
@@ -1252,7 +1292,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   {
     const { createCredentialStore } = await import('@paws/credentials');
     const setupRoutes = createSetupRoutes({
-      serverStore: deps.serverStore ?? createServerStore(),
+      serverStore,
       credentialStore: deps.credentialStore ?? createCredentialStore(deps.apiKey),
       provisioner: {
         start: async () => {
@@ -1282,7 +1322,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
   {
     const serverRoutes = createServerRoutes({
-      serverStore: deps.serverStore ?? createServerStore(),
+      serverStore,
       workerRegistry: deps.workerRegistry,
     });
     app.route('/', serverRoutes);
@@ -1292,7 +1332,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
   {
     const provisioningRoutes = createProvisioningRoutes({
-      serverStore: deps.serverStore ?? createServerStore(),
+      serverStore,
       provisioner: {
         start: async () => {
           /* no-op until provisioner deps are wired */

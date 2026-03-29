@@ -1,5 +1,3 @@
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
@@ -7,32 +5,54 @@ import * as schema from './schema.js';
 
 export { schema };
 
+/** Minimal interface for the underlying SQLite driver (works with both bun:sqlite and better-sqlite3) */
+interface RawSqlite {
+  exec(sql: string): void;
+  prepare(sql: string): { all(): { name: string }[] };
+}
+
 /**
  * Create a SQLite database connection with Drizzle ORM.
- * Auto-creates the database file and runs migrations (push schema).
+ * Auto-detects Bun (bun:sqlite) vs Node.js (better-sqlite3).
+ * Auto-creates the database file and tables on first run.
  */
 export function createDatabase(dbPath: string) {
   // Ensure directory exists
   const dir = dirname(dbPath);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
-  const sqlite = new Database(dbPath);
+  // Detect runtime and create appropriate Drizzle instance
+  let db: ReturnType<typeof import('drizzle-orm/bun-sqlite').drizzle>;
+  let raw: RawSqlite;
 
-  // Enable WAL mode for better concurrent read performance
-  sqlite.pragma('journal_mode = WAL');
-  sqlite.pragma('foreign_keys = ON');
-
-  const db = drizzle(sqlite, { schema });
+  if (typeof globalThis.Bun !== 'undefined') {
+    // Bun runtime — use bun:sqlite (built-in, fast)
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Database } = require('bun:sqlite');
+    const sqlite = new Database(dbPath);
+    sqlite.exec('PRAGMA journal_mode = WAL');
+    sqlite.exec('PRAGMA foreign_keys = ON');
+    raw = sqlite;
+    const { drizzle } = require('drizzle-orm/bun-sqlite');
+    db = drizzle(sqlite, { schema });
+  } else {
+    // Node.js runtime (vitest, etc.) — use better-sqlite3
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const BetterSqlite = require('better-sqlite3');
+    const sqlite = new BetterSqlite(dbPath);
+    sqlite.pragma('journal_mode = WAL');
+    sqlite.pragma('foreign_keys = ON');
+    raw = sqlite;
+    const { drizzle } = require('drizzle-orm/better-sqlite3');
+    db = drizzle(sqlite, { schema });
+  }
 
   // Auto-create tables if they don't exist
-  // In production, use drizzle-kit migrations. For now, push schema directly.
-  const tables = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as {
-    name: string;
-  }[];
+  const tables = raw.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
   const tableNames = new Set(tables.map((t) => t.name));
 
   if (!tableNames.has('admin_users')) {
-    sqlite.exec(`
+    raw.exec(`
       CREATE TABLE IF NOT EXISTS admin_users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT NOT NULL UNIQUE,
@@ -95,6 +115,7 @@ export function createDatabase(dbPath: string) {
         error TEXT,
         ssh_public_key TEXT NOT NULL DEFAULT '',
         ssh_private_key_encrypted TEXT NOT NULL DEFAULT '',
+        provider_server_id TEXT,
         created_at TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS build_jobs (

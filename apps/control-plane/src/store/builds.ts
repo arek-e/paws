@@ -1,4 +1,9 @@
+import { eq } from 'drizzle-orm';
+
 import type { SnapshotBuildStatus } from '@paws/types';
+
+import type { PawsDatabase } from '../db/index.js';
+import { buildJobs as buildJobsTable } from '../db/schema.js';
 
 export interface StoredBuild {
   jobId: string;
@@ -43,6 +48,53 @@ export function createBuildStore(): BuildStore {
       if (result) {
         Object.assign(build, result);
       }
+    },
+  };
+}
+
+type BuildRow = typeof buildJobsTable.$inferSelect;
+
+function rowToStoredBuild(row: BuildRow): StoredBuild {
+  return {
+    jobId: row.jobId,
+    snapshotId: row.snapshotId,
+    status: row.status as SnapshotBuildStatus,
+    worker: row.worker ?? undefined,
+    startedAt: row.startedAt ?? undefined,
+    completedAt: row.completedAt ?? undefined,
+    error: row.error ?? undefined,
+  };
+}
+
+/** SQLite-backed build store */
+export function createSqliteBuildStore(db: PawsDatabase): BuildStore {
+  return {
+    create(jobId, snapshotId) {
+      const now = new Date().toISOString();
+      db.insert(buildJobsTable)
+        .values({
+          jobId,
+          snapshotId,
+          status: 'building',
+          startedAt: now,
+        })
+        .run();
+      return this.get(jobId)!;
+    },
+
+    get(jobId) {
+      const row = db.select().from(buildJobsTable).where(eq(buildJobsTable.jobId, jobId)).get();
+      return row ? rowToStoredBuild(row) : undefined;
+    },
+
+    updateStatus(jobId, status, result) {
+      const values: Record<string, unknown> = { status };
+      if (result) {
+        if (result.worker !== undefined) values['worker'] = result.worker;
+        if (result.completedAt !== undefined) values['completedAt'] = result.completedAt;
+        if (result.error !== undefined) values['error'] = result.error;
+      }
+      db.update(buildJobsTable).set(values).where(eq(buildJobsTable.jobId, jobId)).run();
     },
   };
 }

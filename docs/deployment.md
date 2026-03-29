@@ -288,3 +288,27 @@ bun run scripts/upload-snapshot.ts agent-latest /var/lib/paws/snapshots/agent-la
 ```
 
 Workers with R2 credentials configured will sync snapshots automatically via the sync loop.
+
+## Administration
+
+### Reset Admin Password
+
+If you forget the admin password, reset it from the server:
+
+```bash
+# Docker
+docker exec -it paws-control-plane bun run reset-password
+
+# Kubernetes
+kubectl exec -it deploy/control-plane -- bun run reset-password
+
+# Bare metal / systemd
+cd /opt/paws && bun run reset-password --filter @paws/control-plane
+```
+
+This generates a random password, updates the admin account in SQLite, invalidates all existing
+sessions, and prints the new password to stdout. The admin can then log in at the dashboard with
+the new password.
+
+The script requires access to the control plane's data directory (`DATA_DIR`, defaults to
+`/var/lib/paws/data`). It reads and writes to `paws.db` directly.

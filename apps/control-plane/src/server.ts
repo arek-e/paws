@@ -5,7 +5,7 @@ import { createK8sDiscovery } from './discovery/k8s.js';
 import { createPangolinDiscovery } from './discovery/pangolin.js';
 import { createWorkerRegistry } from './discovery/registry.js';
 import { createStaticDiscovery } from './discovery/static.js';
-import { createPersistentDaemonStore } from './store/persistent.js';
+import { createDatabase } from './db/index.js';
 
 const PORT = parseInt(process.env['PORT'] ?? '4000', 10);
 const API_KEY = process.env['API_KEY'] ?? 'paws-dev-key';
@@ -85,13 +85,13 @@ const DASHBOARD_DIR = process.env['DASHBOARD_DIR'] ?? '';
 const { upgradeWebSocket, websocket } = createBunWebSocket();
 
 const DATA_DIR = process.env['DATA_DIR'] ?? '/var/lib/paws/data';
-const daemonStore = createPersistentDaemonStore(`${DATA_DIR}/daemons.json`);
+const db = createDatabase(`${DATA_DIR}/paws.db`);
 
 const app = await createControlPlaneApp({
   apiKey: API_KEY,
+  db,
   discovery,
   workerRegistry,
-  daemonStore,
   upgradeWebSocket,
   ...(DASHBOARD_DIR && { dashboardDir: DASHBOARD_DIR }),
   ...(oidc && { oidc }),

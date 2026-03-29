@@ -32,7 +32,7 @@ function createMockCredentialStore(): CredentialStore {
     },
     listMasked() {
       return Array.from(creds.entries()).map(([provider, c]) => ({
-        provider: provider as any,
+        provider: provider as import('@paws/credentials').CredentialProvider,
         masked: c.masked,
         headerName: c.headerName,
         createdAt: c.createdAt,
