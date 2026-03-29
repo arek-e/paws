@@ -123,10 +123,9 @@ See @docs/testing.md for full strategy.
 
 ## Gotchas
 
-- **Dockerfiles must list ALL workspace packages.** When adding a new `packages/*` directory,
-  update BOTH `apps/control-plane/Dockerfile` AND `apps/worker/Dockerfile` with: the package.json
-  COPY (manifest stage), the source COPY (builder stage), and the runner COPY (final stage).
-  Missing a package causes `bun install` to fail in CI with "Workspace dependency not found."
+- **Dockerfiles use `COPY . .` with `.dockerignore`.** New packages are picked up automatically.
+  If you add files that shouldn't be in the Docker image (large assets, secrets, dev tools),
+  add them to `.dockerignore`.
 - **Turbo daemon hangs on GH runners.** Always set `TURBO_NO_DAEMON=1` in CI workflows.
 - **Vitest polyfill rejects `new Response('', {status: 204})`.** Use `new Response(null, {status: 204})`
   in test mocks for HTTP 204 responses.
