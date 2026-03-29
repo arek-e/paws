@@ -1,53 +1,76 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/arek-e/paws/main/assets/logo.svg" width="120" alt="paws logo">
+<img src="https://raw.githubusercontent.com/arek-e/paws/main/assets/logo.svg" width="100" alt="paws logo">
 
 # paws
 
-**P**rotected **A**gent **W**orkspace **S**andboxes
+**Protected Agent Workflow System**
 
-Zero-trust credential injection for AI agents.
+Self-hosted zero-trust infrastructure for AI agents.
 Secrets never enter the sandbox.
 
 [![CI](https://github.com/arek-e/paws/actions/workflows/ci.yml/badge.svg)](https://github.com/arek-e/paws/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/arek-e/paws)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/arek-e/paws)](https://github.com/arek-e/paws/releases)
 
+[Website](https://getpaws.dev) &middot; [Docs](https://getpaws.dev/getting-started/install/) &middot; [Issues](https://github.com/arek-e/paws/issues)
+
 </div>
 
-Your AI agent doesn't need your API keys. paws is a zero-trust credential injection layer for
-background AI agents — secrets stay on the host, injected at the network layer by a per-VM TLS MITM
-proxy. The agent never sees an API key. Not in env vars, not in memory, not on disk.
+---
 
-Each agent runs in an ephemeral Firecracker microVM with its own dedicated proxy, its own network
-namespace, and its own ephemeral CA. The VM is disposable. If it's compromised, there's nothing
-worth stealing.
+## The Problem
 
-## What is this?
+Your AI agent needs API keys to work. But giving an agent your keys means trusting it completely -- with your Anthropic key, your GitHub token, your database credentials.
 
-paws is the execution layer for background agents and daemons — persistent roles that watch for
-triggers and act autonomously. Think "keep PRs mergeable" not "fix this bug."
+If the agent gets compromised -- prompt injection, rogue behavior, VM escape -- those keys are gone.
 
-You provide:
+**paws solves this.** A per-VM TLS proxy injects credentials at the network layer. The agent sees normal HTTPS responses but never touches an API key. Not in env vars. Not in memory. Not on disk.
 
-- A snapshot (pre-built VM image with your agent runtime)
-- A trigger (webhook, cron, or watch condition)
-- A workload script (what to run when triggered)
-- Credentials (injected by the platform, never exposed to the VM)
+Each agent runs in an ephemeral [Firecracker](https://firecracker-microvm.github.io/) microVM with its own dedicated proxy, its own network namespace, and its own ephemeral CA certificate. If the VM is compromised, there is nothing worth stealing.
 
-paws handles: VM lifecycle, snapshot boot (<1s), network isolation, credential proxying, fleet
-scheduling, audit logging.
+## How It Works
 
-## Quick Example
+```
+Agent in VM                         Host
+    |                                |
+    |  curl api.anthropic.com        |
+    |------------------------------->|
+    |        iptables DNAT           |
+    |                     +----------+----------+
+    |                     |    TLS Proxy (1:1)  |
+    |                     |                     |
+    |                     |  1. Check allowlist  |
+    |                     |  2. Terminate TLS    |
+    |                     |  3. Inject x-api-key |
+    |                     |  4. Forward request  |
+    |                     +----------+----------+
+    |                                |
+    |                       api.anthropic.com
+    |                                |
+    |<------- normal HTTPS response -|
+    |                                |
+    |  The agent never saw the key.  |
+```
+
+Git works the same way -- `git clone`, `git push`, `git pull` all go through the proxy. Authorization headers are injected transparently. No credential helpers, no SSH keys, no `.netrc` in the VM.
+
+## Quick Start
 
 ```bash
-# Run a one-shot session
-curl -X POST https://paws.example.com/v1/sessions \
+curl -fsSL https://getpaws.dev/install.sh | bash
+```
+
+This installs the control plane + worker on a Linux server with `/dev/kvm`. Then:
+
+```bash
+# Run your first agent session
+curl -X POST https://your-server:4000/v1/sessions \
   -H "Authorization: Bearer $PAWS_API_KEY" \
   -d '{
     "snapshot": "claude-agent",
     "workload": {
-      "script": "cd /workspace && claude-code --prompt \"Fix the login bug\""
+      "script": "Review this PR and post comments"
     },
     "network": {
       "allowOut": ["api.anthropic.com", "github.com"],
@@ -59,103 +82,126 @@ curl -X POST https://paws.example.com/v1/sessions \
   }'
 ```
 
-```bash
-# Register a daemon (persistent role)
-curl -X POST https://paws.example.com/v1/daemons \
-  -H "Authorization: Bearer $PAWS_API_KEY" \
-  -d '{
-    "role": "pr-helper",
-    "description": "Review PRs and fix CI failures",
-    "snapshot": "claude-agent",
-    "trigger": { "type": "webhook", "events": ["pull_request.opened"] },
-    "workload": { "script": "cd /state/repo && git pull && claude-code --prompt \"$TRIGGER_PAYLOAD\"" },
-    "network": {
-      "allowOut": ["api.anthropic.com", "github.com", "*.github.com"],
-      "credentials": { ... }
-    },
-    "governance": { "maxActionsPerHour": 20, "auditLog": true }
-  }'
-```
+The API keys in that request never enter the VM. They stay on the host, injected by the proxy.
+
+## Features
+
+|                        | Feature                    | Description                                                             |
+| ---------------------- | -------------------------- | ----------------------------------------------------------------------- |
+| :lock:                 | **Zero-trust credentials** | Per-VM TLS MITM proxy injects API keys at the network layer             |
+| :zap:                  | **Sub-second boot**        | Firecracker memory snapshots restore VMs in <800ms                      |
+| :bar_chart:            | **Dashboard**              | Fleet management, session history, daemon config, audit log             |
+| :robot:                | **Daemon workflows**       | Persistent agent roles triggered by webhooks, cron, or GitHub events    |
+| :shield:               | **Governance**             | Rate limits, approval gates, full audit logging per daemon              |
+| :electric_plug:        | **MCP Gateway**            | Connect agents to MCP tool servers running on the host                  |
+| :globe_with_meridians: | **Port exposure**          | Agents expose web apps via Pangolin tunnels with SSO/PIN access control |
+| :computer:             | **CLI**                    | `paws run`, `paws top`, `paws logs` -- one-command agent execution      |
+| :package:              | **SDKs**                   | TypeScript and Python clients, generated from OpenAPI spec              |
 
 ## Architecture
 
 ```
-GitHub webhook → Gateway (control plane)
-                    │
-                    ├── Auth + rate limiting
-                    ├── Session tracking
-                    ├── LLM history (proxied conversations)
-                    │
-                    └── Routes to Worker node
-                           │
-                           ├── Spawns TLS proxy (per-VM, isolated)
-                           ├── Restores Firecracker VM from snapshot (<1s)
-                           ├── iptables routes VM traffic → proxy
-                           ├── Proxy injects credentials per domain
-                           │
-                           └── VM runs agent (zero secrets inside)
-                                 │
-                                 ├── git clone → proxy injects GitHub token
-                                 ├── Claude API → proxy injects API key
-                                 └── Result returned → VM destroyed
++---------------------------------------------------+
+|                  Control Plane                     |
+|    API  -  Dashboard  -  Governance  -  Daemons    |
++------------------+----------------+---------------+
+                   |                |
+        +----------v------+  +-----v-----------+
+        |    Worker 1     |  |    Worker 2      |
+        |  +-----------+  |  |  +-----------+   |
+        |  |Firecracker|  |  |  |Firecracker|   |
+        |  |  microVM  |  |  |  |  microVM  |   |
+        |  | (no keys) |  |  |  | (no keys) |   |
+        |  +-----+-----+  |  |  +-----+-----+   |
+        |  +-----v-----+  |  |  +-----v-----+   |
+        |  | TLS Proxy  |  |  |  | TLS Proxy  |  |
+        |  | injects    |  |  |  | injects    |  |
+        |  | x-api-key  |  |  |  | auth token |  |
+        |  +-----+-----+  |  |  +-----+-----+   |
+        +--------+--------+  +--------+---------+
+                 |                     |
+          api.anthropic.com       github.com
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the full design.
+- **Control plane** holds all credentials, dispatches sessions, enforces governance
+- **Workers** run on bare metal with `/dev/kvm`, each VM gets a dedicated TLS proxy
+- **One proxy per VM** -- never shared, spawned with the VM, killed with the VM
+- VMs boot from Firecracker memory snapshots in <800ms
+- Workers auto-register via WireGuard tunnels (Pangolin/Newt)
 
-## Getting Started
+## Comparison
+
+|                      | paws                    | E2B                 | Daytona         | Microsandbox    |
+| -------------------- | ----------------------- | ------------------- | --------------- | --------------- |
+| **Secret injection** | Network-layer MITM      | No                  | No              | Network-layer   |
+| **Self-hosted**      | Yes                     | OSS option          | Enterprise only | Yes             |
+| **Dashboard**        | Full platform           | No                  | Yes             | No              |
+| **Governance**       | Rate limits + approvals | No                  | No              | No              |
+| **Isolation**        | Firecracker microVM     | Firecracker microVM | Docker          | libkrun microVM |
+| **Daemon workflows** | Yes                     | No                  | No              | No              |
+| **Boot time**        | <800ms (snapshot)       | ~150ms              | ~90ms           | ~200ms          |
+
+## SDKs
+
+**TypeScript:**
+
+```typescript
+import { createClient } from '@paws/sdk';
+
+const paws = createClient({
+  baseUrl: 'https://your-server:4000',
+  apiKey: 'paws-...',
+});
+
+const session = await paws.sessions.create({
+  snapshot: 'claude-code',
+  workload: { type: 'script', script: 'Review this PR' },
+});
+```
+
+**Python:**
+
+```python
+from paws import PawsClient
+
+client = PawsClient(base_url="https://your-server:4000", api_key="paws-...")
+session = client.sessions.create(
+    snapshot="claude-code",
+    workload={"type": "script", "script": "Review this PR"},
+)
+```
+
+## Documentation
+
+Full docs at **[getpaws.dev](https://getpaws.dev)**
+
+- [Installation](https://getpaws.dev/getting-started/install/)
+- [Quick Start](https://getpaws.dev/getting-started/quickstart/)
+- [Architecture](https://getpaws.dev/concepts/architecture/)
+- [Security Model](https://getpaws.dev/concepts/security/)
+- [API Reference](https://getpaws.dev/reference/api/)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and conventions.
 
 ```bash
-# 1. Clone and install
-git clone https://github.com/arek-e/paws
-cd paws && bun install
-
-# 2. Configure
-cp .env.example .env    # edit with your settings
-
-# 3. Bootstrap the server (installs Firecracker, kernel, rootfs, SSH keys)
-sudo ./scripts/bootstrap-node.sh
-
-# 4. Start gateway + worker
-bun run start
+bun install          # install deps
+bun test             # run tests
+bun run check        # lint + typecheck + format
+bun run start        # start control-plane + worker
 ```
-
-Then try the [examples](examples/):
-
-```bash
-export PAWS_URL=http://localhost:4000
-export PAWS_API_KEY=paws-dev-key
-
-bash examples/01-health-check.sh   # verify services are up
-bash examples/02-hello-world.sh    # run a script in an isolated VM
-```
-
-Full walkthrough: [docs/getting-started.md](docs/getting-started.md)
-
-## Key Properties
-
-- **Zero-trust credential injection** — per-VM TLS MITM proxy injects secrets at the network layer; the agent never touches an API key
-- **Per-VM isolation** — every session gets its own proxy, its own network namespace, its own ephemeral CA
-- **Network allowlisting** — only approved domains reachable; everything else dropped at the firewall
-- **Sub-second boot** — Firecracker snapshot restore (~28ms with userfaultfd)
-- **Ephemeral by default** — VMs are created per trigger, destroyed after
-- **Persistent state** — LLM conversation history in gateway DB + mounted volumes for files/repos
-- **Spec-first API** — OpenAPI spec generated from code, SDKs auto-generated for any language
-- **Provider-agnostic** — pluggable host providers (Hetzner, AWS, etc.)
-
-## Docs
-
-- [Getting Started](docs/getting-started.md) — deploy and run your first agent
-- [Architecture](docs/architecture.md) — full system design
-- [Security Model](docs/security.md) — zero-trust, credential injection, network isolation
-- [API Reference](docs/api.md) — gateway endpoints
-- [Examples](examples/) — runnable demo scripts
-- [Testing](docs/testing.md) — three-tier test strategy, TDD approach
-- [Roadmap](docs/roadmap.md) — what's built, what's next
-
-## Status
-
-Early development. v0.1 (single server, core loop) is complete. See [roadmap](docs/roadmap.md).
 
 ## License
 
-Apache 2.0
+[Apache-2.0](LICENSE)
+
+---
+
+<div align="center">
+<pre>
+ /\_/\
+( o.o )  paws — because your agent should have
+ > ^ <   nothing worth stealing
+</pre>
+</div>
