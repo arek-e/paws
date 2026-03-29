@@ -260,10 +260,10 @@ export function createSetupRoutes(deps: SetupDeps) {
             slog.info('Created security group', { sgId: sgResult.value });
 
             // Launch instance with security group attached
-            slog.info('Launching EC2 instance', { instanceType: 'c7i.xlarge' });
+            slog.info('Launching EC2 instance', { instanceType: 'c8i.xlarge' });
             const hostResult = await ec2.createHost({
               name: server.name,
-              serverType: 'c7i.xlarge',
+              serverType: 'c8i.xlarge',
               sshKeys: [keyPairName],
               securityGroupIds: [sgResult.value],
             });
