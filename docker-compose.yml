@@ -82,8 +82,6 @@ services:
     image: fosrl/pangolin:latest
     container_name: paws-pangolin
     restart: unless-stopped
-    profiles:
-      - tunnels
     networks:
       - paws
     volumes:
@@ -100,8 +98,6 @@ services:
     image: fosrl/gerbil:latest
     container_name: paws-gerbil
     restart: unless-stopped
-    profiles:
-      - tunnels
     depends_on:
       pangolin:
         condition: service_healthy
@@ -126,8 +122,6 @@ services:
     image: traefik:v3.6
     container_name: paws-traefik
     restart: unless-stopped
-    profiles:
-      - tunnels
     depends_on:
       pangolin:
         condition: service_healthy
@@ -142,8 +136,6 @@ services:
     image: ghcr.io/dexidp/dex:v2.41.1
     container_name: paws-dex
     restart: unless-stopped
-    profiles:
-      - domain
     networks:
       - paws
     expose:
