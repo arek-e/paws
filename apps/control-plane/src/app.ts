@@ -48,10 +48,12 @@ import {
   updateSnapshotConfigRoute,
 } from './routes/snapshot-configs.js';
 import { buildSnapshotRoute, listSnapshotsRoute } from './routes/snapshots.js';
+import { createMcpRoutes } from './routes/mcp.js';
 import { createServerRoutes } from './routes/servers.js';
 import { receiveWebhookRoute } from './routes/webhooks.js';
 import { listAuditRoute, auditStatsRoute } from './routes/audit.js';
 import { createAuditStore } from './store/audit.js';
+import { createMcpServerStore } from './store/mcp.js';
 import { createDaemonStore, createSqliteDaemonStore, type DaemonStore } from './store/daemons.js';
 import { createTemplateStore } from './store/templates.js';
 import {
@@ -463,6 +465,8 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   app.use('/v1/templates/*', authMiddleware(authConfig));
   app.use('/v1/audit/*', authMiddleware(authConfig));
   app.use('/v1/audit', authMiddleware(authConfig));
+  app.use('/v1/mcp/*', authMiddleware(authConfig));
+  app.use('/v1/mcp', authMiddleware(authConfig));
 
   // Snapshot config store — hoisted so mergeSnapshotDomains can use it in session dispatch
   const snapshotConfigStore = deps.db
@@ -1427,6 +1431,18 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       },
     });
     app.route('/', setupRoutes);
+  }
+
+  // --- MCP server management routes ---
+
+  const mcpServerStore = createMcpServerStore();
+
+  {
+    const mcpRoutes = createMcpRoutes({
+      mcpServerStore,
+      sessionStore,
+    });
+    app.route('/', mcpRoutes);
   }
 
   // --- Server management routes ---

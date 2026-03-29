@@ -36,6 +36,8 @@ export const NetworkConfigSchema = z.object({
   credentials: z.record(z.string(), DomainCredentialSchema).default({}),
   /** Ports to expose publicly via Pangolin tunnel */
   expose: z.array(PortExposureSchema).default([]),
+  /** MCP servers this session/daemon can access (by name) */
+  mcp: z.object({ servers: z.array(z.string()) }).optional(),
 });
 
 export type NetworkConfig = z.infer<typeof NetworkConfigSchema>;

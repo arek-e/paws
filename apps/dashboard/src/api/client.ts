@@ -411,6 +411,47 @@ export async function deployTemplate(
   return res.json();
 }
 
+// --- MCP Servers ---
+
+export interface McpServerInfo {
+  name: string;
+  transport: 'stdio' | 'sse' | 'streamable-http';
+  command?: string;
+  args?: string[];
+  url?: string;
+  env?: Record<string, string>;
+}
+
+export async function getMcpServers(): Promise<McpServerInfo[]> {
+  const res = await fetch('/v1/mcp/servers', { headers: apiKeyHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch MCP servers: ${res.status}`);
+  const body = (await res.json()) as { servers: McpServerInfo[] };
+  return body.servers;
+}
+
+export async function addMcpServer(config: McpServerInfo): Promise<void> {
+  const res = await fetch('/v1/mcp/servers', {
+    method: 'POST',
+    headers: apiKeyHeaders(),
+    body: JSON.stringify(config),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(
+      (data as { error?: { message?: string } }).error?.message ??
+        `Failed to add MCP server: ${res.status}`,
+    );
+  }
+}
+
+export async function deleteMcpServer(name: string): Promise<void> {
+  const res = await fetch(`/v1/mcp/servers/${encodeURIComponent(name)}`, {
+    method: 'DELETE',
+    headers: apiKeyHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to delete MCP server: ${res.status}`);
+}
+
 // --- Audit Log ---
 
 export interface AuditEvent {

@@ -142,5 +142,8 @@ export {
 } from './worker.js';
 export type { Worker, WorkerCapacity, WorkerListResponse, WorkerSnapshotInfo } from './worker.js';
 
+export { McpServerConfigSchema, McpToolCallSchema, McpToolCallResponseSchema } from './mcp.js';
+export type { McpServerConfig, McpToolCall, McpToolCallResponse } from './mcp.js';
+
 export { WsSessionMessage, WsStatusMessage, WsCompleteMessage, WsErrorMessage } from './ws.js';
 export type { WsSessionMessage as WsSessionMsg } from './ws.js';

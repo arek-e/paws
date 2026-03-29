@@ -41,6 +41,18 @@ describe('NetworkConfigSchema', () => {
     expect(result.expose).toEqual([]);
   });
 
+  test('accepts mcp servers list', () => {
+    const result = NetworkConfigSchema.parse({
+      mcp: { servers: ['filesystem', 'github'] },
+    });
+    expect(result.mcp?.servers).toEqual(['filesystem', 'github']);
+  });
+
+  test('mcp is optional', () => {
+    const result = NetworkConfigSchema.parse({});
+    expect(result.mcp).toBeUndefined();
+  });
+
   test('accepts expose port list', () => {
     const result = NetworkConfigSchema.parse({
       expose: [

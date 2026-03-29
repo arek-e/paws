@@ -5,6 +5,7 @@ import { FirstRunRedirect } from './components/FirstRunRedirect.js';
 import { Layout } from './components/Layout.js';
 import { AuditLog } from './pages/AuditLog.js';
 import { Daemons } from './pages/Daemons.js';
+import { McpServers } from './pages/McpServers.js';
 import { Fleet } from './pages/Fleet.js';
 import { Provision } from './pages/Provision.js';
 import { Servers } from './pages/Servers.js';
@@ -34,6 +35,7 @@ export function App() {
             <Route path="provision" element={<Provision />} />
             <Route path="sessions" element={<Sessions />} />
             <Route path="sessions/:id" element={<SessionDetail />} />
+            <Route path="mcp" element={<McpServers />} />
             <Route path="audit" element={<AuditLog />} />
           </Route>
         </Routes>

@@ -75,6 +75,7 @@ export function Layout() {
           <SidebarLink to="/servers" label="Servers" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/sessions" label="Sessions" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/provision" label="Provision" onClick={() => setMenuOpen(false)} />
+          <SidebarLink to="/mcp" label="MCP Servers" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/audit" label="Audit Log" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/setup" label="Setup" onClick={() => setMenuOpen(false)} />
           <button
@@ -102,6 +103,7 @@ export function Layout() {
           <SidebarLink to="/servers" label="Servers" />
           <SidebarLink to="/sessions" label="Sessions" />
           <SidebarLink to="/provision" label="Provision" />
+          <SidebarLink to="/mcp" label="MCP Servers" />
           <SidebarLink to="/audit" label="Audit Log" />
           <SidebarLink to="/setup" label="Setup" />
         </nav>
