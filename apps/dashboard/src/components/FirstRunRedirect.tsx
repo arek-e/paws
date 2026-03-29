@@ -12,7 +12,8 @@ export function FirstRunRedirect() {
     fetch('/v1/setup/status', { credentials: 'include' })
       .then((res) => res.json())
       .then((data: { needsOnboarding: boolean }) => {
-        if (data.needsOnboarding && location.pathname === '/') {
+        const skipped = localStorage.getItem('paws_setup_skipped') === 'true';
+        if (data.needsOnboarding && !skipped && location.pathname === '/') {
           navigate('/setup', { replace: true });
         }
         setChecked(true);

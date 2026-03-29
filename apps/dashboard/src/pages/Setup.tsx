@@ -36,7 +36,10 @@ export function Setup() {
           </div>
         </div>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => {
+            localStorage.setItem('paws_setup_skipped', 'true');
+            navigate('/');
+          }}
           className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
         >
           Skip setup →
