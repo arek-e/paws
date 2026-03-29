@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router';
+import { NavLink, Outlet, useLocation } from 'react-router';
 
 import { VersionBadge } from './UpdateBanner.js';
 
@@ -27,8 +27,13 @@ function handleLogout() {
   window.location.reload();
 }
 
+/** Routes that need full-bleed canvas (no padding/max-width constraint) */
+const FULL_BLEED_ROUTES = ['/topology'];
+
 export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  const isFullBleed = FULL_BLEED_ROUTES.includes(location.pathname);
 
   return (
     <div className="flex flex-col md:flex-row h-screen">
@@ -67,6 +72,7 @@ export function Layout() {
       {/* Mobile dropdown menu */}
       {menuOpen && (
         <div className="md:hidden border-b border-zinc-800 bg-zinc-950 p-3 space-y-1">
+          <SidebarLink to="/topology" label="Topology" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/" label="Fleet" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/daemons" label="Daemons" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/templates" label="Templates" onClick={() => setMenuOpen(false)} />
@@ -95,6 +101,7 @@ export function Layout() {
           <p className="text-xs text-zinc-500">fleet dashboard</p>
         </div>
         <nav className="flex-1 p-3 space-y-1">
+          <SidebarLink to="/topology" label="Topology" />
           <SidebarLink to="/" label="Fleet" />
           <SidebarLink to="/daemons" label="Daemons" />
           <SidebarLink to="/templates" label="Templates" />
@@ -121,9 +128,15 @@ export function Layout() {
       </aside>
 
       <main className="flex-1 overflow-auto bg-zinc-950">
-        <div className="p-4 md:p-6 max-w-6xl">
-          <Outlet />
-        </div>
+        {isFullBleed ? (
+          <div className="h-full">
+            <Outlet />
+          </div>
+        ) : (
+          <div className="p-4 md:p-6 max-w-6xl">
+            <Outlet />
+          </div>
+        )}
       </main>
     </div>
   );

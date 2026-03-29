@@ -14,6 +14,7 @@ import { Sessions } from './pages/Sessions.js';
 import { Setup } from './pages/Setup.js';
 import { Snapshots } from './pages/Snapshots.js';
 import { Templates } from './pages/Templates.js';
+import { Topology } from './pages/Topology.js';
 import { Tunnels } from './pages/Tunnels.js';
 
 export function App() {
@@ -27,6 +28,7 @@ export function App() {
           {/* Main app with sidebar layout */}
           <Route element={<Layout />}>
             <Route index element={<FirstRunRedirect />} />
+            <Route path="topology" element={<Topology />} />
             <Route path="daemons" element={<Daemons />} />
             <Route path="templates" element={<Templates />} />
             <Route path="snapshots" element={<Snapshots />} />
