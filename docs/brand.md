@@ -232,9 +232,10 @@ NO ACTIVE KITTENS
 
 ### Tagline Options (ranked)
 
-1. **"Zero-trust credential injection for AI agents."** (current — keep it)
-2. **"Your agent doesn't need your API keys."** (current subheading — keep it)
-3. **"Secrets stay on the host. Agents stay in the box."** (new option, uses vocabulary)
+1. **"Protected Agent Workspace Sandboxes"** — the acronym, the identity
+2. **"Zero-trust credential injection for AI agents."** — the technical pitch
+3. **"Your agent doesn't need your API keys."** — the human pitch
+4. **"Secrets stay on the host. Agents stay in the box."** — uses cat vocabulary
 
 ### README Recommendations
 

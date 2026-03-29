@@ -4,6 +4,8 @@
 
 # paws
 
+**P**rotected **A**gent **W**orkspace **S**andboxes
+
 Zero-trust credential injection for AI agents.
 Secrets never enter the sandbox.
 

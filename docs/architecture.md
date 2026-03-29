@@ -8,7 +8,7 @@
 
 ## Overview
 
-paws is a zero-trust credential injection layer for AI agents. The core idea: your agent never sees
+paws (**P**rotected **A**gent **W**orkspace **S**andboxes) is a zero-trust credential injection layer for AI agents. The core idea: your agent never sees
 an API key. Credentials are held on the host and injected at the network layer by a per-VM TLS MITM
 proxy — the agent makes normal HTTPS requests and auth headers appear transparently.
 
