@@ -616,11 +616,11 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
     <section class="hero">
       <div class="container">
         <div class="hero-cat-scene">
-          <pre class="hero-cat mono">{` /\\_/\\
-( o.o )  ~  zero secrets
- > ^ <
-/|   |\\
-(_|   |_)`}</pre>
+          <pre class="hero-cat mono">{`  /\\_/\\
+ ( o.o )  ~  zero secrets
+  > ^ <
+ /|   |\\
+ (_|   |_)`}</pre>
           <div class="cat-blink"></div>
         </div>
         <h1>Your agent should have <span class="accent">nothing worth stealing</span></h1>
@@ -648,9 +648,9 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
       <div class="container">
         <p class="section-label">How it works</p>
         <h2 class="section-title">Credentials injected, never exposed</h2>
-        <pre class="mono section-cat-inline">{` /\\_/\\
-( -.- )  zzZ
- > ^ <`}</pre>
+        <pre class="mono section-cat-inline">{`  /\\_/\\
+ ( -.- )  zzZ
+  > ^ <`}</pre>
         <p class="section-desc">
           Agents run in ephemeral Firecracker microVMs with zero secrets on disk, in env, or in memory.
           A per-VM TLS proxy intercepts outbound HTTPS and injects credentials on-the-fly.
@@ -757,12 +757,12 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
       <div class="container">
         <p class="section-label">Architecture</p>
         <h2 class="section-title">Control plane + worker isolation</h2>
-        <pre class="mono section-cat-inline">{` /\\_/\\
-( o.o )  < in a box!
-|     |
-+-----+
-|     |
-+-----+`}</pre>
+        <pre class="mono section-cat-inline">{`  /\\_/\\
+ ( o.o )  < in a box!
+ |     |
+ +-----+
+ |     |
+ +-----+`}</pre>
         <p class="section-desc">
           The control plane holds all secrets and orchestrates sessions. Workers run VMs with nothing worth stealing.
         </p>
