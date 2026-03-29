@@ -1,0 +1,3 @@
+# oxfmt can't format Astro files yet (requires Prettier plugin support)
+# Ignore the entire site app since it's Astro-managed with its own formatting
+apps/site/

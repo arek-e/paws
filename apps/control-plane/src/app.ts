@@ -53,7 +53,7 @@ import { createMcpRoutes } from './routes/mcp.js';
 import { createServerRoutes } from './routes/servers.js';
 import { receiveWebhookRoute } from './routes/webhooks.js';
 import { listAuditRoute, auditStatsRoute } from './routes/audit.js';
-import { createAuditStore } from './store/audit.js';
+import { createAuditStore, type AuditStore } from './store/audit.js';
 import { createMcpServerStore } from './store/mcp.js';
 import { createDaemonStore, createSqliteDaemonStore, type DaemonStore } from './store/daemons.js';
 import { createTemplateStore } from './store/templates.js';
@@ -116,6 +116,8 @@ export interface ControlPlaneDeps {
   credentialStore?: CredentialStore | undefined;
   /** Worker registry for call-home discovery. */
   workerRegistry?: WorkerRegistry | undefined;
+  /** Audit store. Defaults to file-backed at DATA_DIR/audit.json, falls back to in-memory. */
+  auditStore?: AuditStore | undefined;
   /** Bun WebSocket upgrader — needed for worker WS and session streaming. */
   upgradeWebSocket?: import('hono/ws').UpgradeWebSocket | undefined;
   /** Pangolin tunnel status for fleet overview. */
@@ -171,9 +173,14 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   const { createSessionEvents } = await import('./events.js');
   const sessionEvents = createSessionEvents();
 
-  // Audit log
-  const dataDir = process.env['DATA_DIR'] ?? '/var/lib/paws/data';
-  const auditStore = createAuditStore(`${dataDir}/audit.json`);
+  // Audit log — injectable for tests, file-backed in production.
+  // Only use file-backed store when DATA_DIR is explicitly set; otherwise in-memory.
+  const auditStore =
+    deps.auditStore ??
+    (() => {
+      const dataDir = process.env['DATA_DIR'];
+      return dataDir ? createAuditStore(`${dataDir}/audit.json`) : createAuditStore();
+    })();
 
   // Metrics
   const metrics = createControlPlaneMetrics({
