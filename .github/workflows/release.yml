@@ -20,6 +20,7 @@ jobs:
       contents: read
       packages: write
     strategy:
+      fail-fast: false
       matrix:
         app: [control-plane, worker]
     timeout-minutes: 15
@@ -75,6 +76,7 @@ jobs:
   # Create release tarball and GitHub Release
   create-release:
     needs: [build-images]
+    if: always() && !cancelled()
     runs-on: ubuntu-latest
     permissions:
       contents: write
