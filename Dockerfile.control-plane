@@ -62,7 +62,8 @@ FROM oven/bun:1.3.9-alpine AS runner
 
 WORKDIR /app
 
-RUN addgroup -S paws && adduser -S -G paws paws
+RUN addgroup -S paws && adduser -S -G paws paws \
+    && mkdir -p /var/lib/paws/data && chown -R paws:paws /var/lib/paws
 
 # Copy root manifest.
 COPY --from=builder /build/package.json ./package.json

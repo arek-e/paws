@@ -4,6 +4,8 @@
  * Admin creates an account on first visit, then logs in with email + password.
  */
 
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 export interface AdminUser {
@@ -27,21 +29,24 @@ export function createPasswordAuth(dataDir: string) {
 
   // Load existing admin from disk
   try {
-    const data = require('fs').readFileSync(filePath, 'utf-8');
-    admin = JSON.parse(data) as AdminUser;
-  } catch {
-    // No admin yet
+    if (existsSync(filePath)) {
+      const data = readFileSync(filePath, 'utf-8');
+      admin = JSON.parse(data) as AdminUser;
+      console.log(`[auth] Loaded admin account: ${admin.email}`);
+    }
+  } catch (err) {
+    console.error('[auth] Failed to load admin.json:', err);
   }
 
   function save() {
     if (!admin) return;
     try {
-      const { mkdirSync, writeFileSync } = require('fs');
-      const { dirname } = require('path');
-      mkdirSync(dirname(filePath), { recursive: true });
+      const dir = dirname(filePath);
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
       writeFileSync(filePath, JSON.stringify(admin, null, 2));
-    } catch {
-      // Non-fatal
+      console.log(`[auth] Saved admin account to ${filePath}`);
+    } catch (err) {
+      console.error('[auth] Failed to save admin.json:', err);
     }
   }
 
@@ -55,14 +60,12 @@ export function createPasswordAuth(dataDir: string) {
   }
 
   return {
-    /** Is this a fresh install with no admin? */
     isFirstRun(): boolean {
       return admin === null;
     },
 
-    /** Create the admin account (first run only) */
     async createAdmin(email: string, password: string): Promise<string | null> {
-      if (admin) return null; // Already exists
+      if (admin) return null;
 
       admin = {
         email,
@@ -71,11 +74,9 @@ export function createPasswordAuth(dataDir: string) {
       };
       save();
 
-      // Auto-login after creation
       return this.createSession(email);
     },
 
-    /** Verify credentials and create a session */
     async login(email: string, password: string): Promise<string | null> {
       if (!admin) return null;
       if (admin.email !== email) return null;
@@ -86,7 +87,6 @@ export function createPasswordAuth(dataDir: string) {
       return this.createSession(email);
     },
 
-    /** Create a session token */
     createSession(email: string): string {
       const token = randomUUID();
       sessions.set(token, {
@@ -97,7 +97,6 @@ export function createPasswordAuth(dataDir: string) {
       return token;
     },
 
-    /** Validate a session token */
     validateSession(token: string): SessionToken | null {
       const session = sessions.get(token);
       if (!session) return null;
@@ -108,7 +107,6 @@ export function createPasswordAuth(dataDir: string) {
       return session;
     },
 
-    /** Get admin email */
     getAdminEmail(): string | null {
       return admin?.email ?? null;
     },
