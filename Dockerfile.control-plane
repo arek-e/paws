@@ -28,9 +28,10 @@ COPY apps/dashboard/package.json          ./apps/dashboard/package.json
 COPY providers/hetzner-cloud/package.json ./providers/hetzner-cloud/package.json
 COPY providers/hetzner-dedicated/package.json ./providers/hetzner-dedicated/package.json
 COPY providers/aws-ec2/package.json ./providers/aws-ec2/package.json
+COPY packages/integrations/package.json ./packages/integrations/package.json
 
-# Install all dependencies (--ignore-scripts: skip postinstall for native modules on Alpine).
-RUN bun install || true
+# Install all dependencies.
+RUN bun install
 
 # Copy workspace package sources that control-plane + dashboard depend on.
 COPY packages/types/          ./packages/types/
@@ -43,6 +44,7 @@ COPY packages/cli/            ./packages/cli/
 COPY packages/credentials/   ./packages/credentials/
 COPY packages/provisioner/   ./packages/provisioner/
 COPY packages/providers/      ./packages/providers/
+COPY packages/integrations/  ./packages/integrations/
 COPY providers/hetzner-cloud/     ./providers/hetzner-cloud/
 COPY providers/hetzner-dedicated/ ./providers/hetzner-dedicated/
 COPY providers/aws-ec2/           ./providers/aws-ec2/
@@ -82,6 +84,7 @@ COPY --from=builder /build/packages/providers/      ./packages/providers/
 COPY --from=builder /build/providers/hetzner-cloud/     ./providers/hetzner-cloud/
 COPY --from=builder /build/providers/hetzner-dedicated/ ./providers/hetzner-dedicated/
 COPY --from=builder /build/providers/aws-ec2/           ./providers/aws-ec2/
+COPY --from=builder /build/packages/integrations/      ./packages/integrations/
 
 # Copy control-plane source.
 COPY --from=builder /build/apps/control-plane/ ./apps/control-plane/
@@ -91,6 +94,8 @@ COPY --from=builder /build/apps/dashboard/dist/ ./apps/dashboard/dist/
 
 USER paws
 
+ARG PAWS_VERSION=0.0.0
+ENV PAWS_VERSION=${PAWS_VERSION}
 ENV PORT=4000
 ENV NODE_ENV=production
 
