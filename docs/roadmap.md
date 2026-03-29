@@ -101,8 +101,8 @@ least-loaded.
 | 29  | Prometheus metrics export                                            | ✅     |
 | 30  | Dashboard UI — fleet status, daemon activity, session history        | ✅     |
 | 31  | Multi-snapshot support — different base images per workload type     | ✅     |
-| 32  | Cost tracking — per-daemon resource usage                            | 🟡     |
-| 33  | Comprehensive test suite                                             | 🟡     |
+| 32  | Cost tracking — per-daemon resource usage                            | ✅     |
+| 33  | Comprehensive test suite                                             | ✅     |
 | 34  | Security audit                                                       | ✅     |
 | 35  | OIDC auth with Dex — enterprise SSO (Okta, Azure AD, LDAP)           | ✅     |
 | 36  | Worker call-home discovery — workers auto-register via WebSocket     | ✅     |
