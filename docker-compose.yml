@@ -11,12 +11,13 @@
 # Pangolin is only used for worker tunnel connectivity and port exposure.
 
 services:
-  # ── Caddy (Reverse Proxy + Auto-HTTPS) ──────────────────────────────────
-  # Handles TLS for the dashboard/API. Simple, zero-config HTTPS.
+  # ── Caddy (Reverse Proxy + Auto-HTTPS — enabled when domain is set) ──────
   caddy:
     image: caddy:2-alpine
     container_name: paws-caddy
     restart: unless-stopped
+    profiles:
+      - domain
     networks:
       - paws
     ports:
@@ -33,6 +34,8 @@ services:
         condition: service_healthy
 
   # ── Gateway (Paws API + Dashboard) ───────────────────────────────────────
+  # Directly accessible on port 3000 (HTTP). When a domain is configured,
+  # Caddy sits in front on 80/443 and proxies to the gateway.
   gateway:
     build:
       context: .
@@ -42,21 +45,21 @@ services:
     networks:
       - paws
     ports:
-      - '4000:4000'
+      - '3000:3000'
     volumes:
       - gateway-data:/var/lib/paws/data
     environment:
-      PORT: '4000'
+      PORT: '3000'
       API_KEY: '${API_KEY:-paws-dev-key}'
       WORKER_URL: '${WORKER_URL:-}'
       DASHBOARD_DIR: '/app/apps/dashboard/dist'
       PAWS_VERSION: '${PAWS_VERSION:-0.0.0}'
-      # OIDC
-      OIDC_ISSUER: 'https://${DOMAIN:-localhost}/dex'
-      OIDC_CLIENT_ID: 'paws-control-plane'
-      OIDC_CLIENT_SECRET: '${OIDC_CLIENT_SECRET:-paws-dex-secret-changeme}'
-      OIDC_REDIRECT_URI: 'https://${DOMAIN:-localhost}/auth/callback'
-      OIDC_AUTH_EXTERNAL_URL: 'https://${DOMAIN:-localhost}'
+      # OIDC (configured when domain is set; on bare IP, use API key auth only)
+      OIDC_ISSUER: '${OIDC_ISSUER:-}'
+      OIDC_CLIENT_ID: '${OIDC_CLIENT_ID:-paws-control-plane}'
+      OIDC_CLIENT_SECRET: '${OIDC_CLIENT_SECRET:-}'
+      OIDC_REDIRECT_URI: '${OIDC_REDIRECT_URI:-}'
+      OIDC_AUTH_EXTERNAL_URL: '${OIDC_AUTH_EXTERNAL_URL:-}'
       AUTH_SECRET: '${AUTH_SECRET:-change-me-to-a-random-32-char-string}'
       PANGOLIN_OIDC_SECRET: '${PANGOLIN_OIDC_SECRET:-}'
       # Pangolin discovery (for workers)
@@ -68,7 +71,7 @@ services:
       # Metrics
       VICTORIAMETRICS_URL: 'http://victoriametrics:8428'
     healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://localhost:4000/health']
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/health']
       interval: 15s
       timeout: 5s
       retries: 3

@@ -14,6 +14,6 @@
 	}
 
 	handle {
-		reverse_proxy gateway:4000
+		reverse_proxy gateway:3000
 	}
 }
