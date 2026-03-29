@@ -73,7 +73,7 @@ least-loaded.
 | 17  | Snapshot builder — build script from YAML config (K8s Job deferred)    | ✅     |
 | 18  | Object storage integration (Cloudflare R2) — upload/download snapshots | ✅     |
 | 19  | Worker sync loop — check manifest version, pull if stale, atomic swap  | ✅     |
-| 20  | `POST /v1/snapshots/:id/build` triggers distributed rebuild            | ⬜     |
+| 20  | `POST /v1/snapshots/:id/build` triggers distributed rebuild            | ✅     |
 
 ---
 
@@ -83,11 +83,11 @@ least-loaded.
 
 | #   | What                                                                       | Status |
 | --- | -------------------------------------------------------------------------- | ------ |
-| 21  | OpenAPI spec export from gateway (`@hono/zod-openapi`)                     | ⬜     |
-| 22  | SDK generation pipeline (openapi-generator)                                | ⬜     |
-| 23  | `@paws/sdk` — TypeScript client (hand-tuned wrapper around generated code) | ⬜     |
-| 24  | Python SDK                                                                 | ⬜     |
-| 25  | CLI tool (`paws sessions create`, `paws daemons list`, etc.)               | ⬜     |
+| 21  | OpenAPI spec export from gateway (`@hono/zod-openapi`)                     | ✅     |
+| 22  | SDK generation pipeline (openapi-generator)                                | ✅     |
+| 23  | `@paws/sdk` — TypeScript client (hand-tuned wrapper around generated code) | ✅     |
+| 24  | Python SDK                                                                 | ✅     |
+| 25  | CLI tool (`paws sessions create`, `paws daemons list`, etc.)               | ✅     |
 
 ---
 
@@ -101,8 +101,8 @@ least-loaded.
 | 29  | Prometheus metrics export                                            | ✅     |
 | 30  | Dashboard UI — fleet status, daemon activity, session history        | ✅     |
 | 31  | Multi-snapshot support — different base images per workload type     | ✅     |
-| 32  | Cost tracking — per-daemon resource usage                            | ⬜     |
-| 33  | Comprehensive test suite                                             | ⬜     |
+| 32  | Cost tracking — per-daemon resource usage                            | 🟡     |
+| 33  | Comprehensive test suite                                             | 🟡     |
 | 34  | Security audit                                                       | ✅     |
 | 35  | OIDC auth with Dex — enterprise SSO (Okta, Azure AD, LDAP)           | ✅     |
 | 36  | Worker call-home discovery — workers auto-register via WebSocket     | ✅     |
