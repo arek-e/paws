@@ -1,4 +1,12 @@
 ---
+import '@/styles/global.css';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import WaitlistForm from '@/components/WaitlistForm';
+import CodeTabs from '@/components/CodeTabs';
+import CopyButton from '@/components/CopyButton';
+
 const title = 'paws — Protected Agent Workflow System';
 const description = 'Zero-trust credential injection for AI agents. Secrets never enter the sandbox — they are injected at the network layer by a per-VM TLS MITM proxy.';
 ---
@@ -20,877 +28,32 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://getpaws.dev/og.png" />
     <style>
-      /* Reset */
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-      :root {
-        --emerald-400: #34d399;
-        --emerald-500: #10b981;
-        --emerald-600: #059669;
-        --emerald-900: #064e3b;
-        --zinc-50: #fafafa;
-        --zinc-100: #f4f4f5;
-        --zinc-200: #e4e4e7;
-        --zinc-300: #d4d4d8;
-        --zinc-400: #a1a1aa;
-        --zinc-500: #71717a;
-        --zinc-600: #52525b;
-        --zinc-700: #3f3f46;
-        --zinc-800: #27272a;
-        --zinc-900: #18181b;
-        --zinc-950: #09090b;
-      }
-
-      html {
-        scroll-behavior: smooth;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        background: var(--zinc-950);
-        color: var(--zinc-300);
-        line-height: 1.6;
-        overflow-x: hidden;
-      }
-
-      a { color: var(--emerald-400); text-decoration: none; }
-      a:hover { color: var(--emerald-500); }
-
-      /* Utilities */
-      .container {
-        max-width: 1120px;
-        margin: 0 auto;
-        padding: 0 1.5rem;
-      }
-
-      .mono {
-        font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-      }
-
-      /* Nav */
-      nav {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 100;
-        background: rgba(9, 9, 11, 0.8);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-bottom: 1px solid var(--zinc-800);
-      }
-
-      .nav-inner {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        height: 64px;
-      }
-
-      .nav-logo {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-weight: 600;
-        color: var(--zinc-50);
-        font-size: 1.125rem;
-      }
-
-      .nav-logo img { width: 28px; height: 28px; }
-
-      .nav-links {
-        display: flex;
-        align-items: center;
-        gap: 2rem;
-        list-style: none;
-      }
-
-      .nav-links a {
-        color: var(--zinc-400);
-        font-size: 0.875rem;
-        transition: color 0.15s;
-      }
-
-      .nav-links a:hover { color: var(--zinc-50); }
-
-      .nav-links .gh-link {
-        display: flex;
-        align-items: center;
-        gap: 0.375rem;
-      }
-
-      .nav-links .gh-link svg { width: 18px; height: 18px; }
-
-      /* Hero */
-      .hero {
-        padding: 10rem 0 6rem;
-        text-align: center;
-        position: relative;
-      }
-
-      .hero::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 800px;
-        height: 600px;
-        background: radial-gradient(ellipse, rgba(52, 211, 153, 0.06) 0%, transparent 70%);
-        pointer-events: none;
-      }
-
-      .hero-cat-scene {
-        position: relative;
-        display: inline-block;
-      }
-
-      .hero-cat {
-        color: var(--emerald-400);
-        font-size: 1rem;
-        line-height: 1.4;
-        animation: cat-float 3s ease-in-out infinite;
-        margin-bottom: 2rem;
-        opacity: 0.7;
-      }
-
-      .hero h1 {
-        font-size: clamp(2rem, 5vw, 3.5rem);
-        font-weight: 700;
-        color: var(--zinc-50);
-        letter-spacing: -0.03em;
-        line-height: 1.15;
-        max-width: 720px;
-        margin: 0 auto 1.5rem;
-      }
-
-      .hero h1 .accent { color: var(--emerald-400); }
-
-      .hero-sub {
-        font-size: 1.125rem;
-        color: var(--zinc-400);
-        max-width: 560px;
-        margin: 0 auto 3rem;
-        line-height: 1.7;
-      }
-
-      .hero-actions {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1.5rem;
-      }
-
-      /* Waitlist form */
-      .waitlist-form {
-        display: flex;
-        gap: 0.5rem;
-        width: 100%;
-        max-width: 440px;
-      }
-
-      .waitlist-form input {
-        flex: 1;
-        padding: 0.75rem 1rem;
-        background: var(--zinc-900);
-        border: 1px solid var(--zinc-700);
-        border-radius: 8px;
-        color: var(--zinc-100);
-        font-size: 0.9375rem;
-        outline: none;
-        transition: border-color 0.15s;
-        font-family: inherit;
-      }
-
-      .waitlist-form input::placeholder { color: var(--zinc-600); }
-      .waitlist-form input:focus { border-color: var(--emerald-400); }
-
-      .btn-primary {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        background: var(--emerald-600);
-        color: white;
-        font-weight: 600;
-        font-size: 0.9375rem;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background 0.15s;
-        white-space: nowrap;
-        font-family: inherit;
-      }
-
-      .btn-primary:hover { background: var(--emerald-500); }
-
-      .btn-primary:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-
-      .waitlist-success {
-        color: var(--emerald-400);
-        font-size: 0.875rem;
-        display: none;
-      }
-
-      .waitlist-error {
-        color: #ef4444;
-        font-size: 0.875rem;
-        display: none;
-      }
-
-      /* Install command */
-      .install-cmd {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        background: var(--zinc-900);
-        border: 1px solid var(--zinc-800);
-        border-radius: 8px;
-        padding: 0.625rem 0.75rem 0.625rem 1rem;
-        max-width: 520px;
-        width: 100%;
-      }
-
-      .install-cmd code {
-        flex: 1;
-        font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-        font-size: 0.8125rem;
-        color: var(--zinc-300);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .install-cmd .prefix { color: var(--emerald-400); }
-
-      .copy-btn {
-        background: none;
-        border: 1px solid var(--zinc-700);
-        border-radius: 6px;
-        padding: 0.375rem 0.625rem;
-        color: var(--zinc-400);
-        cursor: pointer;
-        font-size: 0.75rem;
-        font-family: inherit;
-        transition: all 0.15s;
-        white-space: nowrap;
-      }
-
-      .copy-btn:hover {
-        border-color: var(--zinc-500);
-        color: var(--zinc-200);
-      }
-
-      /* Section shared */
-      section {
-        padding: 6rem 0;
-      }
-
-      .section-label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--emerald-400);
-        margin-bottom: 1rem;
-      }
-
-      .section-title {
-        font-size: clamp(1.5rem, 3vw, 2.25rem);
-        font-weight: 700;
-        color: var(--zinc-50);
-        letter-spacing: -0.02em;
-        margin-bottom: 1rem;
-      }
-
-      .section-desc {
-        color: var(--zinc-400);
-        font-size: 1.0625rem;
-        max-width: 560px;
-        margin-bottom: 3rem;
-      }
-
-      /* How it works */
-      .how-it-works {
-        border-top: 1px solid var(--zinc-800);
-      }
-
-      .steps {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 2rem;
-        margin-bottom: 3rem;
-      }
-
-      .step {
-        position: relative;
-        padding: 1.5rem;
-        background: var(--zinc-900);
-        border: 1px solid var(--zinc-800);
-        border-radius: 12px;
-        transition: border-color 0.2s;
-      }
-
-      .step:hover { border-color: var(--zinc-700); }
-
-      .step-number {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: var(--emerald-900);
-        color: var(--emerald-400);
-        font-size: 0.8125rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
-      }
-
-      .step h3 {
-        color: var(--zinc-50);
-        font-size: 1rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-      }
-
-      .step p {
-        font-size: 0.875rem;
-        color: var(--zinc-400);
-        line-height: 1.6;
-      }
-
-      /* Request flow diagram */
-      .flow-diagram {
-        background: var(--zinc-900);
-        border: 1px solid var(--zinc-800);
-        border-radius: 12px;
-        padding: 2rem;
-        overflow-x: auto;
-      }
-
-      .flow-diagram pre {
-        font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-        font-size: 0.8125rem;
-        line-height: 1.7;
-        color: var(--zinc-300);
-        margin: 0;
-      }
-
-      .flow-diagram .hl { color: var(--emerald-400); }
-      .flow-diagram .dim { color: var(--zinc-600); }
-      .flow-diagram .warn { color: #fbbf24; }
-
-      /* Features */
-      .features {
-        border-top: 1px solid var(--zinc-800);
-      }
-
-      .feature-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-      }
-
-      .feature-card {
-        padding: 1.5rem;
-        background: var(--zinc-900);
-        border: 1px solid var(--zinc-800);
-        border-radius: 12px;
-        transition: border-color 0.2s;
-      }
-
-      .feature-card:hover { border-color: var(--zinc-700); }
-
-      .feature-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        background: var(--emerald-900);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 1rem;
-        color: var(--emerald-400);
-      }
-
-      .feature-icon svg { width: 20px; height: 20px; }
-
-      .feature-card h3 {
-        color: var(--zinc-50);
-        font-size: 0.9375rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-      }
-
-      .feature-card p {
-        font-size: 0.8125rem;
-        color: var(--zinc-500);
-        line-height: 1.6;
-      }
-
-      /* Architecture */
-      .architecture {
-        border-top: 1px solid var(--zinc-800);
-      }
-
-      .arch-diagram {
-        background: var(--zinc-900);
-        border: 1px solid var(--zinc-800);
-        border-radius: 12px;
-        padding: 2.5rem;
-        overflow-x: auto;
-      }
-
-      .arch-diagram pre {
-        font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-        font-size: 0.8125rem;
-        line-height: 1.6;
-        color: var(--zinc-300);
-        margin: 0;
-      }
-
-      .arch-diagram .hl { color: var(--emerald-400); }
-      .arch-diagram .dim { color: var(--zinc-600); }
-
-      /* CTA */
-      .cta {
-        border-top: 1px solid var(--zinc-800);
-        text-align: center;
-      }
-
-      .cta-inner {
-        max-width: 560px;
-        margin: 0 auto;
-      }
-
-      .cta-actions {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 1rem;
-        margin-top: 2rem;
-        flex-wrap: wrap;
-      }
-
-      .btn-secondary {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        background: transparent;
-        color: var(--zinc-300);
-        font-weight: 500;
-        font-size: 0.9375rem;
-        border: 1px solid var(--zinc-700);
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.15s;
-        text-decoration: none;
-        font-family: inherit;
-      }
-
-      .btn-secondary:hover {
-        border-color: var(--zinc-500);
-        color: var(--zinc-50);
-      }
-
-      .btn-secondary svg { width: 18px; height: 18px; }
-
-      /* Footer */
-      footer {
-        border-top: 1px solid var(--zinc-800);
-        padding: 2rem 0;
-      }
-
-      .footer-inner {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-size: 0.8125rem;
-        color: var(--zinc-600);
-      }
-
-      .footer-links {
-        display: flex;
-        gap: 1.5rem;
-        list-style: none;
-      }
-
-      .footer-brand {
-        display: flex;
-        align-items: center;
-        gap: 0.375rem;
-        font-weight: 500;
-      }
-
-      .footer-links a { color: var(--zinc-500); }
-      .footer-links a:hover { color: var(--zinc-300); }
-
-      /* Code Examples (tabs) */
-      .code-examples {
-        border-top: 1px solid var(--zinc-800);
-      }
-
-      .tab-switcher {
-        display: flex;
-        gap: 0;
-        border-bottom: 2px solid var(--zinc-800);
-        margin-bottom: 1.5rem;
-      }
-
-      .tab-btn {
-        padding: 0.75rem 1.5rem;
-        background: none;
-        border: none;
-        border-bottom: 2px solid transparent;
-        margin-bottom: -2px;
-        color: var(--zinc-500);
-        font-size: 0.875rem;
-        font-weight: 500;
-        cursor: pointer;
-        font-family: inherit;
-        transition: color 0.15s, border-color 0.15s;
-      }
-
-      .tab-btn:hover { color: var(--zinc-300); }
-
-      .tab-btn.active {
-        color: var(--emerald-400);
-        border-bottom-color: var(--emerald-400);
-      }
-
-      .tab-panel {
-        display: none;
-      }
-
-      .tab-panel.active {
-        display: block;
-      }
-
-      .code-block {
-        background: var(--zinc-900);
-        border: 1px solid var(--zinc-800);
-        border-radius: 12px;
-        padding: 1.5rem;
-        overflow-x: auto;
-      }
-
-      .code-block pre {
-        font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-        font-size: 0.8125rem;
-        line-height: 1.7;
-        color: var(--zinc-300);
-        margin: 0;
-      }
-
-      .code-block .kw { color: #60a5fa; }
-      .code-block .str { color: var(--emerald-400); }
-      .code-block .cm { color: var(--zinc-600); }
-      .code-block .fn { color: #c084fc; }
-      .code-block .pr { color: #fbbf24; }
-      .code-block .op { color: var(--zinc-500); }
-
-      /* Performance Metrics */
-      .metrics-banner {
-        border-top: 1px solid var(--zinc-800);
-        padding: 4rem 0;
-      }
-
-      .metrics-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 2rem;
-        text-align: center;
-      }
-
-      .metric-item {
-        padding: 1.5rem 1rem;
-      }
-
-      .metric-value {
-        font-size: clamp(1.75rem, 3vw, 2.5rem);
-        font-weight: 700;
-        color: var(--emerald-400);
-        letter-spacing: -0.02em;
-        line-height: 1.2;
-        margin-bottom: 0.5rem;
-      }
-
-      .metric-label {
-        font-size: 0.8125rem;
-        color: var(--zinc-500);
-        line-height: 1.4;
-      }
-
-      /* Use Cases */
-      .use-cases {
-        border-top: 1px solid var(--zinc-800);
-      }
-
-      .use-case-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1.5rem;
-      }
-
-      .use-case-card {
-        padding: 1.5rem;
-        background: var(--zinc-900);
-        border: 1px solid var(--zinc-800);
-        border-radius: 12px;
-        transition: border-color 0.2s;
-      }
-
-      .use-case-card:hover { border-color: var(--zinc-700); }
-
-      .use-case-header {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 0.75rem;
-      }
-
-      .use-case-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        background: var(--emerald-900);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--emerald-400);
-        flex-shrink: 0;
-      }
-
-      .use-case-icon svg { width: 20px; height: 20px; }
-
-      .use-case-card h3 {
-        color: var(--zinc-50);
-        font-size: 0.9375rem;
-        font-weight: 600;
-      }
-
-      .trigger-badge {
-        display: inline-block;
-        padding: 0.125rem 0.5rem;
-        background: rgba(52, 211, 153, 0.1);
-        border: 1px solid rgba(52, 211, 153, 0.2);
-        border-radius: 9999px;
-        font-size: 0.6875rem;
-        font-weight: 500;
-        color: var(--emerald-400);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        margin-bottom: 0.75rem;
-      }
-
-      .use-case-card p {
-        font-size: 0.8125rem;
-        color: var(--zinc-500);
-        line-height: 1.6;
-      }
-
-      /* Security Deep-Dive */
-      .security-deep-dive {
-        border-top: 1px solid var(--zinc-800);
-      }
-
-      .security-flow {
-        display: flex;
-        align-items: stretch;
-        gap: 0;
-        justify-content: center;
-        flex-wrap: wrap;
-        margin-bottom: 2rem;
-      }
-
-      .sec-box {
-        padding: 1.5rem;
-        border-radius: 12px;
-        border: 1px solid var(--zinc-800);
-        background: var(--zinc-900);
-        min-width: 200px;
-        flex: 1;
-        max-width: 280px;
-      }
-
-      .sec-box h4 {
-        font-size: 0.875rem;
-        font-weight: 600;
-        margin-bottom: 0.75rem;
-      }
-
-      .sec-box ul {
-        list-style: none;
-        padding: 0;
-      }
-
-      .sec-box ul li {
-        font-size: 0.8125rem;
-        color: var(--zinc-400);
-        padding: 0.25rem 0;
-        padding-left: 1.25rem;
-        position: relative;
-      }
-
-      .sec-box ul li::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0.625rem;
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-      }
-
-      .sec-box-vm { border-color: var(--emerald-400); }
-      .sec-box-vm h4 { color: var(--emerald-400); }
-      .sec-box-vm ul li::before { background: var(--emerald-400); }
-
-      .sec-box-proxy { border-color: #60a5fa; }
-      .sec-box-proxy h4 { color: #60a5fa; }
-      .sec-box-proxy ul li::before { background: #60a5fa; }
-
-      .sec-box-api { border-color: #c084fc; }
-      .sec-box-api h4 { color: #c084fc; }
-      .sec-box-api ul li::before { background: #c084fc; }
-
-      .sec-arrow {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 0.75rem;
-        color: var(--zinc-600);
-        font-size: 1.5rem;
-        flex-shrink: 0;
-      }
-
-      .sec-blocked {
-        background: var(--zinc-900);
-        border: 1px solid var(--zinc-800);
-        border-radius: 12px;
-        padding: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-      }
-
-      .sec-blocked-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 8px;
-        background: rgba(239, 68, 68, 0.1);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #ef4444;
-        flex-shrink: 0;
-      }
-
-      .sec-blocked-icon svg { width: 20px; height: 20px; }
-
-      .sec-blocked-text h4 {
-        color: #ef4444;
-        font-size: 0.875rem;
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-      }
-
-      .sec-blocked-text p {
-        font-size: 0.8125rem;
-        color: var(--zinc-500);
-      }
-
-      /* Responsive */
-      /* Cat animations */
       @keyframes cat-float {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-6px); }
       }
-
       @keyframes cat-blink {
         0%, 90%, 100% { opacity: 1; }
         95% { opacity: 0; }
       }
-
-      @keyframes cat-tail {
-        0%, 100% { transform: rotate(0deg); }
-        25% { transform: rotate(8deg); }
-        75% { transform: rotate(-8deg); }
-      }
-
-      .cat-blink {
-        position: absolute;
-        top: 1.4em;
-        left: 2.6em;
-        width: 0.6em;
-        height: 0.2em;
-        animation: cat-blink 4s ease-in-out infinite;
-      }
-
-      /* Section cat decorations */
-      .section-cat-inline {
-        color: var(--zinc-600);
-        font-size: 0.75rem;
-        line-height: 1.3;
-        text-align: center;
-        margin: 0.5rem auto 1.5rem;
-        animation: cat-float 4s ease-in-out infinite;
-        animation-delay: 1s;
-      }
-
-      @media (max-width: 768px) {
-        .hero { padding: 7rem 0 4rem; }
-
-        .steps { grid-template-columns: 1fr; }
-
-        .feature-grid { grid-template-columns: 1fr; }
-
-        .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-
-        .use-case-grid { grid-template-columns: 1fr; }
-
-        .security-flow { flex-direction: column; align-items: center; }
-        .sec-arrow { transform: rotate(90deg); padding: 0.5rem 0; }
-
-        .nav-links { gap: 1rem; }
-
-        .waitlist-form { flex-direction: column; }
-
-        .footer-inner {
-          flex-direction: column;
-          gap: 1rem;
-          text-align: center;
-        }
-      }
-
-      @media (max-width: 480px) {
-        .nav-links .hide-mobile { display: none; }
-      }
     </style>
   </head>
 
-  <body>
+  <body class="font-sans bg-zinc-950 text-zinc-300 leading-relaxed overflow-x-hidden antialiased scroll-smooth">
     <!-- Nav -->
-    <nav>
-      <div class="container nav-inner">
-        <a href="/" class="nav-logo">
+    <nav class="fixed top-0 left-0 right-0 z-[100] bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800">
+      <div class="max-w-[1120px] mx-auto px-6 flex items-center justify-between h-16">
+        <a href="/" class="flex items-center gap-2 font-semibold text-zinc-50 text-lg no-underline">
           <img src="/favicon.svg" alt="" width="28" height="28" />
           paws
         </a>
-        <ul class="nav-links">
-          <li><a href="#how-it-works" class="hide-mobile">How it works</a></li>
-          <li><a href="#features" class="hide-mobile">Features</a></li>
-          <li><a href="/getting-started/install/">Docs</a></li>
+        <ul class="flex items-center gap-4 md:gap-8 list-none">
+          <li><a href="#how-it-works" class="hidden sm:inline text-zinc-400 text-sm transition-colors hover:text-zinc-50 no-underline">How it works</a></li>
+          <li><a href="#features" class="hidden sm:inline text-zinc-400 text-sm transition-colors hover:text-zinc-50 no-underline">Features</a></li>
+          <li><a href="/getting-started/install/" class="text-zinc-400 text-sm transition-colors hover:text-zinc-50 no-underline">Docs</a></li>
           <li>
-            <a href="https://github.com/arek-e/paws" class="gh-link" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            <a href="https://github.com/arek-e/paws" class="flex items-center gap-1.5 text-zinc-400 text-sm transition-colors hover:text-zinc-50 no-underline" target="_blank" rel="noopener">
+              <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
               <span>GitHub</span>
             </a>
           </li>
@@ -899,395 +62,389 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
     </nav>
 
     <!-- Hero -->
-    <section class="hero">
-      <div class="container">
-        <div class="hero-cat-scene">
-          <pre class="hero-cat mono">{`  /\\_/\\
+    <section class="pt-40 pb-24 text-center relative">
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[radial-gradient(ellipse,rgba(52,211,153,0.06)_0%,transparent_70%)] pointer-events-none"></div>
+      <div class="max-w-[1120px] mx-auto px-6 relative">
+        <div class="relative inline-block">
+          <pre class="text-emerald-400 font-mono text-base leading-[1.4] mb-8 opacity-70" style="animation: cat-float 3s ease-in-out infinite;">{`  /\\_/\\
  ( o.o )  ~  zero secrets
   > ^ <
  /|   |\\
  (_|   |_)`}</pre>
-          <div class="cat-blink"></div>
+          <div class="absolute" style="top: 1.4em; left: 2.6em; width: 0.6em; height: 0.2em; animation: cat-blink 4s ease-in-out infinite;"></div>
         </div>
-        <h1>Your agent should have <span class="accent">nothing worth stealing</span></h1>
-        <p class="hero-sub">
+        <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-zinc-50 tracking-tight leading-[1.15] max-w-[720px] mx-auto mb-6">
+          Your agent should have <span class="text-emerald-400">nothing worth stealing</span>
+        </h1>
+        <p class="text-lg text-zinc-400 max-w-[560px] mx-auto mb-12 leading-relaxed">
           Zero-trust credential injection for AI agents. Secrets never enter the sandbox —
           they're injected at the network layer by a per-VM TLS proxy.
         </p>
-        <div class="hero-actions">
-          <form class="waitlist-form" id="waitlist-form">
-            <input type="email" name="email" placeholder="you@company.com" required autocomplete="email" />
-            <button type="submit" class="btn-primary">Join waitlist</button>
-          </form>
-          <p class="waitlist-success" id="waitlist-success">You're on the list. We'll be in touch.</p>
-          <p class="waitlist-error" id="waitlist-error"></p>
-          <div class="install-cmd">
-            <code><span class="prefix">$</span> curl -fsSL https://getpaws.dev/install.sh | bash</code>
-            <button class="copy-btn" id="copy-btn" type="button">Copy</button>
+        <div class="flex flex-col items-center gap-6">
+          <WaitlistForm client:load />
+          <div class="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-lg px-4 pr-3 py-2.5 max-w-[520px] w-full">
+            <code class="flex-1 font-mono text-[0.8125rem] text-zinc-300 whitespace-nowrap overflow-hidden text-ellipsis">
+              <span class="text-emerald-400">$</span> curl -fsSL https://getpaws.dev/install.sh | bash
+            </code>
+            <CopyButton client:load text="curl -fsSL https://getpaws.dev/install.sh | bash" />
           </div>
         </div>
       </div>
     </section>
 
     <!-- How it works -->
-    <section class="how-it-works" id="how-it-works">
-      <div class="container">
-        <p class="section-label">How it works</p>
-        <h2 class="section-title">Credentials injected, never exposed</h2>
-        <pre class="mono section-cat-inline">{`  /\\_/\\
+    <Separator className="bg-zinc-800" />
+    <section class="py-24" id="how-it-works">
+      <div class="max-w-[1120px] mx-auto px-6">
+        <p class="text-xs font-semibold tracking-widest uppercase text-emerald-400 mb-4">How it works</p>
+        <h2 class="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-zinc-50 tracking-tight mb-4">Credentials injected, never exposed</h2>
+        <pre class="font-mono text-zinc-600 text-xs leading-[1.3] text-center mx-auto mb-6" style="animation: cat-float 4s ease-in-out infinite 1s;">{`  /\\_/\\
  ( -.- )  zzZ
   > ^ <`}</pre>
-        <p class="section-desc">
+        <p class="text-zinc-400 text-[1.0625rem] max-w-[560px] mb-12">
           Agents run in ephemeral Firecracker microVMs with zero secrets on disk, in env, or in memory.
           A per-VM TLS proxy intercepts outbound HTTPS and injects credentials on-the-fly.
         </p>
 
-        <div class="steps">
-          <div class="step">
-            <div class="step-number">1</div>
-            <h3>Agent runs in VM</h3>
-            <p>Each session gets a fresh Firecracker microVM restored from a memory snapshot in under a second. No API keys, no tokens, no secrets inside.</p>
-          </div>
-          <div class="step">
-            <div class="step-number">2</div>
-            <h3>TLS proxy intercepts</h3>
-            <p>Outbound HTTPS is transparently routed to a per-VM proxy via iptables DNAT. The proxy terminates TLS and reads the target domain from SNI.</p>
-          </div>
-          <div class="step">
-            <div class="step-number">3</div>
-            <h3>Credentials injected</h3>
-            <p>If the domain is allowlisted, the proxy injects the configured API keys as HTTP headers and forwards to the real service. The agent never sees them.</p>
-          </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-900 text-emerald-400 text-[0.8125rem] font-bold mb-4">1</div>
+              <h3 class="text-zinc-50 text-base font-semibold mb-2">Agent runs in VM</h3>
+              <p class="text-sm text-zinc-400 leading-relaxed">Each session gets a fresh Firecracker microVM restored from a memory snapshot in under a second. No API keys, no tokens, no secrets inside.</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-900 text-emerald-400 text-[0.8125rem] font-bold mb-4">2</div>
+              <h3 class="text-zinc-50 text-base font-semibold mb-2">TLS proxy intercepts</h3>
+              <p class="text-sm text-zinc-400 leading-relaxed">Outbound HTTPS is transparently routed to a per-VM proxy via iptables DNAT. The proxy terminates TLS and reads the target domain from SNI.</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-900 text-emerald-400 text-[0.8125rem] font-bold mb-4">3</div>
+              <h3 class="text-zinc-50 text-base font-semibold mb-2">Credentials injected</h3>
+              <p class="text-sm text-zinc-400 leading-relaxed">If the domain is allowlisted, the proxy injects the configured API keys as HTTP headers and forwards to the real service. The agent never sees them.</p>
+            </CardContent>
+          </Card>
         </div>
 
-        <div class="flow-diagram">
-          <pre><span class="hl">Agent in VM</span>: curl https://api.anthropic.com/v1/messages
-  <span class="dim">|</span>
-  <span class="dim">|--</span> VM resolves api.anthropic.com <span class="dim">(real IP)</span>
-  <span class="dim">|--</span> iptables DNAT rewrites destination <span class="dim">--></span> <span class="hl">per-VM proxy</span>
-  <span class="dim">|--</span> Proxy terminates TLS, reads SNI
-  <span class="dim">|</span>
-  <span class="dim">|--</span> Domain in allowlist?
-  <span class="dim">|   |--</span> <span class="hl">YES</span>: inject <span class="hl">x-api-key</span> header, forward to real API
-  <span class="dim">|   |--</span> <span class="warn">NO</span>:  drop connection <span class="dim">(TCP RST)</span>
-  <span class="dim">|</span>
-  <span class="dim">|--</span> Agent sees normal HTTPS response
-       <span class="hl">Never saw the API key.</span> Not in env, not in memory, not on disk.</pre>
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 overflow-x-auto">
+          <pre class="font-mono text-[0.8125rem] leading-[1.7] text-zinc-300 m-0"><span class="text-emerald-400">Agent in VM</span>: curl https://api.anthropic.com/v1/messages
+  <span class="text-zinc-600">|</span>
+  <span class="text-zinc-600">|--</span> VM resolves api.anthropic.com <span class="text-zinc-600">(real IP)</span>
+  <span class="text-zinc-600">|--</span> iptables DNAT rewrites destination <span class="text-zinc-600">--></span> <span class="text-emerald-400">per-VM proxy</span>
+  <span class="text-zinc-600">|--</span> Proxy terminates TLS, reads SNI
+  <span class="text-zinc-600">|</span>
+  <span class="text-zinc-600">|--</span> Domain in allowlist?
+  <span class="text-zinc-600">|   |--</span> <span class="text-emerald-400">YES</span>: inject <span class="text-emerald-400">x-api-key</span> header, forward to real API
+  <span class="text-zinc-600">|   |--</span> <span class="text-amber-400">NO</span>:  drop connection <span class="text-zinc-600">(TCP RST)</span>
+  <span class="text-zinc-600">|</span>
+  <span class="text-zinc-600">|--</span> Agent sees normal HTTPS response
+       <span class="text-emerald-400">Never saw the API key.</span> Not in env, not in memory, not on disk.</pre>
         </div>
       </div>
     </section>
 
     <!-- Code Examples -->
-    <section class="code-examples" id="code-examples">
-      <div class="container">
-        <p class="section-label">Get started in minutes</p>
-        <h2 class="section-title">Three lines to your first session</h2>
-        <p class="section-desc">
+    <Separator className="bg-zinc-800" />
+    <section class="py-24" id="code-examples">
+      <div class="max-w-[1120px] mx-auto px-6">
+        <p class="text-xs font-semibold tracking-widest uppercase text-emerald-400 mb-4">Get started in minutes</p>
+        <h2 class="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-zinc-50 tracking-tight mb-4">Three lines to your first session</h2>
+        <p class="text-zinc-400 text-[1.0625rem] max-w-[560px] mb-12">
           Use our SDK from TypeScript, Python, or the CLI. Create a session, submit a workload, get results.
         </p>
 
-        <div class="tab-switcher" id="code-tabs">
-          <button class="tab-btn active" data-tab="ts">TypeScript</button>
-          <button class="tab-btn" data-tab="py">Python</button>
-          <button class="tab-btn" data-tab="cli">CLI</button>
-        </div>
-
-        <div class="tab-panel active" id="tab-ts">
-          <div class="code-block">
-            <pre><span class="kw">import</span> {'{'} <span class="fn">createClient</span> {'}'} <span class="kw">from</span> <span class="str">'@paws/sdk'</span>;
-
-<span class="kw">const</span> paws <span class="op">=</span> <span class="fn">createClient</span>({'{'} <span class="pr">baseUrl</span>: <span class="str">'https://your-server:4000'</span>, <span class="pr">apiKey</span>: <span class="str">'paws-...'</span> {'}'});
-<span class="kw">const</span> session <span class="op">=</span> <span class="kw">await</span> paws.sessions.<span class="fn">create</span>({'{'}
-  <span class="pr">snapshot</span>: <span class="str">'claude-code'</span>,
-  <span class="pr">workload</span>: {'{'} <span class="pr">type</span>: <span class="str">'script'</span>, <span class="pr">script</span>: <span class="str">'Review this PR and post comments'</span>, <span class="pr">env</span>: {'{'}{'}'}  {'}'},
-{'}'});
-console.<span class="fn">log</span>(session.value.sessionId); <span class="cm">// → "a1b2c3..."</span></pre>
-          </div>
-        </div>
-
-        <div class="tab-panel" id="tab-py">
-          <div class="code-block">
-            <pre><span class="kw">from</span> paws <span class="kw">import</span> <span class="fn">PawsClient</span>
-
-paws <span class="op">=</span> <span class="fn">PawsClient</span>(<span class="pr">base_url</span><span class="op">=</span><span class="str">"https://your-server:4000"</span>, <span class="pr">api_key</span><span class="op">=</span><span class="str">"paws-..."</span>)
-session <span class="op">=</span> paws.sessions.<span class="fn">create</span>(
-    <span class="pr">snapshot</span><span class="op">=</span><span class="str">"claude-code"</span>,
-    <span class="pr">workload</span><span class="op">=</span>{'{'}<span class="str">"type"</span>: <span class="str">"script"</span>, <span class="str">"script"</span>: <span class="str">"Review this PR and post comments"</span>, <span class="str">"env"</span>: {'{'}{'}'}{'}'},
-)
-<span class="fn">print</span>(session.session_id)  <span class="cm"># → "a1b2c3..."</span></pre>
-          </div>
-        </div>
-
-        <div class="tab-panel" id="tab-cli">
-          <div class="code-block">
-            <pre><span class="str">$</span> paws sessions create \
-    <span class="op">--snapshot</span> claude-code \
-    <span class="op">--script</span> <span class="str">"Review this PR and post comments"</span>
-<span class="cm">Session created: a1b2c3...</span>
-<span class="cm">Status: running</span></pre>
-          </div>
-        </div>
+        <CodeTabs client:visible />
       </div>
     </section>
 
     <!-- Performance Metrics -->
-    <section class="metrics-banner">
-      <div class="container">
-        <div class="metrics-grid">
-          <div class="metric-item">
-            <div class="metric-value">&lt;800ms</div>
-            <div class="metric-label">VM restore from snapshot</div>
+    <Separator className="bg-zinc-800" />
+    <section class="py-16">
+      <div class="max-w-[1120px] mx-auto px-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 text-center">
+          <div class="p-4 md:p-6">
+            <div class="text-[clamp(1.75rem,3vw,2.5rem)] font-bold text-emerald-400 tracking-tight leading-tight mb-2">&lt;800ms</div>
+            <div class="text-[0.8125rem] text-zinc-500 leading-snug">VM restore from snapshot</div>
           </div>
-          <div class="metric-item">
-            <div class="metric-value">5</div>
-            <div class="metric-label">Concurrent VMs per node</div>
+          <div class="p-4 md:p-6">
+            <div class="text-[clamp(1.75rem,3vw,2.5rem)] font-bold text-emerald-400 tracking-tight leading-tight mb-2">5</div>
+            <div class="text-[0.8125rem] text-zinc-500 leading-snug">Concurrent VMs per node</div>
           </div>
-          <div class="metric-item">
-            <div class="metric-value">Zero</div>
-            <div class="metric-label">Secrets in the sandbox</div>
+          <div class="p-4 md:p-6">
+            <div class="text-[clamp(1.75rem,3vw,2.5rem)] font-bold text-emerald-400 tracking-tight leading-tight mb-2">Zero</div>
+            <div class="text-[0.8125rem] text-zinc-500 leading-snug">Secrets in the sandbox</div>
           </div>
-          <div class="metric-item">
-            <div class="metric-value">100%</div>
-            <div class="metric-label">Open source</div>
+          <div class="p-4 md:p-6">
+            <div class="text-[clamp(1.75rem,3vw,2.5rem)] font-bold text-emerald-400 tracking-tight leading-tight mb-2">100%</div>
+            <div class="text-[0.8125rem] text-zinc-500 leading-snug">Open source</div>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Features -->
-    <section class="features" id="features">
-      <div class="container">
-        <p class="section-label">Features</p>
-        <h2 class="section-title">Built for zero trust</h2>
-        <p class="section-desc">
+    <Separator className="bg-zinc-800" />
+    <section class="py-24" id="features">
+      <div class="max-w-[1120px] mx-auto px-6">
+        <p class="text-xs font-semibold tracking-widest uppercase text-emerald-400 mb-4">Features</p>
+        <h2 class="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-zinc-50 tracking-tight mb-4">Built for zero trust</h2>
+        <p class="text-zinc-400 text-[1.0625rem] max-w-[560px] mb-12">
           Everything an AI agent needs to run safely, with nothing it shouldn't have.
         </p>
 
-        <div class="feature-grid">
-          <div class="feature-card">
-            <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            </div>
-            <h3>Zero secrets in the VM</h3>
-            <p>API keys never enter the sandbox. A per-VM TLS proxy injects credentials at the network layer. If compromised, there is nothing to steal.</p>
-          </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center mb-4 text-emerald-400">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">Zero secrets in the VM</h3>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">API keys never enter the sandbox. A per-VM TLS proxy injects credentials at the network layer. If compromised, there is nothing to steal.</p>
+            </CardContent>
+          </Card>
 
-          <div class="feature-card">
-            <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            </div>
-            <h3>Sub-second Firecracker boot</h3>
-            <p>Memory snapshots restore full VMs in under a second. Each session gets a fresh, ephemeral microVM — the same isolation model as AWS Lambda.</p>
-          </div>
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center mb-4 text-emerald-400">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </div>
+              <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">Sub-second Firecracker boot</h3>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Memory snapshots restore full VMs in under a second. Each session gets a fresh, ephemeral microVM — the same isolation model as AWS Lambda.</p>
+            </CardContent>
+          </Card>
 
-          <div class="feature-card">
-            <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            </div>
-            <h3>Port exposure via tunnels</h3>
-            <p>Agents run fullstack apps inside the VM. Users access them via Pangolin tunnel URLs with per-port access control: SSO, PIN, or email allowlist.</p>
-          </div>
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center mb-4 text-emerald-400">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </div>
+              <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">Port exposure via tunnels</h3>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Agents run fullstack apps inside the VM. Users access them via Pangolin tunnel URLs with per-port access control: SSO, PIN, or email allowlist.</p>
+            </CardContent>
+          </Card>
 
-          <div class="feature-card">
-            <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            </div>
-            <h3>Per-VM TLS MITM proxy</h3>
-            <p>Every VM gets its own proxy with an ephemeral CA certificate. One proxy per VM, never shared. Spawned with the VM, killed with the VM.</p>
-          </div>
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center mb-4 text-emerald-400">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">Per-VM TLS MITM proxy</h3>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Every VM gets its own proxy with an ephemeral CA certificate. One proxy per VM, never shared. Spawned with the VM, killed with the VM.</p>
+            </CardContent>
+          </Card>
 
-          <div class="feature-card">
-            <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            </div>
-            <h3>Agent harness</h3>
-            <p>Claude Code pre-installed. Provide a prompt and constraints, the workload runs automatically. Bring your own agent framework or use ours.</p>
-          </div>
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center mb-4 text-emerald-400">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </div>
+              <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">Agent harness</h3>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Claude Code pre-installed. Provide a prompt and constraints, the workload runs automatically. Bring your own agent framework or use ours.</p>
+            </CardContent>
+          </Card>
 
-          <div class="feature-card">
-            <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-            </div>
-            <h3>Domain allowlisting</h3>
-            <p>The VM can only reach domains you explicitly allow. Everything else gets a TCP RST. No cloud metadata endpoint, no lateral movement, no surprises.</p>
-          </div>
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center mb-4 text-emerald-400">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+              </div>
+              <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">Domain allowlisting</h3>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">The VM can only reach domains you explicitly allow. Everything else gets a TCP RST. No cloud metadata endpoint, no lateral movement, no surprises.</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </section>
 
     <!-- Use Cases -->
-    <section class="use-cases" id="use-cases">
-      <div class="container">
-        <p class="section-label">What people build</p>
-        <h2 class="section-title">Daemons for every workflow</h2>
-        <p class="section-desc">
+    <Separator className="bg-zinc-800" />
+    <section class="py-24" id="use-cases">
+      <div class="max-w-[1120px] mx-auto px-6">
+        <p class="text-xs font-semibold tracking-widest uppercase text-emerald-400 mb-4">What people build</p>
+        <h2 class="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-zinc-50 tracking-tight mb-4">Daemons for every workflow</h2>
+        <p class="text-zinc-400 text-[1.0625rem] max-w-[560px] mb-12">
           Trigger agents on events, schedules, or API calls. Each runs in its own isolated VM with injected credentials.
         </p>
 
-        <div class="use-case-grid">
-          <div class="use-case-card">
-            <div class="use-case-header">
-              <div class="use-case-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center text-emerald-400 shrink-0">
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+                </div>
+                <h3 class="text-zinc-50 text-[0.9375rem] font-semibold">PR Reviewer</h3>
               </div>
-              <h3>PR Reviewer</h3>
-            </div>
-            <span class="trigger-badge">webhook</span>
-            <p>Claude Code reviews every PR. Runs in isolated VM, posts comments directly to GitHub. Zero API keys in the sandbox.</p>
-          </div>
+              <Badge className="bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 text-[0.6875rem] font-medium uppercase tracking-wide rounded-full mb-3 h-auto py-0.5">webhook</Badge>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Claude Code reviews every PR. Runs in isolated VM, posts comments directly to GitHub. Zero API keys in the sandbox.</p>
+            </CardContent>
+          </Card>
 
-          <div class="use-case-card">
-            <div class="use-case-header">
-              <div class="use-case-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center text-emerald-400 shrink-0">
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h3 class="text-zinc-50 text-[0.9375rem] font-semibold">Security Scanner</h3>
               </div>
-              <h3>Security Scanner</h3>
-            </div>
-            <span class="trigger-badge">schedule</span>
-            <p>Scheduled weekly scans. Agent audits dependencies, checks for vulnerabilities, files issues automatically.</p>
-          </div>
+              <Badge className="bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 text-[0.6875rem] font-medium uppercase tracking-wide rounded-full mb-3 h-auto py-0.5">schedule</Badge>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Scheduled weekly scans. Agent audits dependencies, checks for vulnerabilities, files issues automatically.</p>
+            </CardContent>
+          </Card>
 
-          <div class="use-case-card">
-            <div class="use-case-header">
-              <div class="use-case-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center text-emerald-400 shrink-0">
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                </div>
+                <h3 class="text-zinc-50 text-[0.9375rem] font-semibold">Deploy Watcher</h3>
               </div>
-              <h3>Deploy Watcher</h3>
-            </div>
-            <span class="trigger-badge">webhook</span>
-            <p>Triggered on push to main. Agent runs deployment script, verifies health, rolls back on failure.</p>
-          </div>
+              <Badge className="bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 text-[0.6875rem] font-medium uppercase tracking-wide rounded-full mb-3 h-auto py-0.5">webhook</Badge>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Triggered on push to main. Agent runs deployment script, verifies health, rolls back on failure.</p>
+            </CardContent>
+          </Card>
 
-          <div class="use-case-card">
-            <div class="use-case-header">
-              <div class="use-case-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center text-emerald-400 shrink-0">
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <h3 class="text-zinc-50 text-[0.9375rem] font-semibold">Issue Triage</h3>
               </div>
-              <h3>Issue Triage</h3>
-            </div>
-            <span class="trigger-badge">webhook</span>
-            <p>Webhook on new issues. Agent classifies severity, applies labels, assigns to the right team.</p>
-          </div>
+              <Badge className="bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 text-[0.6875rem] font-medium uppercase tracking-wide rounded-full mb-3 h-auto py-0.5">webhook</Badge>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Webhook on new issues. Agent classifies severity, applies labels, assigns to the right team.</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </section>
 
-    <!-- Comparison Table -->
     <!-- Security Deep-Dive -->
-    <section class="security-deep-dive" id="architecture">
-      <div class="container">
-        <p class="section-label">Security architecture</p>
-        <h2 class="section-title">Credential injection flow</h2>
-        <pre class="mono section-cat-inline">{`  /\\_/\\
+    <Separator className="bg-zinc-800" />
+    <section class="py-24" id="architecture">
+      <div class="max-w-[1120px] mx-auto px-6">
+        <p class="text-xs font-semibold tracking-widest uppercase text-emerald-400 mb-4">Security architecture</p>
+        <h2 class="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-zinc-50 tracking-tight mb-4">Credential injection flow</h2>
+        <pre class="font-mono text-zinc-600 text-xs leading-[1.3] text-center mx-auto mb-6" style="animation: cat-float 4s ease-in-out infinite 1s;">{`  /\\_/\\
  ( o.o )  < in a box!
  |     |
  +-----+
  |     |
  +-----+`}</pre>
-        <p class="section-desc">
+        <p class="text-zinc-400 text-[1.0625rem] max-w-[560px] mb-8">
           Every outbound request from the VM passes through a per-VM TLS proxy. Credentials are injected at the network layer — never exposed inside the sandbox.
         </p>
 
-        <div class="security-flow">
-          <div class="sec-box sec-box-vm">
-            <h4>Agent VM</h4>
-            <ul>
-              <li>SESSION_TOKEN</li>
-              <li>GATEWAY_URL</li>
-              <li>Ephemeral CA cert</li>
-              <li>No API keys</li>
-              <li>No tokens</li>
+        <div class="flex flex-col md:flex-row items-stretch justify-center gap-0 flex-wrap mb-8">
+          <div class="p-6 rounded-xl border border-emerald-400 bg-zinc-900 min-w-[200px] flex-1 max-w-[280px]">
+            <h4 class="text-sm font-semibold text-emerald-400 mb-3">Agent VM</h4>
+            <ul class="list-none p-0">
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-emerald-400">SESSION_TOKEN</li>
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-emerald-400">GATEWAY_URL</li>
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-emerald-400">Ephemeral CA cert</li>
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-emerald-400">No API keys</li>
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-emerald-400">No tokens</li>
             </ul>
           </div>
 
-          <div class="sec-arrow">&#8594;</div>
+          <div class="flex items-center justify-center px-3 py-2 md:py-0 text-zinc-600 text-2xl shrink-0 md:rotate-0 rotate-90">&#8594;</div>
 
-          <div class="sec-box sec-box-proxy">
-            <h4>TLS Proxy (per-VM)</h4>
-            <ul>
-              <li>iptables DNAT intercept</li>
-              <li>SNI domain check</li>
-              <li>Allowlist validation</li>
-              <li>+ x-api-key header</li>
-              <li>+ Authorization header</li>
+          <div class="p-6 rounded-xl border border-blue-400 bg-zinc-900 min-w-[200px] flex-1 max-w-[280px]">
+            <h4 class="text-sm font-semibold text-blue-400 mb-3">TLS Proxy (per-VM)</h4>
+            <ul class="list-none p-0">
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-blue-400">iptables DNAT intercept</li>
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-blue-400">SNI domain check</li>
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-blue-400">Allowlist validation</li>
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-blue-400">+ x-api-key header</li>
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-blue-400">+ Authorization header</li>
             </ul>
           </div>
 
-          <div class="sec-arrow">&#8594;</div>
+          <div class="flex items-center justify-center px-3 py-2 md:py-0 text-zinc-600 text-2xl shrink-0 md:rotate-0 rotate-90">&#8594;</div>
 
-          <div class="sec-box sec-box-api">
-            <h4>Real API</h4>
-            <ul>
-              <li>api.anthropic.com</li>
-              <li>api.openai.com</li>
-              <li>github.com</li>
-              <li>Receives full credentials</li>
-              <li>Normal HTTPS</li>
+          <div class="p-6 rounded-xl border border-purple-400 bg-zinc-900 min-w-[200px] flex-1 max-w-[280px]">
+            <h4 class="text-sm font-semibold text-purple-400 mb-3">Real API</h4>
+            <ul class="list-none p-0">
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-purple-400">api.anthropic.com</li>
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-purple-400">api.openai.com</li>
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-purple-400">github.com</li>
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-purple-400">Receives full credentials</li>
+              <li class="text-[0.8125rem] text-zinc-400 py-1 pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[0.625rem] before:w-1.5 before:h-1.5 before:rounded-full before:bg-purple-400">Normal HTTPS</li>
             </ul>
           </div>
         </div>
 
-        <div class="sec-blocked">
-          <div class="sec-blocked-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500 shrink-0">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
           </div>
-          <div class="sec-blocked-text">
-            <h4>Non-allowlisted domains are blocked</h4>
-            <p>Any outbound request to a domain not in the allowlist gets a TCP RST. No cloud metadata endpoint, no lateral movement, no data exfiltration.</p>
+          <div>
+            <h4 class="text-red-500 text-sm font-semibold mb-1">Non-allowlisted domains are blocked</h4>
+            <p class="text-[0.8125rem] text-zinc-500">Any outbound request to a domain not in the allowlist gets a TCP RST. No cloud metadata endpoint, no lateral movement, no data exfiltration.</p>
           </div>
         </div>
 
-        <div style="margin-top: 2rem;">
-          <div class="arch-diagram">
-            <pre>
-<span class="dim">                    API request</span>
-<span class="dim">                        |</span>
-<span class="dim">                        v</span>
-<span class="dim">            +-----------------------+</span>
-<span class="dim">            |</span>   <span class="hl">Control Plane</span>        <span class="dim">|</span>     <span class="dim">Holds all secrets,</span>
-<span class="dim">            |</span>   sessions, daemons,   <span class="dim">|</span>     <span class="dim">credentials, policies</span>
-<span class="dim">            |</span>   triggers, governance <span class="dim">|</span>
-<span class="dim">            +-----------+-----------+</span>
-<span class="dim">                        |</span>
-<span class="dim">              dispatch session</span>
-<span class="dim">                        |</span>
-<span class="dim">            +-----------v-----------+</span>
-<span class="dim">            |</span>       <span class="hl">Worker</span>           <span class="dim">|</span>     <span class="dim">Bare metal, /dev/kvm</span>
-<span class="dim">            |</span>                       <span class="dim">|</span>
-<span class="dim">            |</span>  <span class="dim">+---vm-1-----------+</span>  <span class="dim">|</span>
-<span class="dim">            |  |</span> <span class="hl">Firecracker VM</span>    <span class="dim">|  |</span>     <span class="dim">Zero secrets</span>
-<span class="dim">            |  |</span> Agent + workload  <span class="dim">|  |</span>     <span class="dim">Ephemeral, disposable</span>
-<span class="dim">            |  |</span>   <span class="dim">|</span>               <span class="dim">|  |</span>
-<span class="dim">            |  +---|---------------+  |</span>
-<span class="dim">            |      |                   |</span>
-<span class="dim">            |  +---v---------------+  |</span>
-<span class="dim">            |  |</span> <span class="hl">TLS Proxy</span>         <span class="dim">|  |</span>     <span class="dim">Injects credentials</span>
-<span class="dim">            |  |</span> Per-VM, ephemeral <span class="dim">|  |</span>     <span class="dim">at the network layer</span>
-<span class="dim">            |  +-------------------+  |</span>
-<span class="dim">            +-----------------------+</span></pre>
+        <div class="mt-8">
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-10 overflow-x-auto">
+            <pre class="font-mono text-[0.8125rem] leading-relaxed text-zinc-300 m-0">
+<span class="text-zinc-600">                    API request</span>
+<span class="text-zinc-600">                        |</span>
+<span class="text-zinc-600">                        v</span>
+<span class="text-zinc-600">            +-----------------------+</span>
+<span class="text-zinc-600">            |</span>   <span class="text-emerald-400">Control Plane</span>        <span class="text-zinc-600">|</span>     <span class="text-zinc-600">Holds all secrets,</span>
+<span class="text-zinc-600">            |</span>   sessions, daemons,   <span class="text-zinc-600">|</span>     <span class="text-zinc-600">credentials, policies</span>
+<span class="text-zinc-600">            |</span>   triggers, governance <span class="text-zinc-600">|</span>
+<span class="text-zinc-600">            +-----------+-----------+</span>
+<span class="text-zinc-600">                        |</span>
+<span class="text-zinc-600">              dispatch session</span>
+<span class="text-zinc-600">                        |</span>
+<span class="text-zinc-600">            +-----------v-----------+</span>
+<span class="text-zinc-600">            |</span>       <span class="text-emerald-400">Worker</span>           <span class="text-zinc-600">|</span>     <span class="text-zinc-600">Bare metal, /dev/kvm</span>
+<span class="text-zinc-600">            |</span>                       <span class="text-zinc-600">|</span>
+<span class="text-zinc-600">            |</span>  <span class="text-zinc-600">+---vm-1-----------+</span>  <span class="text-zinc-600">|</span>
+<span class="text-zinc-600">            |  |</span> <span class="text-emerald-400">Firecracker VM</span>    <span class="text-zinc-600">|  |</span>     <span class="text-zinc-600">Zero secrets</span>
+<span class="text-zinc-600">            |  |</span> Agent + workload  <span class="text-zinc-600">|  |</span>     <span class="text-zinc-600">Ephemeral, disposable</span>
+<span class="text-zinc-600">            |  |</span>   <span class="text-zinc-600">|</span>               <span class="text-zinc-600">|  |</span>
+<span class="text-zinc-600">            |  +---|---------------+  |</span>
+<span class="text-zinc-600">            |      |                   |</span>
+<span class="text-zinc-600">            |  +---v---------------+  |</span>
+<span class="text-zinc-600">            |  |</span> <span class="text-emerald-400">TLS Proxy</span>         <span class="text-zinc-600">|  |</span>     <span class="text-zinc-600">Injects credentials</span>
+<span class="text-zinc-600">            |  |</span> Per-VM, ephemeral <span class="text-zinc-600">|  |</span>     <span class="text-zinc-600">at the network layer</span>
+<span class="text-zinc-600">            |  +-------------------+  |</span>
+<span class="text-zinc-600">            +-----------------------+</span></pre>
           </div>
         </div>
       </div>
     </section>
 
     <!-- CTA -->
-    <section class="cta">
-      <div class="container">
-        <div class="cta-inner">
-          <p class="section-label">Open Source</p>
-          <h2 class="section-title">Run it yourself</h2>
-          <p class="section-desc" style="margin-left: auto; margin-right: auto;">
+    <Separator className="bg-zinc-800" />
+    <section class="py-24 text-center">
+      <div class="max-w-[1120px] mx-auto px-6">
+        <div class="max-w-[560px] mx-auto">
+          <p class="text-xs font-semibold tracking-widest uppercase text-emerald-400 mb-4">Open Source</p>
+          <h2 class="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-zinc-50 tracking-tight mb-4">Run it yourself</h2>
+          <p class="text-zinc-400 text-[1.0625rem] max-w-[560px] mx-auto mb-8">
             paws is open source. Deploy on your own infrastructure, audit every line,
             and own your agent security stack.
           </p>
-          <div class="cta-actions">
-            <a href="https://github.com/arek-e/paws" class="btn-primary" target="_blank" rel="noopener">
+          <div class="flex items-center justify-center gap-4 mt-8 flex-wrap">
+            <a href="https://github.com/arek-e/paws" target="_blank" rel="noopener" class="inline-flex items-center gap-2 h-10 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[0.9375rem] px-6 rounded-lg transition-colors no-underline">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
               Star on GitHub
             </a>
-            <a href="/getting-started/install/" class="btn-secondary">
+            <a href="/getting-started/install/" class="inline-flex items-center gap-2 h-10 border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-50 font-medium text-[0.9375rem] px-6 rounded-lg transition-colors no-underline">
               Read the docs
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </a>
           </div>
         </div>
@@ -1295,89 +452,26 @@ session <span class="op">=</span> paws.sessions.<span class="fn">create</span>(
     </section>
 
     <!-- Footer -->
-    <footer>
-      <div class="container footer-inner">
-        <span class="footer-brand">
+    <Separator className="bg-zinc-800" />
+    <footer class="py-8">
+      <div class="max-w-[1120px] mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-[0.8125rem] text-zinc-600">
+        <span class="flex items-center gap-1.5 font-medium">
           <img src="/favicon.svg" alt="" width="16" height="16" />
           paws
         </span>
-        <ul class="footer-links">
-          <li><a href="https://github.com/arek-e/paws" target="_blank" rel="noopener">GitHub</a></li>
-          <li><a href="/getting-started/install/">Docs</a></li>
-          <li><a href="#" id="footer-waitlist-link">Waitlist</a></li>
+        <ul class="flex gap-6 list-none">
+          <li><a href="https://github.com/arek-e/paws" class="text-zinc-500 hover:text-zinc-300 no-underline" target="_blank" rel="noopener">GitHub</a></li>
+          <li><a href="/getting-started/install/" class="text-zinc-500 hover:text-zinc-300 no-underline">Docs</a></li>
+          <li><a href="#" id="footer-waitlist-link" class="text-zinc-500 hover:text-zinc-300 no-underline">Waitlist</a></li>
         </ul>
       </div>
     </footer>
 
     <script is:inline>
-      // Copy button
-      const copyBtn = document.getElementById('copy-btn');
-      copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText('curl -fsSL https://getpaws.dev/install.sh | bash');
-        copyBtn.textContent = 'Copied!';
-        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
-      });
-
-      // Waitlist form
-      const form = document.getElementById('waitlist-form');
-      const successMsg = document.getElementById('waitlist-success');
-      const errorMsg = document.getElementById('waitlist-error');
-
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = form.email.value.trim();
-        const btn = form.querySelector('button[type="submit"]');
-
-        if (!email) return;
-
-        btn.disabled = true;
-        btn.textContent = 'Joining...';
-        errorMsg.style.display = 'none';
-
-        try {
-          const res = await fetch('/api/waitlist', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
-          });
-
-          if (res.ok) {
-            form.style.display = 'none';
-            successMsg.style.display = 'block';
-          } else {
-            const data = await res.json().catch(() => ({}));
-            errorMsg.textContent = data.error || 'Something went wrong. Try again.';
-            errorMsg.style.display = 'block';
-            btn.disabled = false;
-            btn.textContent = 'Join waitlist';
-          }
-        } catch {
-          errorMsg.textContent = 'Network error. Try again.';
-          errorMsg.style.display = 'block';
-          btn.disabled = false;
-          btn.textContent = 'Join waitlist';
-        }
-      });
-
-      // Tab switcher
-      const tabBtns = document.querySelectorAll('.tab-btn');
-      const tabPanels = document.querySelectorAll('.tab-panel');
-
-      tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-          const target = btn.getAttribute('data-tab');
-          tabBtns.forEach(b => b.classList.remove('active'));
-          tabPanels.forEach(p => p.classList.remove('active'));
-          btn.classList.add('active');
-          document.getElementById('tab-' + target).classList.add('active');
-        });
-      });
-
       // Footer waitlist link scrolls to top
       document.getElementById('footer-waitlist-link').addEventListener('click', (e) => {
         e.preventDefault();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        setTimeout(() => { form.email.focus(); }, 500);
       });
     </script>
   </body>
