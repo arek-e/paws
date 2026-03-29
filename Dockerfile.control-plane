@@ -9,18 +9,8 @@ FROM oven/bun:1.3.9-alpine AS deps
 
 WORKDIR /build
 
-# Copy root manifests
-COPY package.json bun.lock* ./
-
-# Copy ALL workspace package.json files via wildcard.
-# .dockerignore ensures only source files come through, not node_modules/dist.
-COPY packages/*/package.json ./packages/_placeholder/
-COPY apps/*/package.json ./apps/_placeholder/
-COPY providers/*/package.json ./providers/_placeholder/
-
-# The wildcard COPY flattens into one dir. We need to fix the structure.
-# Instead, copy the whole tree (filtered by .dockerignore) and install.
-# This is simpler and the layer cache still works on bun.lock changes.
+# Copy entire repo (filtered by .dockerignore — no tests, docs, node_modules).
+# Layer cache invalidates on any source change, but builds are fast with bun.
 COPY . .
 
 RUN bun install --frozen-lockfile || bun install
