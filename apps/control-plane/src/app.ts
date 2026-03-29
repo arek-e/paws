@@ -556,15 +556,35 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     }
 
     const sessionId = randomUUID();
-    const sessionRequest = {
-      snapshot: daemon.snapshot,
-      workload: {
+
+    // Generate workload from agent config or use the explicit workload
+    let workload;
+    if (daemon.agent) {
+      const { generateAgentScript } = await import('@paws/types');
+      workload = {
+        type: 'script' as const,
+        script: generateAgentScript(daemon.agent),
+        env: { TRIGGER_PAYLOAD: JSON.stringify(payload) },
+      };
+    } else if (daemon.workload) {
+      workload = {
         ...daemon.workload,
         env: {
           ...daemon.workload.env,
           TRIGGER_PAYLOAD: JSON.stringify(payload),
         },
-      },
+      };
+    } else {
+      console.error(`daemon ${role}: no workload or agent configured`);
+      return c.json(
+        { error: { code: 'DAEMON_MISCONFIGURED', message: 'No workload or agent configured' } },
+        500,
+      );
+    }
+
+    const sessionRequest = {
+      snapshot: daemon.snapshot,
+      workload,
       resources: daemon.resources,
       timeoutMs: 600_000,
       network: daemon.network,

@@ -1,0 +1,18 @@
+id: claude-code
+base:
+  kernel: /var/lib/paws/kernels/vmlinux-default
+  rootfs: /var/lib/paws/rootfs/ubuntu-default.ext4
+vcpu: 2
+memory_mb: 4096
+setup: |
+  apt-get update
+  apt-get install -y --no-install-recommends curl git ca-certificates openssh-server jq ripgrep fd-find
+  echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+  systemctl enable ssh
+  # Install Node.js 22 LTS (required by Claude Code)
+  curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+  apt-get install -y nodejs
+  # Install Claude Code CLI
+  curl -fsSL https://claude.ai/install.sh | bash
+  # Create output directory for structured results
+  mkdir -p /output

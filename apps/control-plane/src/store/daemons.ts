@@ -1,4 +1,11 @@
-import type { CreateDaemonRequest, DaemonStatus, Governance, Trigger, Workload } from '@paws/types';
+import type {
+  AgentConfig,
+  CreateDaemonRequest,
+  DaemonStatus,
+  Governance,
+  Trigger,
+  Workload,
+} from '@paws/types';
 import type { Resources, NetworkConfig } from '@paws/types';
 
 export interface StoredDaemon {
@@ -7,7 +14,8 @@ export interface StoredDaemon {
   status: DaemonStatus;
   snapshot: string;
   trigger: Trigger;
-  workload: Workload;
+  workload?: Workload | undefined;
+  agent?: AgentConfig | undefined;
   resources?: Resources | undefined;
   network?: NetworkConfig | undefined;
   governance: Governance;
@@ -43,6 +51,7 @@ export function createDaemonStore(): DaemonStore {
         snapshot: request.snapshot,
         trigger: request.trigger,
         workload: request.workload,
+        agent: request.agent,
         resources: request.resources,
         network: request.network,
         governance: request.governance ?? {

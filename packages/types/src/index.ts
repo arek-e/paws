@@ -1,3 +1,6 @@
+export { AgentConfigSchema, AgentFramework, generateAgentScript } from './agent.js';
+export type { AgentConfig } from './agent.js';
+
 export {
   DurationMsSchema,
   IdSchema,

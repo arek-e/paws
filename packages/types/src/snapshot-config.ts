@@ -4,7 +4,14 @@ import { NonEmptyStringSchema } from './common.js';
 import { ResourcesSchema } from './session.js';
 
 /** Available snapshot templates */
-export const SnapshotTemplateId = z.enum(['minimal', 'node', 'python', 'docker', 'fullstack']);
+export const SnapshotTemplateId = z.enum([
+  'minimal',
+  'node',
+  'python',
+  'docker',
+  'fullstack',
+  'claude-code',
+]);
 
 export type SnapshotTemplateId = z.infer<typeof SnapshotTemplateId>;
 

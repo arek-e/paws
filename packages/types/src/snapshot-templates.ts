@@ -69,6 +69,24 @@ npm install -g npm@latest
 curl -fsSL https://bun.sh/install | bash`,
     requiredDomains: [...DOCKER_REGISTRY_DOMAINS, 'registry.npmjs.org', 'nodejs.org', 'bun.sh'],
   },
+
+  'claude-code': {
+    setup: `${COMMON_SETUP}
+
+# Install Node.js 22 LTS (required by Claude Code)
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+apt-get install -y nodejs
+
+# Install Claude Code CLI
+curl -fsSL https://claude.ai/install.sh | bash
+
+# Create output directory for structured results
+mkdir -p /output
+
+# Install common dev tools agents typically need
+apt-get install -y --no-install-recommends jq ripgrep fd-find`,
+    requiredDomains: ['api.anthropic.com', 'claude.ai', 'registry.npmjs.org', 'nodejs.org'],
+  },
 };
 
 /** Get a snapshot template by ID */

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { AgentConfigSchema } from './agent.js';
 import { DurationMsSchema, IdSchema, NonEmptyStringSchema, TimestampSchema } from './common.js';
 import { NetworkConfigSchema } from './network.js';
 import { ResourcesSchema, SessionStatus, WorkloadSchema } from './session.js';
@@ -78,16 +79,23 @@ export const DaemonSessionSummarySchema = z.object({
 export type DaemonSessionSummary = z.infer<typeof DaemonSessionSummarySchema>;
 
 /** Register daemon request */
-export const CreateDaemonRequestSchema = z.object({
-  role: NonEmptyStringSchema,
-  description: z.string().default(''),
-  snapshot: NonEmptyStringSchema,
-  trigger: TriggerSchema,
-  workload: WorkloadSchema,
-  resources: ResourcesSchema.optional(),
-  network: NetworkConfigSchema.optional(),
-  governance: GovernanceSchema.optional(),
-});
+export const CreateDaemonRequestSchema = z
+  .object({
+    role: NonEmptyStringSchema,
+    description: z.string().default(''),
+    snapshot: NonEmptyStringSchema,
+    trigger: TriggerSchema,
+    /** Workload script — required unless agent is configured */
+    workload: WorkloadSchema.optional(),
+    /** Agent framework config — auto-generates the workload script */
+    agent: AgentConfigSchema.optional(),
+    resources: ResourcesSchema.optional(),
+    network: NetworkConfigSchema.optional(),
+    governance: GovernanceSchema.optional(),
+  })
+  .refine((data) => data.workload || data.agent, {
+    message: 'Either workload or agent must be provided',
+  });
 
 export type CreateDaemonRequest = z.infer<typeof CreateDaemonRequestSchema>;
 
