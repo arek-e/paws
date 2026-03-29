@@ -94,7 +94,7 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
         font-size: 1.125rem;
       }
 
-      .nav-logo svg { width: 28px; height: 28px; }
+      .nav-logo img { width: 28px; height: 28px; }
 
       .nav-links {
         display: flex;
@@ -595,7 +595,7 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
     <nav>
       <div class="container nav-inner">
         <a href="/" class="nav-logo">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><path fill-rule="evenodd" d="M81 36 64 0 47 36l-1 2-9-10a6 6 0 0 0-9 9l10 10h-2L0 64l36 17h2L28 91a6 6 0 1 0 9 9l9-10 1 2 17 36 17-36v-2l9 10a6 6 0 1 0 9-9l-9-9 2-1 36-17-36-17-2-1 9-9a6 6 0 1 0-9-9l-9 10v-2Zm-17 2-2 5c-4 8-11 15-19 19l-5 2 5 2c8 4 15 11 19 19l2 5 2-5c4-8 11-15 19-19l5-2-5-2c-8-4-15-11-19-19l-2-5Z" clip-rule="evenodd" fill="#34d399"/><path d="M118 19a6 6 0 0 0-9-9l-3 3a6 6 0 1 0 9 9l3-3Zm-96 4c-2 2-6 2-9 0l-3-3a6 6 0 1 1 9-9l3 3c3 2 3 6 0 9Zm0 82c-2-2-6-2-9 0l-3 3a6 6 0 1 0 9 9l3-3c3-2 3-6 0-9Zm96 4a6 6 0 0 1-9 9l-3-3a6 6 0 1 1 9-9l3 3Z" fill="#34d399"/></svg>
+          <img src="/favicon.svg" alt="" width="28" height="28" />
           paws
         </a>
         <ul class="nav-links">
@@ -616,11 +616,11 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
     <section class="hero">
       <div class="container">
         <div class="hero-cat-scene">
-          <pre class="hero-cat mono">{`   /\\_/\\
-  ( o.o )  ~  zero secrets
-   > ^ <
-  /|   |\\
- (_|   |_)`}</pre>
+          <pre class="hero-cat mono">{` /\\_/\\
+( o.o )  ~  zero secrets
+ > ^ <
+/|   |\\
+(_|   |_)`}</pre>
           <div class="cat-blink"></div>
         </div>
         <h1>Your agent should have <span class="accent">nothing worth stealing</span></h1>
@@ -648,9 +648,9 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
       <div class="container">
         <p class="section-label">How it works</p>
         <h2 class="section-title">Credentials injected, never exposed</h2>
-        <pre class="mono section-cat-inline">{`    /\\_/\\
-   ( -.- )  zzZ
-    > ^ <`}</pre>
+        <pre class="mono section-cat-inline">{` /\\_/\\
+( -.- )  zzZ
+ > ^ <`}</pre>
         <p class="section-desc">
           Agents run in ephemeral Firecracker microVMs with zero secrets on disk, in env, or in memory.
           A per-VM TLS proxy intercepts outbound HTTPS and injects credentials on-the-fly.
@@ -757,12 +757,12 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
       <div class="container">
         <p class="section-label">Architecture</p>
         <h2 class="section-title">Control plane + worker isolation</h2>
-        <pre class="mono section-cat-inline">{`   /\\_/\\
-  ( o.o )  < in a box!
-  |     |
-  +-----+
-  |     |
-  +-----+`}</pre>
+        <pre class="mono section-cat-inline">{` /\\_/\\
+( o.o )  < in a box!
+|     |
++-----+
+|     |
++-----+`}</pre>
         <p class="section-desc">
           The control plane holds all secrets and orchestrates sessions. Workers run VMs with nothing worth stealing.
         </p>
@@ -826,7 +826,7 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
     <footer>
       <div class="container footer-inner">
         <span class="footer-brand">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="16" height="16"><path fill-rule="evenodd" d="M81 36 64 0 47 36l-1 2-9-10a6 6 0 0 0-9 9l10 10h-2L0 64l36 17h2L28 91a6 6 0 1 0 9 9l9-10 1 2 17 36 17-36v-2l9 10a6 6 0 1 0 9-9l-9-9 2-1 36-17-36-17-2-1 9-9a6 6 0 1 0-9-9l-9 10v-2Zm-17 2-2 5c-4 8-11 15-19 19l-5 2 5 2c8 4 15 11 19 19l2 5 2-5c4-8 11-15 19-19l5-2-5-2c-8-4-15-11-19-19l-2-5Z" clip-rule="evenodd" fill="#71717a"/><path d="M118 19a6 6 0 0 0-9-9l-3 3a6 6 0 1 0 9 9l3-3Zm-96 4c-2 2-6 2-9 0l-3-3a6 6 0 1 1 9-9l3 3c3 2 3 6 0 9Zm0 82c-2-2-6-2-9 0l-3 3a6 6 0 1 0 9 9l3-3c3-2 3-6 0-9Zm96 4a6 6 0 0 1-9 9l-3-3a6 6 0 1 1 9-9l3 3Z" fill="#71717a"/></svg>
+          <img src="/favicon.svg" alt="" width="16" height="16" />
           paws
         </span>
         <ul class="footer-links">
