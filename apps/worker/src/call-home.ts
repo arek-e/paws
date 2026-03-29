@@ -3,6 +3,8 @@ export interface CallHomeOpts {
   apiKey: string;
   workerName: string;
   workerUrl: string;
+  /** paws version running on this worker */
+  version?: string | undefined;
   healthFn: () => {
     status: string;
     capacity: { maxConcurrent: number; running: number; queued: number; available: number };
@@ -46,6 +48,7 @@ export function createCallHome(opts: CallHomeOpts): CallHome {
         capacity: health.capacity,
         uptime: health.uptime,
         snapshot: health.snapshot ?? { id: 'default', version: 0, ageMs: 0 },
+        version: opts.version ?? '0.0.0',
       }),
     );
   }

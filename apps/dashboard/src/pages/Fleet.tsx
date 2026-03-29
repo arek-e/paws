@@ -1,4 +1,5 @@
 import { getFleet, getWorkers } from '../api/client.js';
+import { UpdateBanner } from '../components/UpdateBanner.js';
 import { MiniChart } from '../components/MiniChart.js';
 import { StatCard } from '../components/StatCard.js';
 import { WorkerCard } from '../components/WorkerCard.js';
@@ -48,6 +49,7 @@ export function Fleet() {
 
   return (
     <div className="space-y-6">
+      <UpdateBanner />
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Fleet Overview</h1>
         <TunnelStatus pangolin={fleetData?.pangolin} />

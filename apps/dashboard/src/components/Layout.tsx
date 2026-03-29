@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router';
 
+import { VersionBadge } from './UpdateBanner.js';
+
 function SidebarLink({ to, label, onClick }: { to: string; label: string; onClick?: () => void }) {
   return (
     <NavLink
@@ -110,7 +112,9 @@ export function Layout() {
           >
             Disconnect
           </button>
-          <p className="px-4 text-xs text-zinc-700">v0.1</p>
+          <div className="px-4">
+            <VersionBadge />
+          </div>
         </div>
       </aside>
 

@@ -236,7 +236,23 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   // --- Health (no auth) ---
 
   app.openapi(healthRoute, (c) => {
-    return c.json({ status: 'healthy', uptime: Date.now() - startTime, version: '0.1.0' }, 200);
+    return c.json(
+      {
+        status: 'healthy',
+        uptime: Date.now() - startTime,
+        version: process.env['PAWS_VERSION'] ?? '0.0.0',
+      },
+      200,
+    );
+  });
+
+  // --- Version (no auth — workers and dashboard check this) ---
+
+  const { createVersionChecker } = await import('./version-checker.js');
+  const versionChecker = createVersionChecker(process.env['PAWS_VERSION'] ?? '0.0.0');
+
+  app.get('/v1/version', (c) => {
+    return c.json(versionChecker.getInfo());
   });
 
   // --- Metrics (no auth — Prometheus scraper) ---
@@ -1217,7 +1233,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     openapi: '3.1.0',
     info: {
       title: 'paws Control Plane API',
-      version: '0.1.0',
+      version: process.env['PAWS_VERSION'] ?? '0.0.0',
       description: 'Self-hosted platform for running AI agents in isolated Firecracker microVMs',
     },
   });

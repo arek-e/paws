@@ -75,7 +75,7 @@ describe.skipIf(!hasBun)('Control plane integration — real HTTP', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.status).toBe('healthy');
-    expect(body.version).toBe('0.1.0');
+    expect(typeof body.version).toBe('string');
     expect(typeof body.uptime).toBe('number');
   });
 

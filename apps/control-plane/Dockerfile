@@ -70,6 +70,8 @@ COPY --from=builder /build/apps/control-plane/ ./apps/control-plane/
 
 USER paws
 
+ARG PAWS_VERSION=0.0.0
+ENV PAWS_VERSION=${PAWS_VERSION}
 ENV PORT=4000
 ENV NODE_ENV=production
 

@@ -78,6 +78,8 @@ COPY --from=builder /build/apps/worker/ ./apps/worker/
 # The actual snapshot/VM data is expected to be mounted via volumes.
 RUN mkdir -p /var/lib/paws/snapshots /var/lib/paws/vms /var/lib/paws/ssh
 
+ARG PAWS_VERSION=0.0.0
+ENV PAWS_VERSION=${PAWS_VERSION}
 ENV PORT=3000
 ENV NODE_ENV=production
 ENV SNAPSHOT_DIR=/var/lib/paws/snapshots/agent-latest

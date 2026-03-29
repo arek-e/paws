@@ -1,0 +1,185 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  TURBO_NO_DAEMON: 1
+
+jobs:
+  # Build and push versioned Docker images
+  build-images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        app: [control-plane, worker]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/paws-${{ matrix.app }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            PAWS_VERSION=${{ steps.version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Create release tarball and GitHub Release
+  create-release:
+    needs: [build-images]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Generate docker-compose.release.yml
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          OWNER=${{ github.repository_owner }}
+
+          # Start from the main docker-compose.yml but replace build with image
+          sed \
+            -e "s|build:|# build (replaced by image for release):|g" \
+            -e "s|context: \.|# context: .|g" \
+            -e "s|dockerfile: Dockerfile.control-plane|image: ghcr.io/${OWNER}/paws-control-plane:v${VERSION}|g" \
+            -e "s|dockerfile: apps/control-plane/Dockerfile|image: ghcr.io/${OWNER}/paws-control-plane:v${VERSION}|g" \
+            docker-compose.yml > docker-compose.release.yml
+
+          # Replace the gateway build block with an image reference
+          cat > docker-compose.release.yml << 'HEREDOC_END'
+          HEREDOC_END
+
+          # Simpler approach: copy and patch
+          cp docker-compose.yml docker-compose.release.yml
+          # Replace the build section for gateway with image
+          python3 -c "
+          import re
+          with open('docker-compose.release.yml') as f:
+              content = f.read()
+          # Replace build block with image
+          content = content.replace(
+              '    build:\n      context: .\n      dockerfile: Dockerfile.control-plane',
+              '    image: ghcr.io/${OWNER}/paws-control-plane:v${VERSION}'
+          )
+          # Also handle the apps/ path variant
+          content = content.replace(
+              '    build:\n      context: .\n      dockerfile: apps/control-plane/Dockerfile',
+              '    image: ghcr.io/${OWNER}/paws-control-plane:v${VERSION}'
+          )
+          with open('docker-compose.release.yml', 'w') as f:
+              f.write(content)
+          "
+
+      - name: Create release tarball
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          mkdir -p release-bundle
+
+          # Core files
+          cp docker-compose.release.yml release-bundle/docker-compose.yml
+          cp .env.example release-bundle/.env.example
+          cp VERSION release-bundle/VERSION
+
+          # Scripts
+          cp scripts/install.sh release-bundle/install.sh
+          cp scripts/setup-control-plane.sh release-bundle/setup-control-plane.sh
+          cp scripts/setup-worker.sh release-bundle/setup-worker.sh
+          [ -f scripts/update.sh ] && cp scripts/update.sh release-bundle/update.sh || true
+          [ -f scripts/install-firecracker.sh ] && cp scripts/install-firecracker.sh release-bundle/install-firecracker.sh || true
+
+          # Config templates
+          mkdir -p release-bundle/snapshot-configs
+          cp snapshot-configs/*.yaml release-bundle/snapshot-configs/ 2>/dev/null || true
+
+          # Create tarball
+          tar -czf paws-v${VERSION}.tar.gz -C release-bundle .
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          # Extract the section for this version from CHANGELOG.md
+          awk "/^## \[${VERSION}\]/{found=1; next} /^## \[/{if(found) exit} found{print}" CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "Release v${VERSION}" > release-notes.md
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: paws v${{ steps.version.outputs.version }}
+          body_path: release-notes.md
+          files: |
+            paws-v${{ steps.version.outputs.version }}.tar.gz
+          draft: false
+          prerelease: false
+
+  # Deploy to staging (optional, same as deploy.yml)
+  deploy-staging:
+    needs: [build-images]
+    runs-on: ubuntu-latest
+    if: github.repository == 'arek-e/paws'
+    timeout-minutes: 10
+    steps:
+      - uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+
+      - name: Wait for Tailscale tunnel
+        run: |
+          for i in $(seq 1 30); do
+            if sudo tailscale ping -c 1 100.78.44.23 2>/dev/null; then
+              echo "Tailscale tunnel ready"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Deploy to staging
+        run: |
+          SSH="ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 root@100.78.44.23"
+          $SSH "cd /opt/paws && git fetch origin main && git reset --hard origin/main && bun install"
+          $SSH "systemctl restart paws-worker"
+          sleep 5
+          $SSH "curl -sf http://127.0.0.1:3000/health"

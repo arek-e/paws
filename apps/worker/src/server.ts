@@ -9,6 +9,15 @@ import type { SyncLoop } from './sync/sync-loop.js';
 import { createPangolinResourceManager } from './tunnel/pangolin-resources.js';
 import type { PangolinResourceManager } from './tunnel/pangolin-resources.js';
 
+// Read version from env (Docker) or VERSION file (bare metal)
+const PAWS_VERSION =
+  process.env['PAWS_VERSION'] ||
+  (
+    await Bun.file('/opt/paws/VERSION')
+      .text()
+      .catch(() => '0.0.0')
+  ).trim();
+
 const PORT = parseInt(process.env['PORT'] ?? '3000', 10);
 const MAX_CONCURRENT = parseInt(process.env['MAX_CONCURRENT_VMS'] ?? '5', 10);
 const MAX_QUEUED = parseInt(process.env['MAX_QUEUE_SIZE'] ?? '10', 10);
@@ -150,6 +159,7 @@ if (GATEWAY_URL && API_KEY) {
     apiKey: API_KEY,
     workerName: WORKER_NAME,
     workerUrl: WORKER_URL,
+    version: PAWS_VERSION,
     healthFn: () => ({
       status:
         semaphore.running === 0 && semaphore.queued === 0
@@ -177,7 +187,7 @@ const portExposureStatus = pangolinResources
 
 console.log(`
  /\\_/\\
-( o.o )  paws worker
+( o.o )  paws worker v${PAWS_VERSION}
  > ^ <
 
 Listening on :${PORT}
