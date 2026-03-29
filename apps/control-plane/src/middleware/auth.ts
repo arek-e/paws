@@ -1,17 +1,21 @@
 import type { Context, Next } from 'hono';
 
+import type { PasswordAuth } from '../auth/password.js';
+
 export interface AuthConfig {
   apiKey: string;
   /** When true, also check OIDC session cookie (requires @hono/oidc-auth init) */
   oidcEnabled?: boolean;
+  /** Password auth instance for session cookie validation */
+  passwordAuth?: PasswordAuth;
 }
 
-/** Dual auth middleware: OIDC session cookie OR Bearer API key */
+/** Multi-auth middleware: OIDC session → password session cookie → Bearer API key */
 export function authMiddleware(config: AuthConfig) {
-  const { apiKey, oidcEnabled = false } = config;
+  const { apiKey, oidcEnabled = false, passwordAuth } = config;
 
   return async (c: Context, next: Next) => {
-    // 1. Check OIDC session cookie (dashboard users)
+    // 1. Check OIDC session cookie (dashboard users with SSO)
     if (oidcEnabled) {
       try {
         const { getAuth } = await import('@hono/oidc-auth');
@@ -21,11 +25,23 @@ export function authMiddleware(config: AuthConfig) {
           return next();
         }
       } catch {
-        // OIDC not configured or session invalid — fall through to API key
+        // OIDC not configured or session invalid
       }
     }
 
-    // 2. Check Bearer API key (SDK/CLI/programmatic clients)
+    // 2. Check password session cookie (dashboard users on bare IP)
+    if (passwordAuth) {
+      const cookies = c.req.header('cookie') ?? '';
+      const match = cookies.match(/paws_session=([^;]+)/);
+      if (match) {
+        const session = passwordAuth.validateSession(match[1]);
+        if (session) {
+          return next();
+        }
+      }
+    }
+
+    // 3. Check Bearer API key (SDK/CLI/programmatic clients)
     const header = c.req.header('Authorization');
     if (header) {
       const [scheme, token] = header.split(' ');
@@ -34,7 +50,7 @@ export function authMiddleware(config: AuthConfig) {
       }
     }
 
-    // 3. Unauthorized
+    // 4. Unauthorized
     return c.json(
       { error: { code: 'UNAUTHORIZED', message: 'Invalid or missing authentication' } },
       401,

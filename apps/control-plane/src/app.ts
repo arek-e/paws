@@ -246,16 +246,95 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     );
   });
 
-  // --- Setup status (no auth — dashboard checks if first run) ---
+  // --- Password auth (for bare IP installs without OIDC) ---
 
+  const { createPasswordAuth } = await import('./auth/password.js');
+  const passwordAuth = createPasswordAuth(process.env['DATA_DIR'] ?? '/var/lib/paws/data');
+
+  // Setup status — no auth, dashboard checks this on load
   app.get('/v1/setup/status', (c) => {
-    const hasDaemons = daemonStore.list().length > 0;
-    const hasSessions = sessionStore.countActiveSessions() > 0;
-    const isFirstRun = !hasDaemons && !hasSessions;
     return c.json({
-      isFirstRun,
-      apiKey: isFirstRun ? deps.apiKey : undefined,
+      isFirstRun: passwordAuth.isFirstRun(),
+      needsAccount: passwordAuth.isFirstRun(),
+      oidcAvailable: oidcEnabled,
     });
+  });
+
+  // Create admin account (first run only)
+  app.post('/auth/setup', async (c) => {
+    if (!passwordAuth.isFirstRun()) {
+      return c.json(
+        { error: { code: 'ALREADY_SETUP', message: 'Admin account already exists' } },
+        409,
+      );
+    }
+
+    const body = await c.req.json<{ email: string; password: string }>().catch(() => null);
+    if (!body?.email || !body?.password) {
+      return c.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Email and password required' } },
+        400,
+      );
+    }
+    if (body.password.length < 8) {
+      return c.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Password must be at least 8 characters' } },
+        400,
+      );
+    }
+
+    const token = await passwordAuth.createAdmin(body.email, body.password);
+    if (!token) {
+      return c.json({ error: { code: 'SETUP_FAILED', message: 'Failed to create admin' } }, 500);
+    }
+
+    // Set session cookie
+    c.header(
+      'Set-Cookie',
+      `paws_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}`,
+    );
+    return c.json({ email: body.email, status: 'created' }, 201);
+  });
+
+  // Password login
+  app.post('/auth/password-login', async (c) => {
+    const body = await c.req.json<{ email: string; password: string }>().catch(() => null);
+    if (!body?.email || !body?.password) {
+      return c.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Email and password required' } },
+        400,
+      );
+    }
+
+    const token = await passwordAuth.login(body.email, body.password);
+    if (!token) {
+      return c.json(
+        { error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' } },
+        401,
+      );
+    }
+
+    c.header(
+      'Set-Cookie',
+      `paws_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}`,
+    );
+    return c.json({ email: body.email, status: 'authenticated' });
+  });
+
+  // Check session (from cookie)
+  app.get('/auth/session', (c) => {
+    const cookies = c.req.header('cookie') ?? '';
+    const match = cookies.match(/paws_session=([^;]+)/);
+    if (!match) {
+      return c.json({ authenticated: false }, 401);
+    }
+
+    const session = passwordAuth.validateSession(match[1]);
+    if (!session) {
+      return c.json({ authenticated: false }, 401);
+    }
+
+    return c.json({ authenticated: true, email: session.email });
   });
 
   // --- Version (no auth — workers and dashboard check this) ---
@@ -323,7 +402,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
   // --- Auth middleware for all /v1 routes (except webhooks) ---
 
-  const authConfig: AuthConfig = { apiKey: deps.apiKey, oidcEnabled };
+  const authConfig: AuthConfig = { apiKey: deps.apiKey, oidcEnabled, passwordAuth };
   app.use('/v1/sessions', authMiddleware(authConfig));
   app.use('/v1/sessions/*', authMiddleware(authConfig));
   app.use('/v1/daemons/*', authMiddleware(authConfig));
