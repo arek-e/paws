@@ -22,7 +22,7 @@ const HELP = `
 Usage: paws [options] <resource> <action> [args]
 
 Resources:
-  status      fleet overview with trees, boxes, and active kittens
+  status      fleet overview with workers and active sessions
   sessions    create, get, cancel, wait
   daemons     list, create, get, delete
   fleet       status, workers

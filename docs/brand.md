@@ -6,9 +6,10 @@
  > ^ <
 ```
 
-paws uses cat-themed names for core concepts. The metaphor is structural, not decorative —
-it teaches the architecture. "The control plane picks a tree, the tree builds a box, a kitten
-runs inside it."
+paws uses cat-themed names as a conceptual vocabulary for explaining the architecture. The
+metaphor is structural, not decorative — "the control plane picks a tree, the tree builds a
+box, a kitten runs inside it." These names live in documentation and conversation, not in the
+CLI or dashboard UI, which use standard infrastructure terms (workers, sessions, VMs).
 
 See [concepts.md](concepts.md) for the full domain glossary.
 
@@ -93,15 +94,11 @@ their own IDs because a kitten cannot exist outside a box.
 
 ### When to Use Which
 
-- **API endpoints:** Standard terms. `POST /v1/sessions`, `GET /v1/workers/:id/health`
-- **API responses:** Standard terms. `{ "worker_id": "...", "session_id": "..." }`
-- **CLI output:** User-facing terms. "tree-01", "box-a3f1", "3 kittens running"
-- **CLI commands:** User-facing terms. `paws status`, `paws fleet workers`
-- **Docs:** User-facing terms with glossary bridging. First mention in each doc links to glossary.
-- **Dashboard:** User-facing terms throughout.
-- **Error messages:** User-facing terms. "Box failed to start on tree-01."
-- **Log files:** Standard terms (logs are for debugging, not branding).
-- **Code comments:** Standard terms (comments are for developers, not users).
+- **Docs and conceptual explanations:** Cat terms (tree, box, kitten) to teach architecture.
+- **API, CLI, dashboard, error messages, logs, code:** Standard terms (worker, session, VM).
+
+The cat vocabulary is a teaching tool for understanding the system, not a replacement for
+standard infrastructure terminology in the product itself.
 
 ### Naming IDs in CLI Output
 

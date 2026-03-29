@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import type { FleetOverview, Session, WorkerListResponse } from '@paws/types';
-import { buildBoxIds, formatStatusOutput } from './status.js';
+import { buildShortIds, formatStatusOutput } from './status.js';
 
 function makeFleet(overrides: Partial<FleetOverview> = {}): FleetOverview {
   return {
@@ -85,7 +85,7 @@ describe('formatStatusOutput', () => {
     expect(output).toContain('( o.o )!');
   });
 
-  test('empty fleet shows no trees message', () => {
+  test('empty fleet shows no workers message', () => {
     const output = formatStatusOutput(
       makeFleet({
         totalWorkers: 0,
@@ -97,8 +97,8 @@ describe('formatStatusOutput', () => {
       makeWorkers([]),
       [],
     );
-    expect(output).toContain('No trees in the fleet.');
-    expect(output).toContain('0 trees, 0 kittens active');
+    expect(output).toContain('No workers in the fleet.');
+    expect(output).toContain('0 workers, 0 active sessions');
   });
 
   test('summary line shows correct counts', () => {
@@ -106,35 +106,35 @@ describe('formatStatusOutput', () => {
       makeSession(),
       makeSession({ sessionId: 'b2b2b2b2-0000-0000-0000-000000000000' }),
     ]);
-    expect(output).toContain('2 trees, 2 kittens active');
+    expect(output).toContain('2 workers, 2 active sessions');
   });
 
-  test('singular tree and kitten', () => {
+  test('singular worker and session', () => {
     const output = formatStatusOutput(
       makeFleet({ totalWorkers: 1 }),
       makeWorkers([{ name: 'w1' }]),
       [makeSession()],
     );
-    expect(output).toContain('1 tree, 1 kitten active');
+    expect(output).toContain('1 worker, 1 active session');
   });
 
-  test('worker names map to tree-01, tree-02', () => {
+  test('worker names map to worker-01, worker-02', () => {
     const output = formatStatusOutput(
       makeFleet(),
       makeWorkers([{ name: 'w1' }, { name: 'w2' }]),
       [],
     );
-    expect(output).toContain('tree-01');
-    expect(output).toContain('tree-02');
+    expect(output).toContain('worker-01');
+    expect(output).toContain('worker-02');
   });
 
-  test('session IDs shorten to box-XXXX', () => {
+  test('session IDs are shortened', () => {
     const output = formatStatusOutput(
       makeFleet(),
       makeWorkers([{ name: 'http://127.0.0.1:3000' }]),
       [makeSession({ sessionId: '7e22d901-0000-0000-0000-000000000000' })],
     );
-    expect(output).toContain('box-7e22');
+    expect(output).toContain('7e22d901');
   });
 
   test('no active sessions shows message', () => {
@@ -143,12 +143,12 @@ describe('formatStatusOutput', () => {
       makeWorkers([{ name: 'w1' }]),
       [],
     );
-    expect(output).toContain('No active kittens.');
+    expect(output).toContain('No active sessions.');
   });
 
   test('null sessions shows unavailable note', () => {
     const output = formatStatusOutput(makeFleet(), makeWorkers([{ name: 'w1' }]), null);
-    expect(output).toContain('ACTIVE KITTENS (unavailable)');
+    expect(output).toContain('ACTIVE SESSIONS (unavailable)');
   });
 
   test('session with no worker shows ---', () => {
@@ -167,35 +167,35 @@ describe('formatStatusOutput', () => {
       ]),
       [],
     );
-    expect(output).toContain('(1 tree unreachable)');
+    expect(output).toContain('(1 worker unreachable)');
   });
 });
 
-describe('buildBoxIds', () => {
-  test('shortens to 4 chars by default', () => {
-    const ids = buildBoxIds([
+describe('buildShortIds', () => {
+  test('shortens to 8 chars by default', () => {
+    const ids = buildShortIds([
       makeSession({ sessionId: 'a3f1e2b4-0000-0000-0000-000000000000' }),
       makeSession({ sessionId: 'b7c8d9e0-0000-0000-0000-000000000000' }),
     ]);
-    expect(ids).toEqual(['box-a3f1', 'box-b7c8']);
+    expect(ids).toEqual(['a3f1e2b4', 'b7c8d9e0']);
   });
 
-  test('extends to 6 chars on collision', () => {
-    const ids = buildBoxIds([
+  test('extends to 12 chars on collision', () => {
+    const ids = buildShortIds([
       makeSession({ sessionId: 'a3f1e2b4-0000-0000-0000-000000000000' }),
-      makeSession({ sessionId: 'a3f1ffff-0000-0000-0000-000000000000' }),
+      makeSession({ sessionId: 'a3f1e2b4-ffff-0000-0000-000000000000' }),
     ]);
-    expect(ids).toEqual(['box-a3f1e2', 'box-a3f1ff']);
+    expect(ids).toEqual(['a3f1e2b4-000', 'a3f1e2b4-fff']);
   });
 
-  test('non-colliding IDs stay at 4 chars when others collide', () => {
-    const ids = buildBoxIds([
+  test('non-colliding IDs stay at 8 chars when others collide', () => {
+    const ids = buildShortIds([
       makeSession({ sessionId: 'a3f1e2b4-0000-0000-0000-000000000000' }),
-      makeSession({ sessionId: 'a3f1ffff-0000-0000-0000-000000000000' }),
+      makeSession({ sessionId: 'a3f1e2b4-ffff-0000-0000-000000000000' }),
       makeSession({ sessionId: 'b7c8d9e0-0000-0000-0000-000000000000' }),
     ]);
-    expect(ids[0]).toBe('box-a3f1e2');
-    expect(ids[1]).toBe('box-a3f1ff');
-    expect(ids[2]).toBe('box-b7c8');
+    expect(ids[0]).toBe('a3f1e2b4-000');
+    expect(ids[1]).toBe('a3f1e2b4-fff');
+    expect(ids[2]).toBe('b7c8d9e0');
   });
 });

@@ -66,16 +66,16 @@ export function formatStatusOutput(
     workerList.some((w: Worker) => w.status !== 'healthy') ||
     (fleet.totalCapacity > 0 && fleet.totalCapacity - fleet.usedCapacity === 0);
 
-  const kittenCount = activeSessions?.length ?? fleet.activeSessions ?? 0;
-  const treeCount = workerList.length;
+  const sessionCount = activeSessions?.length ?? fleet.activeSessions ?? 0;
+  const workerCount = workerList.length;
   const unhealthyCount = workerList.filter((w: Worker) => w.status !== 'healthy').length;
 
-  const treeWord = treeCount === 1 ? 'tree' : 'trees';
-  const kittenWord = kittenCount === 1 ? 'kitten' : 'kittens';
+  const workerWord = workerCount === 1 ? 'worker' : 'workers';
+  const sessionWord = sessionCount === 1 ? 'session' : 'sessions';
 
-  let summary = `${treeCount} ${treeWord}, ${kittenCount} ${kittenWord} active`;
+  let summary = `${workerCount} ${workerWord}, ${sessionCount} active ${sessionWord}`;
   if (unhealthyCount > 0) {
-    const uhWord = unhealthyCount === 1 ? 'tree' : 'trees';
+    const uhWord = unhealthyCount === 1 ? 'worker' : 'workers';
     summary += ` (${unhealthyCount} ${uhWord} unreachable)`;
   }
 
@@ -86,77 +86,76 @@ export function formatStatusOutput(
   lines.push(CAT_BOTTOM);
   lines.push('');
 
-  if (treeCount === 0) {
-    lines.push('No trees in the fleet.');
+  if (workerCount === 0) {
+    lines.push('No workers in the fleet.');
     return lines.join('\n');
   }
 
-  // Trees table
-  const treeNames = buildTreeNames(workerList);
-  lines.push('TREES');
+  // Workers table
+  const workerNames = buildWorkerNames(workerList);
+  lines.push('WORKERS');
 
-  const treeRows = workerList.map((w: Worker, i: number) => {
-    const name = treeNames[i]!;
-    const boxes =
+  const workerRows = workerList.map((w: Worker, i: number) => {
+    const name = workerNames[i]!;
+    const slots =
       w.status === 'healthy' || w.status === 'degraded'
         ? `${w.capacity.running}/${w.capacity.maxConcurrent}`
         : '---';
     const uptime = w.uptime > 0 ? formatDuration(w.uptime) : '---';
     const status = w.status === 'healthy' ? 'healthy' : w.status;
-    return { NAME: name, BOXES: boxes, STATUS: status, UPTIME: uptime };
+    return { NAME: name, SLOTS: slots, STATUS: status, UPTIME: uptime };
   });
 
-  lines.push(formatTable(treeRows, 2));
+  lines.push(formatTable(workerRows, 2));
   lines.push('');
 
-  // Active kittens table
+  // Active sessions table
   if (activeSessions === null) {
-    lines.push('ACTIVE KITTENS (unavailable)');
+    lines.push('ACTIVE SESSIONS (unavailable)');
   } else if (activeSessions.length === 0) {
-    lines.push('No active kittens.');
+    lines.push('No active sessions.');
   } else {
-    lines.push('ACTIVE KITTENS');
-    const boxIds = buildBoxIds(activeSessions);
-    const kittenRows = activeSessions.map((s, i) => {
-      const id = boxIds[i]!;
+    lines.push('ACTIVE SESSIONS');
+    const shortIds = buildShortIds(activeSessions);
+    const sessionRows = activeSessions.map((s, i) => {
+      const id = shortIds[i]!;
       const daemon = (s.metadata as Record<string, unknown>)?.role ?? '---';
-      const tree = s.worker ? findTreeName(treeNames, workerList, s.worker) : '---';
+      const worker = s.worker ? findWorkerName(workerNames, workerList, s.worker) : '---';
       const age = s.startedAt
         ? formatDuration(Date.now() - new Date(s.startedAt).getTime())
         : '---';
-      return { ID: id, DAEMON: String(daemon), TREE: tree, AGE: age, STATUS: s.status };
+      return { ID: id, DAEMON: String(daemon), WORKER: worker, AGE: age, STATUS: s.status };
     });
-    lines.push(formatTable(kittenRows, 2));
+    lines.push(formatTable(sessionRows, 2));
   }
 
   return lines.join('\n');
 }
 
-function buildTreeNames(workers: Worker[]): string[] {
-  return workers.map((_: Worker, i: number) => `tree-${String(i + 1).padStart(2, '0')}`);
+function buildWorkerNames(workers: Worker[]): string[] {
+  return workers.map((_: Worker, i: number) => `worker-${String(i + 1).padStart(2, '0')}`);
 }
 
-function findTreeName(treeNames: string[], workers: Worker[], workerName: string): string {
-  const idx = workers.findIndex((w: Worker) => w.name === workerName);
-  return idx >= 0 ? treeNames[idx]! : '---';
+function findWorkerName(workerNames: string[], workers: Worker[], workerUrl: string): string {
+  const idx = workers.findIndex((w: Worker) => w.name === workerUrl);
+  return idx >= 0 ? workerNames[idx]! : '---';
 }
 
-export function buildBoxIds(sessions: Session[]): string[] {
-  const shortIds = sessions.map((s) => s.sessionId.slice(0, 4));
+export function buildShortIds(sessions: Session[]): string[] {
+  const shortIds = sessions.map((s) => s.sessionId.slice(0, 8));
 
-  // Detect collisions and extend to 6 chars
+  // Detect collisions and extend to 12 chars
   const counts = new Map<string, number>();
   for (const id of shortIds) {
     counts.set(id, (counts.get(id) ?? 0) + 1);
   }
 
   return sessions.map((s) => {
-    const short = s.sessionId.slice(0, 4);
-    const prefix = 'box-';
+    const short = s.sessionId.slice(0, 8);
     if ((counts.get(short) ?? 0) > 1) {
-      return prefix + s.sessionId.slice(0, 6);
+      return s.sessionId.slice(0, 12);
     }
-    return prefix + short;
+    return short;
   });
 }
 
