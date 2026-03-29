@@ -127,6 +127,41 @@ flags:
   allow_raw_resources: true
 EOF
 
+# ── Generate Dex config (minimal, OIDC enabled later with domain) ─────────
+mkdir -p config/dex
+cat > config/dex/config.yaml << EOF
+issuer: http://${SERVER_IP}:3000/dex
+
+storage:
+  type: sqlite3
+  config:
+    file: /data/dex.db
+
+web:
+  http: 0.0.0.0:5556
+
+enablePasswordDB: true
+EOF
+
+# ── Generate Traefik config (for tunnel subdomains) ───────────────────────
+mkdir -p config/traefik
+cat > config/traefik/traefik_config.yml << EOF
+api:
+  insecure: true
+
+log:
+  level: INFO
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  http:
+    endpoint: "http://pangolin:3001/api/v1/traefik-config"
+    pollInterval: "5s"
+EOF
+
 # ── Start ─────────────────────────────────────────────────────────────────
 info "Starting paws..."
 docker compose build gateway 2>&1 | tail -3
