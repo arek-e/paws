@@ -70,6 +70,12 @@ export const ExposedPortSchema = z.object({
   url: z.string().url(),
   /** Human-readable label */
   label: z.string().optional(),
+  /** Access control mode used for this port */
+  access: z.enum(['sso', 'pin', 'email']).optional(),
+  /** Auto-generated PIN (only present when access is 'pin') */
+  pin: z.string().optional(),
+  /** Time-limited shareable link (always generated) */
+  shareLink: z.string().url().optional(),
 });
 
 export type ExposedPort = z.infer<typeof ExposedPortSchema>;

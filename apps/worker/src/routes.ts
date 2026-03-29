@@ -35,7 +35,16 @@ export function createSessionApp(deps: AppDeps) {
       output: unknown;
       durationMs: number;
       completedAt: string;
-      exposedPorts?: Array<{ port: number; url: string; label?: string | undefined }> | undefined;
+      exposedPorts?:
+        | Array<{
+            port: number;
+            url: string;
+            label?: string | undefined;
+            access?: string | undefined;
+            pin?: string | undefined;
+            shareLink?: string | undefined;
+          }>
+        | undefined;
     }
   >();
 
@@ -147,6 +156,9 @@ export function createSessionApp(deps: AppDeps) {
           port: t.port,
           url: t.publicUrl,
           label: t.label,
+          access: t.access,
+          pin: t.pin,
+          shareLink: t.shareLink,
         })),
       });
     }

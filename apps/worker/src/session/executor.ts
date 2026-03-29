@@ -52,7 +52,16 @@ export interface SessionResult {
   stderr: string;
   output: unknown;
   durationMs: number;
-  exposedPorts?: Array<{ port: number; url: string; label?: string | undefined }> | undefined;
+  exposedPorts?:
+    | Array<{
+        port: number;
+        url: string;
+        label?: string | undefined;
+        access?: string | undefined;
+        pin?: string | undefined;
+        shareLink?: string | undefined;
+      }>
+    | undefined;
 }
 
 /** Active session state for tracking */
@@ -216,9 +225,7 @@ export function createExecutor(config: ExecutorConfig) {
 
         // 9.5. Set up port exposure (if configured)
         const exposePorts = network.expose ?? [];
-        let exposedPortUrls:
-          | Array<{ port: number; url: string; label?: string | undefined }>
-          | undefined;
+        let exposedPortUrls: SessionResult['exposedPorts'];
 
         if (exposePorts.length > 0 && config.portPool) {
           const portResult = config.portPool.allocate(exposePorts.length);
@@ -263,6 +270,9 @@ export function createExecutor(config: ExecutorConfig) {
               port: t.port,
               url: t.publicUrl,
               label: t.label,
+              access: t.access,
+              pin: t.pin,
+              shareLink: t.shareLink,
             }));
           } else if (config.workerExternalUrl) {
             // Fallback: direct host port URLs

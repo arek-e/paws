@@ -50,12 +50,14 @@ export {
   DomainCredentialSchema,
   NetworkAllocationSchema,
   NetworkConfigSchema,
+  PortAccessSchema,
   PortExposureSchema,
 } from './network.js';
 export type {
   DomainCredential,
   NetworkAllocation,
   NetworkConfig,
+  PortAccess,
   PortExposure,
 } from './network.js';
 

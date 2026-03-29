@@ -79,6 +79,29 @@ describe('PortExposureSchema', () => {
   test('rejects invalid protocol', () => {
     expect(() => PortExposureSchema.parse({ port: 80, protocol: 'ftp' })).toThrow();
   });
+
+  test('accepts access mode', () => {
+    const result = PortExposureSchema.parse({ port: 3000, access: 'pin' });
+    expect(result.access).toBe('pin');
+  });
+
+  test('accepts email access with allowedEmails', () => {
+    const result = PortExposureSchema.parse({
+      port: 3000,
+      access: 'email',
+      allowedEmails: ['*@company.com', 'user@example.com'],
+    });
+    expect(result.access).toBe('email');
+    expect(result.allowedEmails).toEqual(['*@company.com', 'user@example.com']);
+  });
+
+  test('access is optional (undefined when not provided)', () => {
+    // access field is optional on PortExposureSchema — default 'sso' is on PortAccessSchema
+    const result = PortExposureSchema.parse({ port: 3000 });
+    // PortAccessSchema has .default('sso') but the field itself is .optional()
+    // so it may or may not be present
+    expect(['sso', undefined]).toContain(result.access);
+  });
 });
 
 describe('NetworkAllocationSchema', () => {

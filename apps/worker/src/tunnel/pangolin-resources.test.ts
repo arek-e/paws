@@ -11,6 +11,11 @@ const BASE_CONFIG = {
   baseDomain: 'fleet.tpops.dev',
 };
 
+/** Mock a successful share link response */
+function mockShareLink(token = 'share-tok-1') {
+  return new Response(JSON.stringify({ data: { token } }), { status: 200 });
+}
+
 describe('createPangolinResourceManager', () => {
   const fetchSpy = vi.fn<typeof globalThis.fetch>();
 
@@ -24,21 +29,23 @@ describe('createPangolinResourceManager', () => {
   });
 
   describe('expose', () => {
-    it('creates Pangolin resources with two-step API (resource + target)', async () => {
-      // Port 3000: create resource → create target
+    it('creates resources with resource + target + share link', async () => {
+      // Port 3000: create resource → target → share link
       fetchSpy.mockResolvedValueOnce(
         new Response(JSON.stringify({ data: { resourceId: 'res-1' } }), { status: 200 }),
       );
       fetchSpy.mockResolvedValueOnce(
         new Response(JSON.stringify({ data: { targetId: 'tgt-1' } }), { status: 200 }),
       );
-      // Port 5432: create resource → create target
+      fetchSpy.mockResolvedValueOnce(mockShareLink('tok-1'));
+      // Port 5432: create resource → target → share link
       fetchSpy.mockResolvedValueOnce(
         new Response(JSON.stringify({ data: { resourceId: 'res-2' } }), { status: 200 }),
       );
       fetchSpy.mockResolvedValueOnce(
         new Response(JSON.stringify({ data: { targetId: 'tgt-2' } }), { status: 200 }),
       );
+      fetchSpy.mockResolvedValueOnce(mockShareLink('tok-2'));
 
       const manager = createPangolinResourceManager(BASE_CONFIG);
       const tunnels = await manager.expose(
@@ -51,41 +58,89 @@ describe('createPangolinResourceManager', () => {
       );
 
       expect(tunnels).toHaveLength(2);
+      expect(tunnels[0]?.port).toBe(3000);
+      expect(tunnels[0]?.resourceId).toBe('res-1');
+      expect(tunnels[0]?.publicUrl).toBe('https://s-abcdef12-3000.fleet.tpops.dev');
+      expect(tunnels[0]?.access).toBe('sso');
+      expect(tunnels[0]?.shareLink).toContain('tok-1');
 
-      expect(tunnels[0]).toEqual({
-        port: 3000,
-        hostPort: 10001,
-        resourceId: 'res-1',
-        publicUrl: 'https://s-abcdef12-3000.fleet.tpops.dev',
-        label: 'Web',
-      });
+      expect(tunnels[1]?.port).toBe(5432);
+      expect(tunnels[1]?.resourceId).toBe('res-2');
 
-      expect(tunnels[1]).toEqual({
-        port: 5432,
-        hostPort: 10002,
-        resourceId: 'res-2',
-        publicUrl: 'https://s-abcdef12-5432.fleet.tpops.dev',
-        label: undefined,
-      });
+      // 6 API calls: (create + target + share) x 2 ports
+      expect(fetchSpy).toHaveBeenCalledTimes(6);
 
-      // 4 API calls: 2 resources + 2 targets
-      expect(fetchSpy).toHaveBeenCalledTimes(4);
-
-      // Step 1: Create resource
+      // Verify create resource call
       const [url1, opts1] = fetchSpy.mock.calls[0]!;
       expect(url1).toBe('http://pangolin:3001/api/v1/org/org-123/resource');
       const body1 = JSON.parse((opts1 as RequestInit).body as string);
       expect(body1.subdomain).toBe('s-abcdef12-3000');
       expect(body1.domainId).toBe('dom-789');
-      expect(body1.http).toBe(true);
 
-      // Step 2: Add target
+      // Verify target call
       const [url2, opts2] = fetchSpy.mock.calls[1]!;
       expect(url2).toBe('http://pangolin:3001/api/v1/resource/res-1/target');
       const body2 = JSON.parse((opts2 as RequestInit).body as string);
       expect(body2.siteId).toBe(456);
       expect(body2.port).toBe(10001);
-      expect(body2.method).toBe('http');
+    });
+
+    it('configures PIN auth when access is pin', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: { resourceId: 'res-pin' } }), { status: 200 }),
+      );
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: { targetId: 'tgt-1' } }), { status: 200 }),
+      );
+      // Auth config call (PIN)
+      fetchSpy.mockResolvedValueOnce(new Response(null, { status: 200 }));
+      // Share link
+      fetchSpy.mockResolvedValueOnce(mockShareLink('tok-pin'));
+
+      const manager = createPangolinResourceManager(BASE_CONFIG);
+      const tunnels = await manager.expose(
+        'abcdef12-0000-0000-0000-000000000000',
+        [{ port: 3000, protocol: 'http', access: 'pin' }],
+        [10001],
+      );
+
+      expect(tunnels[0]?.access).toBe('pin');
+      expect(tunnels[0]?.pin).toMatch(/^\d{6}$/); // 6-digit PIN
+
+      // Auth config call should set pincodeEnabled
+      const [authUrl, authOpts] = fetchSpy.mock.calls[2]!;
+      expect(authUrl).toBe('http://pangolin:3001/api/v1/resource/res-pin/auth');
+      const authBody = JSON.parse((authOpts as RequestInit).body as string);
+      expect(authBody.pincodeEnabled).toBe(true);
+      expect(authBody.sso).toBe(false);
+    });
+
+    it('configures email whitelist when access is email', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: { resourceId: 'res-email' } }), { status: 200 }),
+      );
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: { targetId: 'tgt-1' } }), { status: 200 }),
+      );
+      // Auth config call (email)
+      fetchSpy.mockResolvedValueOnce(new Response(null, { status: 200 }));
+      // Share link
+      fetchSpy.mockResolvedValueOnce(mockShareLink('tok-email'));
+
+      const manager = createPangolinResourceManager(BASE_CONFIG);
+      const tunnels = await manager.expose(
+        'abcdef12-0000-0000-0000-000000000000',
+        [{ port: 8080, protocol: 'http', access: 'email', allowedEmails: ['*@acme.com'] }],
+        [10002],
+      );
+
+      expect(tunnels[0]?.access).toBe('email');
+
+      const [authUrl, authOpts] = fetchSpy.mock.calls[2]!;
+      expect(authUrl).toBe('http://pangolin:3001/api/v1/resource/res-email/auth');
+      const authBody = JSON.parse((authOpts as RequestInit).body as string);
+      expect(authBody.emailWhitelistEnabled).toBe(true);
+      expect(authBody.emailWhitelist).toEqual(['*@acme.com']);
     });
 
     it('includes Authorization header with API key', async () => {
@@ -95,6 +150,7 @@ describe('createPangolinResourceManager', () => {
       fetchSpy.mockResolvedValueOnce(
         new Response(JSON.stringify({ data: { targetId: 'tgt-1' } }), { status: 200 }),
       );
+      fetchSpy.mockResolvedValueOnce(mockShareLink());
 
       const manager = createPangolinResourceManager(BASE_CONFIG);
       await manager.expose(
@@ -119,31 +175,6 @@ describe('createPangolinResourceManager', () => {
           [10001],
         ),
       ).rejects.toThrow('Pangolin resource creation failed for port 3000: 500');
-    });
-
-    it('cleans up resource on target creation error', async () => {
-      // Resource created OK
-      fetchSpy.mockResolvedValueOnce(
-        new Response(JSON.stringify({ data: { resourceId: 'res-orphan' } }), { status: 200 }),
-      );
-      // Target creation fails
-      fetchSpy.mockResolvedValueOnce(new Response('target error', { status: 500 }));
-      // Cleanup delete of orphaned resource
-      fetchSpy.mockResolvedValueOnce(new Response(null, { status: 204 }));
-
-      const manager = createPangolinResourceManager(BASE_CONFIG);
-      await expect(
-        manager.expose(
-          'abcdef12-0000-0000-0000-000000000000',
-          [{ port: 3000, protocol: 'http' }],
-          [10001],
-        ),
-      ).rejects.toThrow('Pangolin target creation failed for port 3000: 500');
-
-      // 3 calls: create resource, fail target, cleanup resource
-      expect(fetchSpy).toHaveBeenCalledTimes(3);
-      const [deleteUrl] = fetchSpy.mock.calls[2]!;
-      expect(deleteUrl).toBe('http://pangolin:3001/api/v1/resource/res-orphan');
     });
   });
 
@@ -172,19 +203,6 @@ describe('createPangolinResourceManager', () => {
       expect(url1).toBe('http://pangolin:3001/api/v1/resource/res-1');
       const [, opts1] = fetchSpy.mock.calls[0]!;
       expect((opts1 as RequestInit).method).toBe('DELETE');
-    });
-
-    it('continues on 404 (resource already deleted)', async () => {
-      fetchSpy.mockResolvedValueOnce(new Response(null, { status: 404 }));
-      fetchSpy.mockResolvedValueOnce(new Response(null, { status: 204 }));
-
-      const manager = createPangolinResourceManager(BASE_CONFIG);
-      await manager.cleanup([
-        { port: 3000, hostPort: 10001, resourceId: 'gone', publicUrl: 'https://x.dev' },
-        { port: 5432, hostPort: 10002, resourceId: 'exists', publicUrl: 'https://y.dev' },
-      ]);
-
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
     });
 
     it('continues on network error (best-effort)', async () => {

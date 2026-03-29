@@ -125,21 +125,59 @@ export function SessionDetail() {
               <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-2">
                 Exposed Ports
               </h2>
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 space-y-2">
-                {session.data.exposedPorts.map((ep) => (
-                  <div key={ep.port} className="flex items-center gap-3 text-sm">
-                    <span className="px-2 py-0.5 text-xs font-mono rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
-                      :{ep.port}
-                    </span>
-                    {ep.label && <span className="text-zinc-500 text-xs">{ep.label}</span>}
-                    <a
-                      href={ep.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 font-mono text-xs"
-                    >
-                      {ep.url}
-                    </a>
+              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 space-y-3">
+                {session.data.exposedPorts.map((ep: Record<string, unknown>) => (
+                  <div key={ep.port as number} className="space-y-1">
+                    <div className="flex items-center gap-3 text-sm">
+                      <span className="px-2 py-0.5 text-xs font-mono rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                        :{ep.port as number}
+                      </span>
+                      {ep.label && (
+                        <span className="text-zinc-500 text-xs">{ep.label as string}</span>
+                      )}
+                      {ep.access && (
+                        <span
+                          className={`px-1.5 py-0.5 text-xs rounded border ${
+                            ep.access === 'sso'
+                              ? 'bg-blue-400/10 text-blue-400 border-blue-400/20'
+                              : ep.access === 'pin'
+                                ? 'bg-amber-400/10 text-amber-400 border-amber-400/20'
+                                : 'bg-purple-400/10 text-purple-400 border-purple-400/20'
+                          }`}
+                        >
+                          {ep.access as string}
+                        </span>
+                      )}
+                      <a
+                        href={ep.url as string}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 font-mono text-xs"
+                      >
+                        {ep.url as string}
+                      </a>
+                    </div>
+                    {ep.pin && (
+                      <div className="flex items-center gap-2 ml-8">
+                        <span className="text-xs text-zinc-500">PIN:</span>
+                        <code className="text-xs text-amber-400 bg-zinc-800 px-2 py-0.5 rounded font-mono">
+                          {ep.pin as string}
+                        </code>
+                      </div>
+                    )}
+                    {ep.shareLink && (
+                      <div className="flex items-center gap-2 ml-8">
+                        <span className="text-xs text-zinc-500">Share:</span>
+                        <a
+                          href={ep.shareLink as string}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-zinc-400 hover:text-zinc-300 underline underline-offset-2 font-mono truncate max-w-md"
+                        >
+                          {ep.shareLink as string}
+                        </a>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

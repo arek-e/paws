@@ -29,6 +29,12 @@ export interface ExposedTunnel {
   publicUrl: string;
   /** Human-readable label */
   label?: string | undefined;
+  /** Access control mode */
+  access?: string | undefined;
+  /** Auto-generated PIN (when access is 'pin') */
+  pin?: string | undefined;
+  /** Time-limited shareable link */
+  shareLink?: string | undefined;
 }
 
 /**
@@ -184,12 +190,71 @@ export function createPangolinResourceManager(config: PangolinResourceConfig) {
             );
           }
 
+          // Step 3: Configure access control on the resource
+          const accessMode = portConfig.access ?? 'sso';
+          let pin: string | undefined;
+
+          if (accessMode === 'pin') {
+            // Generate a 6-digit PIN
+            pin = String(Math.floor(100000 + Math.random() * 900000));
+            await authFetch(`${apiUrl}/resource/${resourceId}/auth`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                sso: false,
+                pincodeEnabled: true,
+                pincode: pin,
+              }),
+            }).catch((err) => {
+              console.error(`pangolin: failed to set PIN for resource ${resourceId}:`, err);
+            });
+          } else if (accessMode === 'email') {
+            const emails = portConfig.allowedEmails ?? [];
+            await authFetch(`${apiUrl}/resource/${resourceId}/auth`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                sso: false,
+                emailWhitelistEnabled: true,
+                emailWhitelist: emails,
+              }),
+            }).catch((err) => {
+              console.error(
+                `pangolin: failed to set email whitelist for resource ${resourceId}:`,
+                err,
+              );
+            });
+          }
+          // 'sso' is the default — no extra config needed
+
+          // Step 4: Create a time-limited shareable link
+          let shareLink: string | undefined;
+          const shareLinkRes = await authFetch(`${apiUrl}/resource/${resourceId}/share-link`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              // Link expires when the session's timeout expires (default 10 min)
+              expiresIn: '24h',
+            }),
+          }).catch(() => null);
+
+          if (shareLinkRes?.ok) {
+            const linkBody = (await shareLinkRes.json().catch(() => null)) as {
+              data?: { link?: string; token?: string };
+            } | null;
+            if (linkBody?.data?.link) {
+              shareLink = linkBody.data.link;
+            } else if (linkBody?.data?.token) {
+              shareLink = `https://${fullDomain}?token=${linkBody.data.token}`;
+            }
+          }
+
           tunnels.push({
             port: portConfig.port,
             hostPort,
             resourceId,
             publicUrl: `https://${fullDomain}`,
             label: portConfig.label,
+            access: accessMode,
+            pin,
+            shareLink,
           });
         }
       } catch (err) {

@@ -7,6 +7,11 @@ export const DomainCredentialSchema = z.object({
 
 export type DomainCredential = z.infer<typeof DomainCredentialSchema>;
 
+/** Access control mode for an exposed port */
+export const PortAccessSchema = z.enum(['sso', 'pin', 'email']).default('sso');
+
+export type PortAccess = z.infer<typeof PortAccessSchema>;
+
 /** Port to expose publicly from the VM via Pangolin tunnel */
 export const PortExposureSchema = z.object({
   /** Port inside the VM to expose */
@@ -15,6 +20,10 @@ export const PortExposureSchema = z.object({
   protocol: z.enum(['http', 'https']).default('http'),
   /** Human-readable label (e.g., "Next.js dev server") */
   label: z.string().optional(),
+  /** Access control mode (default: sso — Pangolin login required) */
+  access: PortAccessSchema.optional(),
+  /** Email whitelist — only used when access is 'email' (e.g., ["*@company.com", "user@example.com"]) */
+  allowedEmails: z.array(z.string()).optional(),
 });
 
 export type PortExposure = z.infer<typeof PortExposureSchema>;
