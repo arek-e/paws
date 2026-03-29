@@ -408,3 +408,57 @@ export async function deployTemplate(
   }
   return res.json();
 }
+
+// --- Audit Log ---
+
+export interface AuditEvent {
+  id: string;
+  timestamp: string;
+  category: 'session' | 'daemon' | 'server' | 'auth' | 'system';
+  action: string;
+  actor?: string;
+  resourceType?: string;
+  resourceId?: string;
+  details?: Record<string, unknown>;
+  severity: 'info' | 'warn' | 'error';
+}
+
+export interface AuditFilters {
+  category?: string;
+  action?: string;
+  severity?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+  since?: string;
+  until?: string;
+}
+
+export interface AuditStats {
+  last24h: Record<string, number>;
+  last7d: Record<string, number>;
+  total: number;
+}
+
+export async function getAuditEvents(
+  filters?: AuditFilters,
+): Promise<{ events: AuditEvent[]; total: number }> {
+  const params = new URLSearchParams();
+  if (filters) {
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== '') {
+        params.set(key, String(value));
+      }
+    }
+  }
+  const qs = params.toString();
+  const res = await fetch(`/v1/audit${qs ? `?${qs}` : ''}`, { headers: apiKeyHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch audit events: ${res.status}`);
+  return res.json();
+}
+
+export async function getAuditStats(): Promise<AuditStats> {
+  const res = await fetch('/v1/audit/stats', { headers: apiKeyHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch audit stats: ${res.status}`);
+  return res.json();
+}

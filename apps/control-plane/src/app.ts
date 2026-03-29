@@ -49,6 +49,8 @@ import {
 import { buildSnapshotRoute, listSnapshotsRoute } from './routes/snapshots.js';
 import { createServerRoutes } from './routes/servers.js';
 import { receiveWebhookRoute } from './routes/webhooks.js';
+import { listAuditRoute, auditStatsRoute } from './routes/audit.js';
+import { createAuditStore } from './store/audit.js';
 import { createDaemonStore, type DaemonStore } from './store/daemons.js';
 import { createTemplateStore } from './store/templates.js';
 import { createSnapshotConfigStore } from './store/snapshot-configs.js';
@@ -151,6 +153,9 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   const { createSessionEvents } = await import('./events.js');
   const sessionEvents = createSessionEvents();
 
+  // Audit log
+  const auditStore = createAuditStore();
+
   // Metrics
   const metrics = createControlPlaneMetrics({
     sessionStore: rawSessionStore,
@@ -167,9 +172,21 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       if (session) {
         sessionEvents.emit('update', sessionId, session);
 
-        // Record metrics + daemon cost on terminal states
+        // Record metrics + daemon cost + audit on terminal states
         const terminal = ['completed', 'failed', 'timeout', 'cancelled'];
         if (terminal.includes(status)) {
+          auditStore.append({
+            category: 'session',
+            action: `session.${status}`,
+            severity: status === 'completed' ? 'info' : status === 'cancelled' ? 'warn' : 'error',
+            resourceType: 'session',
+            resourceId: sessionId,
+            details: {
+              durationMs: session.durationMs,
+              worker: session.worker,
+              daemonRole: session.daemonRole,
+            },
+          });
           metrics.recordSession(
             status,
             session.durationMs,
@@ -298,6 +315,8 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   app.use('/v1/provisioning/*', authMiddleware(authConfig));
   app.use('/v1/templates', authMiddleware(authConfig));
   app.use('/v1/templates/*', authMiddleware(authConfig));
+  app.use('/v1/audit/*', authMiddleware(authConfig));
+  app.use('/v1/audit', authMiddleware(authConfig));
 
   // Snapshot config store — hoisted so mergeSnapshotDomains can use it in session dispatch
   const snapshotConfigStore = createSnapshotConfigStore();
@@ -328,6 +347,15 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     const body = c.req.valid('json');
     const sessionId = randomUUID();
     sessionStore.create(sessionId, body);
+
+    auditStore.append({
+      category: 'session',
+      action: 'session.created',
+      severity: 'info',
+      resourceType: 'session',
+      resourceId: sessionId,
+      details: { snapshot: body.snapshot },
+    });
 
     // Merge snapshot requiredDomains into network allowOut before dispatch
     const enriched = mergeSnapshotDomains(body);
@@ -394,6 +422,13 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     }
 
     sessionStore.updateStatus(id, 'cancelled');
+    auditStore.append({
+      category: 'session',
+      action: 'session.cancelled',
+      severity: 'warn',
+      resourceType: 'session',
+      resourceId: id,
+    });
     return c.json({ sessionId: id, status: 'cancelled' as const }, 200);
   });
 
@@ -414,6 +449,13 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     }
 
     const daemon = daemonStore.create(body);
+    auditStore.append({
+      category: 'daemon',
+      action: 'daemon.created',
+      severity: 'info',
+      resourceType: 'daemon',
+      resourceId: daemon.role,
+    });
     return c.json(
       { role: daemon.role, status: 'active' as const, createdAt: daemon.createdAt },
       201,
@@ -487,6 +529,13 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       role,
       patch as Partial<import('./store/daemons.js').StoredDaemon>,
     )!;
+    auditStore.append({
+      category: 'daemon',
+      action: 'daemon.updated',
+      severity: 'info',
+      resourceType: 'daemon',
+      resourceId: role,
+    });
 
     const recentSessions = sessionStore.listByDaemon(role).map((s) => ({
       sessionId: s.sessionId,
@@ -517,6 +566,13 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
         404,
       );
     }
+    auditStore.append({
+      category: 'daemon',
+      action: 'daemon.deleted',
+      severity: 'warn',
+      resourceType: 'daemon',
+      resourceId: role,
+    });
     return c.json({ role, status: 'stopped' as const }, 200);
   });
 
@@ -636,6 +692,13 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
     // Check governance rate limit
     if (!governance.checkRateLimit(role, daemon.governance)) {
+      auditStore.append({
+        category: 'daemon',
+        action: 'governance.rate_limited',
+        severity: 'warn',
+        resourceType: 'daemon',
+        resourceId: role,
+      });
       return c.json(
         {
           error: {
@@ -693,6 +756,14 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     sessionStore.create(sessionId, sessionRequest, role);
     governance.recordAction(role);
     daemonStore.recordInvocation(role);
+    auditStore.append({
+      category: 'daemon',
+      action: 'daemon.triggered',
+      severity: 'info',
+      resourceType: 'daemon',
+      resourceId: role,
+      details: { sessionId },
+    });
 
     // Dispatch to worker
     dispatchSession(discovery, legacyWorkerClient, sessionStore, sessionId, sessionRequest);
@@ -873,6 +944,18 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       return c.json({ accepted: true, sessionId }, 202);
     });
   }
+
+  // --- Audit ---
+
+  app.openapi(listAuditRoute, (c) => {
+    const query = c.req.valid('query');
+    const result = auditStore.query(query);
+    return c.json(result, 200);
+  });
+
+  app.openapi(auditStatsRoute, (c) => {
+    return c.json(auditStore.stats(), 200);
+  });
 
   // --- Fleet ---
 

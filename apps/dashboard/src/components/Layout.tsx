@@ -73,6 +73,7 @@ export function Layout() {
           <SidebarLink to="/servers" label="Servers" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/sessions" label="Sessions" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/provision" label="Provision" onClick={() => setMenuOpen(false)} />
+          <SidebarLink to="/audit" label="Audit Log" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/setup" label="Setup" onClick={() => setMenuOpen(false)} />
           <button
             onClick={handleLogout}
@@ -99,6 +100,7 @@ export function Layout() {
           <SidebarLink to="/servers" label="Servers" />
           <SidebarLink to="/sessions" label="Sessions" />
           <SidebarLink to="/provision" label="Provision" />
+          <SidebarLink to="/audit" label="Audit Log" />
           <SidebarLink to="/setup" label="Setup" />
         </nav>
         <div className="p-3 border-t border-zinc-800 space-y-2">
