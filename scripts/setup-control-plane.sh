@@ -99,7 +99,7 @@ gerbil:
   base_endpoint: "${TUNNEL_DOMAIN}"
 
 app:
-  dashboard_url: "https://pangolin.${DOMAIN}"
+  dashboard_url: "https://${DOMAIN}"
   log_level: "info"
 
 domains:
@@ -110,17 +110,22 @@ server:
   secret: "${PANGOLIN_SECRET}"
   cors:
     origins:
-      - "https://pangolin.${DOMAIN}"
-      - "https://fleet.${DOMAIN}"
+      - "https://${DOMAIN}"
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
     allowed_headers: ["X-CSRF-Token", "Content-Type", "Authorization"]
     credentials: true
 
 flags:
   require_email_verification: false
-  disable_signup_without_invite: true
+  disable_signup_without_invite: false
   disable_user_create_org: false
   allow_raw_resources: true
+
+# Users block auto-creates the admin account (no manual Pangolin setup step)
+users:
+  - email: "${ACME_EMAIL}"
+    password: "${PANGOLIN_SECRET}"
+    role: "admin"
 EOF
 
 # ── Generate Dex config ────────────────────────────────────────────────────
@@ -128,7 +133,7 @@ echo "==> Generating Dex config..."
 mkdir -p config/dex
 
 cat > config/dex/config.yaml << EOF
-issuer: https://fleet.${DOMAIN}/dex
+issuer: https://${DOMAIN}/dex
 
 storage:
   type: sqlite3
@@ -142,13 +147,13 @@ staticClients:
   - id: paws-control-plane
     name: paws
     redirectURIs:
-      - https://fleet.${DOMAIN}/auth/callback
+      - https://${DOMAIN}/auth/callback
     secret: ${OIDC_CLIENT_SECRET}
 
   - id: pangolin
     name: pangolin
     redirectURIs:
-      - https://pangolin.${DOMAIN}/auth/idp/1/oidc/callback
+      - https://${DOMAIN}/pangolin/auth/idp/1/oidc/callback
     secret: ${PANGOLIN_OIDC_SECRET}
 
 enablePasswordDB: true
@@ -268,34 +273,19 @@ docker compose up -d
 
 echo ""
 echo " /\\_/\\"
-echo "( ^.^ )  all services starting!"
+echo "( ^.^ )  paws is running!"
 echo " > ^ <"
 echo ""
-echo "Services:"
-echo "  Pangolin dashboard: https://pangolin.${DOMAIN}"
-echo "  Paws dashboard:     https://fleet.${DOMAIN}"
-echo "  Grafana:            https://${GRAFANA_DOMAIN:-grafana.${DOMAIN}}"
+echo "  Dashboard:    https://${DOMAIN}"
+echo "  Grafana:      https://${DOMAIN}/grafana/"
+echo "  API:          https://${DOMAIN}/v1/"
 echo ""
 echo "Next steps:"
-echo "  1. Wait ~30s for Pangolin to start"
-echo "  2. Visit https://pangolin.${DOMAIN}/auth/initial-setup"
-echo "  3. Create admin account"
-echo "  4. In Pangolin dashboard, create resources:"
-echo "     - fleet.${DOMAIN} → http://gateway:4000 (local site)"
-echo "     - grafana.${DOMAIN} → http://grafana:3001 (local site)"
-echo "  5. Set up SSO (Identity Providers → Add → OAuth2/OIDC):"
-echo "     - Client ID:          pangolin"
-echo "     - Client Secret:      ${PANGOLIN_OIDC_SECRET}"
-echo "     - Authorization URL:  https://fleet.${DOMAIN}/dex/auth"
-echo "     - Token URL:          https://fleet.${DOMAIN}/dex/token"
-echo "     - Scopes:             openid profile email"
-echo "     - Email path:         email"
-echo "     - Name path:          name"
-echo "     - Identifier path:    sub"
-echo "  6. Create a site for each worker, note the Site ID + Secret"
-echo "  7. On each worker: ./scripts/setup-worker.sh"
-echo "  7. Update .env with PANGOLIN_API_KEY and PANGOLIN_ORG_ID"
-echo "     then: docker compose restart gateway"
+echo "  1. Open https://${DOMAIN} — the paws dashboard"
+echo "  2. Follow the setup wizard to add a worker"
+echo "  3. Add a credential (Anthropic API key)"
+echo "  4. Create your first daemon"
 echo ""
-echo "Check status: docker compose ps"
-echo "View logs:    docker compose logs -f"
+echo "Update:  paws update"
+echo "Status:  docker compose ps"
+echo "Logs:    docker compose logs -f"

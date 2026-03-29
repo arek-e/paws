@@ -1,0 +1,19 @@
+# /\_/\
+# ( o.o )  paws Caddy config
+#  > ^ <
+#
+# Main domain → paws gateway (dashboard + API + Dex)
+
+{$DOMAIN:localhost} {
+	handle /dex/* {
+		reverse_proxy dex:5556
+	}
+
+	handle /grafana/* {
+		reverse_proxy grafana:3001
+	}
+
+	handle {
+		reverse_proxy gateway:4000
+	}
+}
