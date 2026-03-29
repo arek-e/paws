@@ -32,7 +32,7 @@ export function createSessionApp(deps: AppDeps) {
       output: unknown;
       durationMs: number;
       completedAt: string;
-      exposedPorts?: Array<{ port: number; url: string; label?: string }>;
+      exposedPorts?: Array<{ port: number; url: string; label?: string | undefined }> | undefined;
     }
   >();
 

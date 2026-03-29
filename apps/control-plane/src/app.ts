@@ -38,9 +38,17 @@ import {
   getSessionRoute,
   listSessionsRoute,
 } from './routes/sessions.js';
+import {
+  createSnapshotConfigRoute,
+  deleteSnapshotConfigRoute,
+  getSnapshotConfigRoute,
+  listSnapshotConfigsRoute,
+  updateSnapshotConfigRoute,
+} from './routes/snapshot-configs.js';
 import { buildSnapshotRoute, listSnapshotsRoute } from './routes/snapshots.js';
 import { receiveWebhookRoute } from './routes/webhooks.js';
 import { createDaemonStore, type DaemonStore } from './store/daemons.js';
+import { createSnapshotConfigStore } from './store/snapshot-configs.js';
 import { createSessionStore, type SessionStore, type StoredSession } from './store/sessions.js';
 import { createSetupRoutes } from './routes/setup.js';
 import { createServerStore, type ServerStore } from './store/servers.js';
@@ -273,6 +281,8 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   app.use('/v1/fleet', authMiddleware(authConfig));
   app.use('/v1/snapshots/*', authMiddleware(authConfig));
   app.use('/v1/snapshots', authMiddleware(authConfig));
+  app.use('/v1/snapshot-configs/*', authMiddleware(authConfig));
+  app.use('/v1/snapshot-configs', authMiddleware(authConfig));
   app.use('/v1/setup/*', authMiddleware(authConfig));
   app.use('/v1/setup', authMiddleware(authConfig));
 
@@ -802,6 +812,78 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     })();
 
     return c.json({ snapshotId: id, status: 'building' as const, jobId }, 202);
+  });
+
+  // --- Snapshot Configs ---
+
+  const snapshotConfigStore = createSnapshotConfigStore();
+
+  app.openapi(listSnapshotConfigsRoute, (c) => {
+    return c.json({ configs: snapshotConfigStore.list() }, 200);
+  });
+
+  app.openapi(createSnapshotConfigRoute, (c) => {
+    const body = c.req.valid('json');
+    if (snapshotConfigStore.get(body.id)) {
+      return c.json(
+        { error: { code: 'CONFLICT', message: `Snapshot config '${body.id}' already exists` } },
+        409,
+      );
+    }
+    const config = snapshotConfigStore.create(body);
+    return c.json(config, 201);
+  });
+
+  app.openapi(getSnapshotConfigRoute, (c) => {
+    const { id } = c.req.valid('param');
+    const config = snapshotConfigStore.get(id);
+    if (!config) {
+      return c.json(
+        {
+          error: {
+            code: 'SNAPSHOT_NOT_FOUND' as const,
+            message: `Snapshot config '${id}' not found`,
+          },
+        },
+        404,
+      );
+    }
+    return c.json(config, 200);
+  });
+
+  app.openapi(updateSnapshotConfigRoute, (c) => {
+    const { id } = c.req.valid('param');
+    const body = c.req.valid('json');
+    const updated = snapshotConfigStore.update(id, body);
+    if (!updated) {
+      return c.json(
+        {
+          error: {
+            code: 'SNAPSHOT_NOT_FOUND' as const,
+            message: `Snapshot config '${id}' not found`,
+          },
+        },
+        404,
+      );
+    }
+    return c.json(updated, 200);
+  });
+
+  app.openapi(deleteSnapshotConfigRoute, (c) => {
+    const { id } = c.req.valid('param');
+    const deleted = snapshotConfigStore.delete(id);
+    if (!deleted) {
+      return c.json(
+        {
+          error: {
+            code: 'SNAPSHOT_NOT_FOUND' as const,
+            message: `Snapshot config '${id}' not found`,
+          },
+        },
+        404,
+      );
+    }
+    return c.body(null, 204);
   });
 
   // --- Setup wizard ---

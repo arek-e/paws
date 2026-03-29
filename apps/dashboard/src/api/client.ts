@@ -1,4 +1,10 @@
-import type { FleetOverview, Session, SessionListResponse, WorkerListResponse } from '@paws/types';
+import type {
+  FleetOverview,
+  Session,
+  SessionListResponse,
+  SnapshotConfig,
+  WorkerListResponse,
+} from '@paws/types';
 import { createClient, type PawsClient } from '@paws/sdk';
 
 let _client: PawsClient | null = null;
@@ -70,4 +76,51 @@ export async function getDaemons(): Promise<{ daemons: unknown[] }> {
   const result = await getClient().daemons.list();
   if (result.isErr()) throw result.error;
   return result.value as { daemons: unknown[] };
+}
+
+// --- Snapshot Configs ---
+
+function apiKeyHeaders(): Record<string, string> {
+  const key = getApiKey();
+  return key
+    ? { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }
+    : { 'Content-Type': 'application/json' };
+}
+
+export async function getSnapshotConfigs(): Promise<SnapshotConfig[]> {
+  const res = await fetch('/v1/snapshot-configs', { headers: apiKeyHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch snapshot configs: ${res.status}`);
+  const body = (await res.json()) as { configs: SnapshotConfig[] };
+  return body.configs;
+}
+
+export async function createSnapshotConfig(config: {
+  id: string;
+  template?: string;
+  setup: string;
+  requiredDomains?: string[];
+}): Promise<SnapshotConfig> {
+  const res = await fetch('/v1/snapshot-configs', {
+    method: 'POST',
+    headers: apiKeyHeaders(),
+    body: JSON.stringify(config),
+  });
+  if (!res.ok) throw new Error(`Failed to create snapshot config: ${res.status}`);
+  return (await res.json()) as SnapshotConfig;
+}
+
+export async function buildSnapshot(id: string): Promise<void> {
+  // Fetch the config to get the setup script, then dispatch build
+  const configRes = await fetch(`/v1/snapshot-configs/${id}`, { headers: apiKeyHeaders() });
+  const config = configRes.ok ? ((await configRes.json()) as SnapshotConfig) : null;
+
+  const res = await fetch(`/v1/snapshots/${id}/build`, {
+    method: 'POST',
+    headers: apiKeyHeaders(),
+    body: JSON.stringify({
+      base: config?.id ?? id,
+      setup: config?.setup ?? '',
+    }),
+  });
+  if (!res.ok) throw new Error(`Failed to trigger snapshot build: ${res.status}`);
 }

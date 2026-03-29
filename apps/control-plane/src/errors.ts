@@ -19,6 +19,8 @@ export class ControlPlaneError extends Error {
 const statusMap: Record<ErrorCode, number> = {
   UNAUTHORIZED: 401,
   FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
   SESSION_NOT_FOUND: 404,
   DAEMON_NOT_FOUND: 404,
   DAEMON_ALREADY_EXISTS: 409,

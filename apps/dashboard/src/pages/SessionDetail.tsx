@@ -120,6 +120,32 @@ export function SessionDetail() {
             </div>
           </div>
 
+          {session.data.exposedPorts && session.data.exposedPorts.length > 0 && (
+            <div>
+              <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-2">
+                Exposed Ports
+              </h2>
+              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 space-y-2">
+                {session.data.exposedPorts.map((ep) => (
+                  <div key={ep.port} className="flex items-center gap-3 text-sm">
+                    <span className="px-2 py-0.5 text-xs font-mono rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                      :{ep.port}
+                    </span>
+                    {ep.label && <span className="text-zinc-500 text-xs">{ep.label}</span>}
+                    <a
+                      href={ep.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 font-mono text-xs"
+                    >
+                      {ep.url}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <div className="flex items-center gap-2 mb-2">
               <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">

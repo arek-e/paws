@@ -38,11 +38,11 @@ export interface ExecutorConfig {
   /** Worker name for session tracking */
   workerName: string;
   /** Port pool for inbound port exposure (optional — needed for port exposure) */
-  portPool?: PortPool;
+  portPool?: PortPool | undefined;
   /** Pangolin resource manager for tunnel URLs (optional — needed for port exposure) */
-  pangolinResources?: PangolinResourceManager;
+  pangolinResources?: PangolinResourceManager | undefined;
   /** Fallback worker URL when Pangolin is not configured (e.g., "http://65.108.10.170") */
-  workerExternalUrl?: string;
+  workerExternalUrl?: string | undefined;
 }
 
 /** Result of a completed session */
@@ -52,7 +52,7 @@ export interface SessionResult {
   stderr: string;
   output: unknown;
   durationMs: number;
-  exposedPorts?: Array<{ port: number; url: string; label?: string }>;
+  exposedPorts?: Array<{ port: number; url: string; label?: string | undefined }> | undefined;
 }
 
 /** Active session state for tracking */
@@ -65,9 +65,9 @@ export interface ActiveSession {
   proxyHandle?: ProxyInstance;
   ca?: SessionCa;
   /** Pangolin tunnels for exposed ports */
-  exposedTunnels?: ExposedTunnel[];
+  exposedTunnels?: ExposedTunnel[] | undefined;
   /** Allocated host ports for inbound DNAT */
-  inboundPorts?: Array<{ hostPort: number; guestPort: number }>;
+  inboundPorts?: Array<{ hostPort: number; guestPort: number }> | undefined;
 }
 
 /** Resolve a snapshot ID to a local directory path */
@@ -110,7 +110,11 @@ export function createExecutor(config: ExecutorConfig) {
      */
     async execute(sessionId: string, request: CreateSessionRequest): Promise<SessionResult> {
       const startedAt = new Date();
-      const network: NetworkConfig = request.network ?? { allowOut: [], credentials: {} };
+      const network: NetworkConfig = request.network ?? {
+        allowOut: [],
+        credentials: {},
+        expose: [],
+      };
       const session: ActiveSession = { sessionId, status: 'running', startedAt };
       sessions.set(sessionId, session);
 
@@ -212,7 +216,9 @@ export function createExecutor(config: ExecutorConfig) {
 
         // 9.5. Set up port exposure (if configured)
         const exposePorts = network.expose ?? [];
-        let exposedPortUrls: Array<{ port: number; url: string; label?: string }> | undefined;
+        let exposedPortUrls:
+          | Array<{ port: number; url: string; label?: string | undefined }>
+          | undefined;
 
         if (exposePorts.length > 0 && config.portPool) {
           const portResult = config.portPool.allocate(exposePorts.length);

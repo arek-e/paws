@@ -19,7 +19,7 @@ describe('postComment', () => {
       ok: true,
       status: 201,
     });
-    globalThis.fetch = mockFetch as typeof fetch;
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
 
     await postComment(
       deps,
@@ -47,7 +47,7 @@ describe('postComment', () => {
       status: 404,
       text: async () => 'not found',
     });
-    globalThis.fetch = mockFetch as typeof fetch;
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
 
     await expect(
       postComment(deps, 12345, 'https://api.github.com/repos/org/repo/issues/42', 'result'),

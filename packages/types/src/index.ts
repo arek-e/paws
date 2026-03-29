@@ -94,6 +94,9 @@ export type {
   SnapshotConfigListResponse,
 } from './snapshot-config.js';
 
+export { getTemplate, listTemplateIds } from './snapshot-templates.js';
+export type { SnapshotTemplate } from './snapshot-templates.js';
+
 export {
   SnapshotBuildJobSchema,
   SnapshotBuildRequestSchema,

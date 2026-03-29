@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 import type { ExecFn } from './types.js';
 import { generateSessionCa } from './ca.js';
