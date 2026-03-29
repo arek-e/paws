@@ -75,6 +75,12 @@ if [[ -z "${PANGOLIN_SECRET:-}" || "$PANGOLIN_SECRET" == *"change-me"* ]]; then
   echo "Generated PANGOLIN_SECRET"
 fi
 
+if [[ -z "${PANGOLIN_OIDC_SECRET:-}" || "$PANGOLIN_OIDC_SECRET" == *"changeme"* ]]; then
+  PANGOLIN_OIDC_SECRET=$(openssl rand -hex 24)
+  sed -i "s|^PANGOLIN_OIDC_SECRET=.*|PANGOLIN_OIDC_SECRET=$PANGOLIN_OIDC_SECRET|" .env 2>/dev/null || echo "PANGOLIN_OIDC_SECRET=$PANGOLIN_OIDC_SECRET" >> .env
+  echo "Generated PANGOLIN_OIDC_SECRET"
+fi
+
 # ── Generate Pangolin config ────────────────────────────────────────────────
 echo "==> Generating Pangolin config..."
 mkdir -p config/pangolin
@@ -130,6 +136,12 @@ staticClients:
     redirectURIs:
       - https://fleet.${DOMAIN}/auth/callback
     secret: ${OIDC_CLIENT_SECRET}
+
+  - id: pangolin
+    name: pangolin
+    redirectURIs:
+      - https://pangolin.${DOMAIN}/auth/idp/1/oidc/callback
+    secret: ${PANGOLIN_OIDC_SECRET}
 
 enablePasswordDB: true
 EOF
@@ -203,8 +215,17 @@ echo "  3. Create admin account"
 echo "  4. In Pangolin dashboard, create resources:"
 echo "     - fleet.${DOMAIN} → http://gateway:4000 (local site)"
 echo "     - grafana.${DOMAIN} → http://grafana:3001 (local site)"
-echo "  5. Create a site for each worker, note the Site ID + Secret"
-echo "  6. On each worker: ./scripts/setup-worker.sh"
+echo "  5. Set up SSO (Identity Providers → Add → OAuth2/OIDC):"
+echo "     - Client ID:          pangolin"
+echo "     - Client Secret:      ${PANGOLIN_OIDC_SECRET}"
+echo "     - Authorization URL:  https://fleet.${DOMAIN}/dex/auth"
+echo "     - Token URL:          https://fleet.${DOMAIN}/dex/token"
+echo "     - Scopes:             openid profile email"
+echo "     - Email path:         email"
+echo "     - Name path:          name"
+echo "     - Identifier path:    sub"
+echo "  6. Create a site for each worker, note the Site ID + Secret"
+echo "  7. On each worker: ./scripts/setup-worker.sh"
 echo "  7. Update .env with PANGOLIN_API_KEY and PANGOLIN_ORG_ID"
 echo "     then: docker compose restart gateway"
 echo ""
