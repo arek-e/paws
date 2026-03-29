@@ -71,7 +71,11 @@ COPY --from=builder /build/apps/control-plane/ ./apps/control-plane/
 USER paws
 
 ARG PAWS_VERSION=0.0.0
+ARG PAWS_COMMIT=unknown
+ARG PAWS_BUILD_DATE=unknown
 ENV PAWS_VERSION=${PAWS_VERSION}
+ENV PAWS_COMMIT=${PAWS_COMMIT}
+ENV PAWS_BUILD_DATE=${PAWS_BUILD_DATE}
 ENV PORT=4000
 ENV NODE_ENV=production
 

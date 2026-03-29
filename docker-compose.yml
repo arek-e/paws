@@ -42,6 +42,8 @@ services:
       dockerfile: Dockerfile.control-plane
       args:
         PAWS_VERSION: '${PAWS_VERSION:-0.5.2}'
+        PAWS_COMMIT: '${PAWS_COMMIT:-unknown}'
+        PAWS_BUILD_DATE: '${PAWS_BUILD_DATE:-unknown}'
     container_name: paws-control-plane
     restart: unless-stopped
     networks:
@@ -169,6 +171,32 @@ services:
       - '--promscrape.config=/etc/victoria-metrics/scrape.yml'
       - '--httpListenAddr=:8428'
 
+  # ── Loki (Log Aggregation) ─────────────────────────────────────────────
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: paws-loki
+    restart: unless-stopped
+    networks:
+      - paws
+    expose:
+      - '3100'
+    volumes:
+      - loki-data:/loki
+      - ./infra/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+
+  # ── Promtail (Log Collector) ─────────────────────────────────────────────
+  promtail:
+    image: grafana/promtail:3.4.2
+    container_name: paws-promtail
+    restart: unless-stopped
+    networks:
+      - paws
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./infra/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+    depends_on:
+      - loki
+
   # ── Grafana (Dashboards) ─────────────────────────────────────────────────
   grafana:
     image: grafana/grafana-oss:11.6.0
@@ -200,4 +228,5 @@ volumes:
   gateway-data:
   letsencrypt-data:
   vm-data:
+  loki-data:
   grafana-data:
