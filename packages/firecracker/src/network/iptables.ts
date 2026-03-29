@@ -110,6 +110,113 @@ export function setupIptables(
 }
 
 /**
+ * Set up an inbound port forwarding rule: external traffic to hostPort
+ * is DNATed to the VM's guestIp:guestPort.
+ *
+ * These rules are separate from the outbound proxy rules (80/443) and
+ * don't conflict with the FORWARD DROP rule (which applies to -i tapN,
+ * i.e., traffic originating FROM the VM, not traffic destined TO it).
+ */
+export function setupInboundPort(
+  alloc: NetworkAllocation,
+  hostPort: number,
+  guestPort: number,
+  options: { exec?: ExecFn } = {},
+): ResultAsync<void, FirecrackerError> {
+  const exec = options.exec ?? defaultExec;
+
+  return ResultAsync.fromPromise(
+    (async () => {
+      // DNAT: redirect inbound host:hostPort → guest:guestPort
+      await exec('iptables', [
+        '-t',
+        'nat',
+        '-A',
+        'PREROUTING',
+        '-p',
+        'tcp',
+        '--dport',
+        String(hostPort),
+        '-j',
+        'DNAT',
+        '--to',
+        `${alloc.guestIp}:${guestPort}`,
+      ]);
+
+      // Allow forwarding to guest
+      await exec('iptables', [
+        '-A',
+        'FORWARD',
+        '-d',
+        alloc.guestIp,
+        '-p',
+        'tcp',
+        '--dport',
+        String(guestPort),
+        '-j',
+        'ACCEPT',
+      ]);
+    })(),
+    (e) =>
+      new FirecrackerError(
+        FirecrackerErrorCode.IPTABLES_FAILED,
+        `Failed to setup inbound port ${hostPort}->${guestPort} for ${alloc.tapDevice}: ${e}`,
+        e,
+      ),
+  );
+}
+
+/**
+ * Tear down an inbound port forwarding rule.
+ */
+export function teardownInboundPort(
+  alloc: NetworkAllocation,
+  hostPort: number,
+  guestPort: number,
+  options: { exec?: ExecFn } = {},
+): ResultAsync<void, FirecrackerError> {
+  const exec = options.exec ?? defaultExec;
+
+  return ResultAsync.fromPromise(
+    (async () => {
+      await exec('iptables', [
+        '-D',
+        'FORWARD',
+        '-d',
+        alloc.guestIp,
+        '-p',
+        'tcp',
+        '--dport',
+        String(guestPort),
+        '-j',
+        'ACCEPT',
+      ]);
+
+      await exec('iptables', [
+        '-t',
+        'nat',
+        '-D',
+        'PREROUTING',
+        '-p',
+        'tcp',
+        '--dport',
+        String(hostPort),
+        '-j',
+        'DNAT',
+        '--to',
+        `${alloc.guestIp}:${guestPort}`,
+      ]);
+    })(),
+    (e) =>
+      new FirecrackerError(
+        FirecrackerErrorCode.IPTABLES_FAILED,
+        `Failed to teardown inbound port ${hostPort}->${guestPort} for ${alloc.tapDevice}: ${e}`,
+        e,
+      ),
+  );
+}
+
+/**
  * Tear down iptables rules for a VM.
  * Uses -D (delete) to remove the exact rules that were added.
  */

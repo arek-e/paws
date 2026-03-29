@@ -32,6 +32,7 @@ export function createSessionApp(deps: AppDeps) {
       output: unknown;
       durationMs: number;
       completedAt: string;
+      exposedPorts?: Array<{ port: number; url: string; label?: string }>;
     }
   >();
 
@@ -108,6 +109,7 @@ export function createSessionApp(deps: AppDeps) {
           output: result.output,
           durationMs: result.durationMs,
           completedAt: new Date().toISOString(),
+          exposedPorts: result.exposedPorts,
         });
       },
       (err) => {
@@ -138,6 +140,11 @@ export function createSessionApp(deps: AppDeps) {
         status: 'running',
         startedAt: active.startedAt.toISOString(),
         worker: workerName,
+        exposedPorts: active.exposedTunnels?.map((t) => ({
+          port: t.port,
+          url: t.publicUrl,
+          label: t.label,
+        })),
       });
     }
 

@@ -5,16 +5,19 @@ import {
   deleteTap,
   restoreVm,
   setupIptables,
+  setupInboundPort,
   stopVm,
   teardownIptables,
+  teardownInboundPort,
 } from '@paws/firecracker';
-import type { VmHandle } from '@paws/firecracker';
+import type { PortPool, VmHandle } from '@paws/firecracker';
 import { createProxy, generateSessionCa } from '@paws/proxy';
 import type { ProxyInstance, SessionCa } from '@paws/proxy';
 
 import { WorkerError, WorkerErrorCode } from '../errors.js';
 import { sshExec, sshReadFile, sshWriteFile, waitForSsh } from '../ssh/client.js';
 import type { Semaphore } from '../semaphore.js';
+import type { ExposedTunnel, PangolinResourceManager } from '../tunnel/pangolin-resources.js';
 
 /** Configuration for the session executor */
 export interface ExecutorConfig {
@@ -34,6 +37,12 @@ export interface ExecutorConfig {
   firecrackerBin?: string;
   /** Worker name for session tracking */
   workerName: string;
+  /** Port pool for inbound port exposure (optional — needed for port exposure) */
+  portPool?: PortPool;
+  /** Pangolin resource manager for tunnel URLs (optional — needed for port exposure) */
+  pangolinResources?: PangolinResourceManager;
+  /** Fallback worker URL when Pangolin is not configured (e.g., "http://65.108.10.170") */
+  workerExternalUrl?: string;
 }
 
 /** Result of a completed session */
@@ -43,6 +52,7 @@ export interface SessionResult {
   stderr: string;
   output: unknown;
   durationMs: number;
+  exposedPorts?: Array<{ port: number; url: string; label?: string }>;
 }
 
 /** Active session state for tracking */
@@ -54,6 +64,10 @@ export interface ActiveSession {
   vmHandle?: VmHandle;
   proxyHandle?: ProxyInstance;
   ca?: SessionCa;
+  /** Pangolin tunnels for exposed ports */
+  exposedTunnels?: ExposedTunnel[];
+  /** Allocated host ports for inbound DNAT */
+  inboundPorts?: Array<{ hostPort: number; guestPort: number }>;
 }
 
 /** Resolve a snapshot ID to a local directory path */
@@ -196,6 +210,64 @@ export function createExecutor(config: ExecutorConfig) {
         const updateCaResult = await sshExec(sshOpts, 'update-ca-certificates 2>/dev/null || true');
         if (updateCaResult.isErr()) throw updateCaResult.error;
 
+        // 9.5. Set up port exposure (if configured)
+        const exposePorts = network.expose ?? [];
+        let exposedPortUrls: Array<{ port: number; url: string; label?: string }> | undefined;
+
+        if (exposePorts.length > 0 && config.portPool) {
+          const portResult = config.portPool.allocate(exposePorts.length);
+          if (portResult.isErr()) {
+            throw new WorkerError(
+              WorkerErrorCode.CAPACITY_EXHAUSTED,
+              `Port allocation failed: ${portResult.error.message}`,
+              portResult.error,
+            );
+          }
+          const hostPorts = portResult.value;
+          session.inboundPorts = exposePorts.map((ep, i) => ({
+            hostPort: hostPorts[i]!,
+            guestPort: ep.port,
+          }));
+
+          // Set up inbound iptables rules
+          for (const mapping of session.inboundPorts) {
+            const iptResult = await setupInboundPort(
+              allocation,
+              mapping.hostPort,
+              mapping.guestPort,
+            );
+            if (iptResult.isErr()) {
+              throw new WorkerError(
+                WorkerErrorCode.EXECUTION_FAILED,
+                `Inbound iptables failed: ${iptResult.error.message}`,
+                iptResult.error,
+              );
+            }
+          }
+
+          // Create Pangolin tunnels (if configured) or use direct URLs
+          if (config.pangolinResources) {
+            const tunnels = await config.pangolinResources.expose(
+              sessionId,
+              exposePorts,
+              hostPorts,
+            );
+            session.exposedTunnels = tunnels;
+            exposedPortUrls = tunnels.map((t) => ({
+              port: t.port,
+              url: t.publicUrl,
+              label: t.label,
+            }));
+          } else if (config.workerExternalUrl) {
+            // Fallback: direct host port URLs
+            exposedPortUrls = exposePorts.map((ep, i) => ({
+              port: ep.port,
+              url: `${config.workerExternalUrl}:${hostPorts[i]}`,
+              label: ep.label,
+            }));
+          }
+        }
+
         // 10. Write and execute workload script
         const envExports = Object.entries(request.workload.env)
           .map(([k, v]) => `export ${k}=${shellEscape(v)}`)
@@ -257,10 +329,25 @@ export function createExecutor(config: ExecutorConfig) {
 
         const durationMs = Date.now() - startedAt.getTime();
 
-        return { exitCode, stdout, stderr, output, durationMs };
+        return { exitCode, stdout, stderr, output, durationMs, exposedPorts: exposedPortUrls };
       } finally {
         // Cleanup — always runs
         session.status = 'stopping';
+
+        // Clean up Pangolin resources
+        if (session.exposedTunnels?.length && config.pangolinResources) {
+          await config.pangolinResources.cleanup(session.exposedTunnels);
+        }
+
+        // Clean up inbound iptables rules and release host ports
+        if (session.inboundPorts?.length && allocation) {
+          for (const mapping of session.inboundPorts) {
+            await teardownInboundPort(allocation, mapping.hostPort, mapping.guestPort);
+          }
+          if (config.portPool) {
+            config.portPool.release(session.inboundPorts.map((m) => m.hostPort));
+          }
+        }
 
         if (vmHandle) {
           await stopVm(vmHandle);

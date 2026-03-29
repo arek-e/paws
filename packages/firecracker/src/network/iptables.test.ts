@@ -4,7 +4,12 @@ import { describe, expect, it } from 'vitest';
 
 import type { ExecFn } from '../types.js';
 
-import { setupIptables, teardownIptables } from './iptables.js';
+import {
+  setupInboundPort,
+  setupIptables,
+  teardownInboundPort,
+  teardownIptables,
+} from './iptables.js';
 
 function createMockExec(): {
   exec: ExecFn;
@@ -152,5 +157,79 @@ describe('teardownIptables', () => {
     const result = await teardownIptables(testAlloc, {}, { exec });
     expect(result.isErr()).toBe(true);
     expect(result._unsafeUnwrapErr().code).toBe('IPTABLES_FAILED');
+  });
+});
+
+describe('setupInboundPort', () => {
+  it('creates DNAT + FORWARD rules for inbound port', async () => {
+    const { exec, calls } = createMockExec();
+
+    const result = await setupInboundPort(testAlloc, 10001, 3000, { exec });
+    expect(result.isOk()).toBe(true);
+    expect(calls).toHaveLength(2);
+
+    // DNAT: hostPort → guestIp:guestPort
+    expect(calls[0]).toEqual({
+      cmd: 'iptables',
+      args: [
+        '-t',
+        'nat',
+        '-A',
+        'PREROUTING',
+        '-p',
+        'tcp',
+        '--dport',
+        '10001',
+        '-j',
+        'DNAT',
+        '--to',
+        '172.16.0.2:3000',
+      ],
+    });
+
+    // FORWARD allow to guest
+    expect(calls[1]).toEqual({
+      cmd: 'iptables',
+      args: ['-A', 'FORWARD', '-d', '172.16.0.2', '-p', 'tcp', '--dport', '3000', '-j', 'ACCEPT'],
+    });
+  });
+
+  it('returns error when exec fails', async () => {
+    const exec: ExecFn = async () => {
+      throw new Error('iptables failed');
+    };
+
+    const result = await setupInboundPort(testAlloc, 10001, 3000, { exec });
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr().code).toBe('IPTABLES_FAILED');
+  });
+});
+
+describe('teardownInboundPort', () => {
+  it('removes inbound rules with -D in reverse order', async () => {
+    const { exec, calls } = createMockExec();
+
+    const result = await teardownInboundPort(testAlloc, 10001, 3000, { exec });
+    expect(result.isOk()).toBe(true);
+    expect(calls).toHaveLength(2);
+
+    // FORWARD delete first
+    expect(calls[0]!.args).toContain('-D');
+    expect(calls[0]!.args).toContain('172.16.0.2');
+    expect(calls[0]!.args).toContain('3000');
+
+    // NAT delete second
+    expect(calls[1]!.args).toContain('-D');
+    expect(calls[1]!.args).toContain('10001');
+    expect(calls[1]!.args).toContain('172.16.0.2:3000');
+  });
+
+  it('returns error when exec fails', async () => {
+    const exec: ExecFn = async () => {
+      throw new Error('iptables failed');
+    };
+
+    const result = await teardownInboundPort(testAlloc, 10001, 3000, { exec });
+    expect(result.isErr()).toBe(true);
   });
 });

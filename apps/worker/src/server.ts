@@ -1,9 +1,13 @@
+import { createPortPool } from '@paws/firecracker';
+
 import { createCallHome } from './call-home.js';
 import { createSessionApp } from './routes.js';
 import { createExecutor } from './session/executor.js';
 import { createSemaphore } from './semaphore.js';
 import { createSyncLoop } from './sync/sync-loop.js';
 import type { SyncLoop } from './sync/sync-loop.js';
+import { createPangolinResourceManager } from './tunnel/pangolin-resources.js';
+import type { PangolinResourceManager } from './tunnel/pangolin-resources.js';
 
 const PORT = parseInt(process.env['PORT'] ?? '3000', 10);
 const MAX_CONCURRENT = parseInt(process.env['MAX_CONCURRENT_VMS'] ?? '5', 10);
@@ -26,6 +30,31 @@ const SNAPSHOT_SYNC_INTERVAL_MS = parseInt(
 const semaphore = createSemaphore(MAX_CONCURRENT, MAX_QUEUED);
 const SNAPSHOT_BASE_DIR = process.env['SNAPSHOT_BASE_DIR'] ?? '/var/lib/paws/snapshots';
 
+// Port exposure configuration (optional)
+const PANGOLIN_API_URL_WORKER = process.env['PANGOLIN_API_URL'] ?? '';
+const PANGOLIN_API_KEY_WORKER = process.env['PANGOLIN_API_KEY'] ?? '';
+const PANGOLIN_EMAIL_WORKER = process.env['PANGOLIN_EMAIL'] ?? '';
+const PANGOLIN_PASSWORD_WORKER = process.env['PANGOLIN_PASSWORD'] ?? '';
+const PANGOLIN_ORG_ID_WORKER = process.env['PANGOLIN_ORG_ID'] ?? '';
+const PANGOLIN_SITE_ID = process.env['PANGOLIN_SITE_ID'] ?? '';
+const PANGOLIN_BASE_DOMAIN = process.env['PANGOLIN_BASE_DOMAIN'] ?? '';
+const WORKER_EXTERNAL_URL = process.env['WORKER_EXTERNAL_URL'] ?? '';
+
+let pangolinResources: PangolinResourceManager | undefined;
+const portPool = createPortPool();
+
+if (PANGOLIN_API_URL_WORKER && PANGOLIN_ORG_ID_WORKER && PANGOLIN_SITE_ID && PANGOLIN_BASE_DOMAIN) {
+  pangolinResources = createPangolinResourceManager({
+    apiUrl: PANGOLIN_API_URL_WORKER,
+    apiKey: PANGOLIN_API_KEY_WORKER || undefined,
+    email: PANGOLIN_EMAIL_WORKER || undefined,
+    password: PANGOLIN_PASSWORD_WORKER || undefined,
+    orgId: PANGOLIN_ORG_ID_WORKER,
+    siteId: PANGOLIN_SITE_ID,
+    baseDomain: PANGOLIN_BASE_DOMAIN,
+  });
+}
+
 const executor = createExecutor({
   snapshotDir: SNAPSHOT_DIR,
   snapshotBaseDir: SNAPSHOT_BASE_DIR,
@@ -33,6 +62,9 @@ const executor = createExecutor({
   sshKeyPath: SSH_KEY_PATH,
   semaphore,
   workerName: WORKER_NAME,
+  portPool,
+  pangolinResources,
+  workerExternalUrl: WORKER_EXTERNAL_URL || undefined,
 });
 
 let syncLoop: SyncLoop | undefined;
@@ -91,6 +123,12 @@ if (GATEWAY_URL && API_KEY) {
   callHome.start();
 }
 
+const portExposureStatus = pangolinResources
+  ? `Pangolin (${PANGOLIN_BASE_DOMAIN})`
+  : WORKER_EXTERNAL_URL
+    ? `direct (${WORKER_EXTERNAL_URL})`
+    : 'disabled';
+
 console.log(`
  /\\_/\\
 ( o.o )  paws worker
@@ -102,6 +140,7 @@ Max queued: ${MAX_QUEUED}
 Snapshot: ${SNAPSHOT_DIR}
 Worker: ${WORKER_NAME}
 Snapshot sync: ${SNAPSHOT_SYNC_ENABLED ? 'enabled' : 'disabled'}
+Port exposure: ${portExposureStatus}
 Call-home: ${GATEWAY_URL ? `${GATEWAY_URL}` : 'disabled (set GATEWAY_URL + API_KEY)'}
 `);
 

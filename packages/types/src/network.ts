@@ -7,12 +7,26 @@ export const DomainCredentialSchema = z.object({
 
 export type DomainCredential = z.infer<typeof DomainCredentialSchema>;
 
+/** Port to expose publicly from the VM via Pangolin tunnel */
+export const PortExposureSchema = z.object({
+  /** Port inside the VM to expose */
+  port: z.number().int().min(1).max(65535),
+  /** Protocol (default: http) */
+  protocol: z.enum(['http', 'https']).default('http'),
+  /** Human-readable label (e.g., "Next.js dev server") */
+  label: z.string().optional(),
+});
+
+export type PortExposure = z.infer<typeof PortExposureSchema>;
+
 /** Network configuration for a session/daemon */
 export const NetworkConfigSchema = z.object({
   /** Allowed outbound domains (supports wildcards like *.github.com) */
   allowOut: z.array(z.string()).default([]),
   /** Per-domain credential injection */
   credentials: z.record(z.string(), DomainCredentialSchema).default({}),
+  /** Ports to expose publicly via Pangolin tunnel */
+  expose: z.array(PortExposureSchema).default([]),
 });
 
 export type NetworkConfig = z.infer<typeof NetworkConfigSchema>;

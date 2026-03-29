@@ -4,6 +4,7 @@ import {
   CancelSessionResponseSchema,
   CreateSessionRequestSchema,
   CreateSessionResponseSchema,
+  ExposedPortSchema,
   ResourcesSchema,
   SessionSchema,
   SessionStatus,
@@ -163,6 +164,57 @@ describe('SessionSchema', () => {
       status: 'pending',
     });
     expect(result.exitCode).toBeUndefined();
+  });
+});
+
+describe('ExposedPortSchema', () => {
+  test('accepts valid exposed port', () => {
+    const result = ExposedPortSchema.parse({
+      port: 3000,
+      url: 'https://s-abc12345-3000.fleet.tpops.dev',
+      label: 'Next.js dev server',
+    });
+    expect(result.port).toBe(3000);
+    expect(result.url).toBe('https://s-abc12345-3000.fleet.tpops.dev');
+    expect(result.label).toBe('Next.js dev server');
+  });
+
+  test('accepts without label', () => {
+    const result = ExposedPortSchema.parse({
+      port: 8080,
+      url: 'https://s-abc12345-8080.fleet.tpops.dev',
+    });
+    expect(result.label).toBeUndefined();
+  });
+
+  test('rejects invalid url', () => {
+    expect(() => ExposedPortSchema.parse({ port: 3000, url: 'not-a-url' })).toThrow();
+  });
+
+  test('rejects port out of range', () => {
+    expect(() => ExposedPortSchema.parse({ port: 0, url: 'https://example.com' })).toThrow();
+  });
+});
+
+describe('SessionSchema exposedPorts', () => {
+  test('accepts session with exposed ports', () => {
+    const result = SessionSchema.parse({
+      sessionId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      status: 'running',
+      exposedPorts: [
+        { port: 3000, url: 'https://s-abc-3000.fleet.tpops.dev', label: 'Web' },
+        { port: 5432, url: 'https://s-abc-5432.fleet.tpops.dev' },
+      ],
+    });
+    expect(result.exposedPorts).toHaveLength(2);
+  });
+
+  test('accepts session without exposed ports', () => {
+    const result = SessionSchema.parse({
+      sessionId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      status: 'pending',
+    });
+    expect(result.exposedPorts).toBeUndefined();
   });
 });
 

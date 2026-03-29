@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'vitest';
 
-import { DomainCredentialSchema, NetworkAllocationSchema, NetworkConfigSchema } from './network.js';
+import {
+  DomainCredentialSchema,
+  NetworkAllocationSchema,
+  NetworkConfigSchema,
+  PortExposureSchema,
+} from './network.js';
 
 describe('DomainCredentialSchema', () => {
   test('accepts headers map', () => {
@@ -33,6 +38,46 @@ describe('NetworkConfigSchema', () => {
     const result = NetworkConfigSchema.parse({});
     expect(result.allowOut).toEqual([]);
     expect(result.credentials).toEqual({});
+    expect(result.expose).toEqual([]);
+  });
+
+  test('accepts expose port list', () => {
+    const result = NetworkConfigSchema.parse({
+      expose: [
+        { port: 3000, label: 'Next.js dev server' },
+        { port: 5432, protocol: 'http' },
+      ],
+    });
+    expect(result.expose).toHaveLength(2);
+    expect(result.expose[0]?.port).toBe(3000);
+    expect(result.expose[0]?.protocol).toBe('http'); // default
+    expect(result.expose[0]?.label).toBe('Next.js dev server');
+  });
+});
+
+describe('PortExposureSchema', () => {
+  test('accepts valid port', () => {
+    const result = PortExposureSchema.parse({ port: 8080 });
+    expect(result.port).toBe(8080);
+    expect(result.protocol).toBe('http');
+    expect(result.label).toBeUndefined();
+  });
+
+  test('accepts https protocol', () => {
+    const result = PortExposureSchema.parse({ port: 443, protocol: 'https' });
+    expect(result.protocol).toBe('https');
+  });
+
+  test('rejects port 0', () => {
+    expect(() => PortExposureSchema.parse({ port: 0 })).toThrow();
+  });
+
+  test('rejects port above 65535', () => {
+    expect(() => PortExposureSchema.parse({ port: 70000 })).toThrow();
+  });
+
+  test('rejects invalid protocol', () => {
+    expect(() => PortExposureSchema.parse({ port: 80, protocol: 'ftp' })).toThrow();
   });
 });
 
