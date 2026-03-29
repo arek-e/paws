@@ -41,7 +41,7 @@ export function SessionTable({ sessions }: { sessions: Session[] }) {
           {sessions.map((session) => (
             <tr
               key={session.sessionId}
-              onClick={() => void navigate(`/sessions/${session.sessionId}`)}
+              onClick={() => void navigate({ to: `/sessions/${session.sessionId}` })}
               className="border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer transition-colors"
             >
               <td className="py-2 pr-4 font-mono text-zinc-300">{truncateId(session.sessionId)}</td>

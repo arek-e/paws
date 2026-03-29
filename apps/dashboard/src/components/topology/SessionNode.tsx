@@ -49,7 +49,7 @@ export function SessionNode({ data }: NodeProps<SessionNodeType>) {
   return (
     <div
       className={`px-3 py-2 rounded-md bg-zinc-800 border ${borderColor} min-w-[140px] cursor-pointer hover:bg-zinc-750 transition-colors shadow-sm`}
-      onClick={() => navigate(`/sessions/${data.sessionId}`)}
+      onClick={() => navigate({ to: `/sessions/${data.sessionId}` })}
     >
       <Handle
         type="target"

@@ -118,7 +118,10 @@ export function Setup() {
           )}
 
           {step === 'first-run' && (
-            <FirstRunStep onComplete={() => navigate('/')} onBack={() => setStep('github')} />
+            <FirstRunStep
+              onComplete={() => navigate({ to: '/' })}
+              onBack={() => setStep('github')}
+            />
           )}
         </div>
       </div>

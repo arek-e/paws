@@ -57,8 +57,8 @@ const indexRoute = createRoute({
         throw redirect({ to: '/setup' });
       }
     } catch (e) {
-      // Re-throw redirects
-      if (e instanceof Error && 'to' in (e as Record<string, unknown>)) throw e;
+      // Re-throw redirects (redirect() returns a special object, not an Error)
+      if (e != null && typeof e === 'object' && 'to' in e) throw e;
       // Swallow fetch errors — just show topology
     }
   },

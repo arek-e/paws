@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router';
+import { useNavigate, useLocation } from '@tanstack/react-router';
 
 import { Topology } from '../pages/Topology.js';
 
@@ -14,7 +14,7 @@ export function FirstRunRedirect() {
       .then((data: { needsOnboarding: boolean }) => {
         const skipped = localStorage.getItem('paws_setup_skipped') === 'true';
         if (data.needsOnboarding && !skipped && location.pathname === '/') {
-          navigate('/setup', { replace: true });
+          navigate({ to: '/setup', replace: true });
         }
         setChecked(true);
       })
