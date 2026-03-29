@@ -59,10 +59,13 @@ jobs:
             echo "path=apps/${APP}/Dockerfile" >> $GITHUB_OUTPUT
           fi
 
+      - uses: docker/setup-qemu-action@v3
+
       - uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ steps.dockerfile.outputs.path }}
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
