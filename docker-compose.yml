@@ -22,6 +22,8 @@ services:
     ports:
       - '80:80'
       - '443:443'
+    environment:
+      DOMAIN: '${DOMAIN:-localhost}'
     volumes:
       - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
