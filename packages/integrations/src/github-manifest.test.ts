@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -83,7 +83,7 @@ describe('exchangeManifestCode', () => {
       ok: true,
       status: 200,
       json: () => Promise.resolve(mockData),
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
 
     const creds = await exchangeManifestCode('temp_code_xyz');
 
@@ -97,7 +97,7 @@ describe('exchangeManifestCode', () => {
     expect(creds.createdAt).toBeTruthy();
 
     // Verify fetch was called correctly
-    const fetchCall = (fetch as ReturnType<typeof vi.fn>).mock.calls[0]!;
+    const fetchCall = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(fetchCall[0]).toBe('https://api.github.com/app-manifests/temp_code_xyz/conversions');
     expect(fetchCall[1]).toMatchObject({ method: 'POST' });
   });
@@ -107,7 +107,7 @@ describe('exchangeManifestCode', () => {
       ok: false,
       status: 404,
       text: () => Promise.resolve('Not Found'),
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
 
     await expect(exchangeManifestCode('bad_code')).rejects.toThrow(
       'GitHub manifest exchange failed: 404 Not Found',

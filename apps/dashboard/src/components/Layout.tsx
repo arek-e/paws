@@ -67,6 +67,7 @@ export function Layout() {
         <div className="md:hidden border-b border-zinc-800 bg-zinc-950 p-3 space-y-1">
           <SidebarLink to="/" label="Fleet" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/daemons" label="Daemons" onClick={() => setMenuOpen(false)} />
+          <SidebarLink to="/snapshots" label="Snapshots" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/sessions" label="Sessions" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/setup" label="Setup" onClick={() => setMenuOpen(false)} />
           <button
@@ -88,6 +89,7 @@ export function Layout() {
         <nav className="flex-1 p-3 space-y-1">
           <SidebarLink to="/" label="Fleet" />
           <SidebarLink to="/daemons" label="Daemons" />
+          <SidebarLink to="/snapshots" label="Snapshots" />
           <SidebarLink to="/sessions" label="Sessions" />
           <SidebarLink to="/setup" label="Setup" />
         </nav>
