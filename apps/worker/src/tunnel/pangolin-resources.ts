@@ -115,11 +115,14 @@ export function createPangolinResourceManager(config: PangolinResourceConfig) {
     }
   }
 
-  /** Generate a subdomain for a session + port, using label if provided */
+  /**
+   * Generate a subdomain for a session + port, using label if provided.
+   * Uses 12 hex chars from session UUID (48 bits) — collision-safe to ~420k concurrent sessions.
+   */
   function subdomain(sessionId: string, port: number, label?: string): string {
-    const shortId = sessionId.slice(0, 8);
+    // Strip hyphens from UUID and take first 12 hex chars (48 bits of entropy)
+    const shortId = sessionId.replace(/-/g, '').slice(0, 12);
     if (label) {
-      // Sanitize label for DNS: lowercase, replace non-alphanumeric with hyphens, trim
       const slug = label
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
