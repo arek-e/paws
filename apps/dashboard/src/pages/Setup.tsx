@@ -38,7 +38,7 @@ export function Setup() {
         <button
           onClick={() => {
             localStorage.setItem('paws_setup_skipped', 'true');
-            navigate('/');
+            window.location.href = '/';
           }}
           className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
         >

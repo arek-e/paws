@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { OpenAPIHono } from '@hono/zod-openapi';
+import { createLogger } from '@paws/logger';
 import type { Hono } from 'hono';
 import {
   verifyWebhookSignature,
@@ -290,10 +291,11 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
   // Setup status — no auth, dashboard checks this on load
   app.get('/v1/setup/status', (c) => {
-    const hasDaemons = daemonStore.list().length > 0;
+    const isFirstRun = passwordAuth?.isFirstRun() ?? true;
+    const hasAnySetup = daemonStore.list().length > 0 || sessionStore.listAll(1).length > 0;
     return c.json({
-      needsAccount: passwordAuth?.isFirstRun() ?? true,
-      needsOnboarding: !(passwordAuth?.isFirstRun() ?? true) && !hasDaemons,
+      needsAccount: isFirstRun,
+      needsOnboarding: !isFirstRun && !hasAnySetup,
       oidcAvailable: oidcEnabled,
     });
   });
@@ -1005,7 +1007,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
         },
       };
     } else {
-      console.error(`daemon ${role}: no workload or agent configured`);
+      createLogger('daemon').error('No workload or agent configured', { role });
       return c.json(
         { error: { code: 'DAEMON_MISCONFIGURED', message: 'No workload or agent configured' } },
         500,
@@ -1202,7 +1204,10 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
         postComment({ auth: githubAuth }, event.installationId, event.issueUrl, resultBody).catch(
           (err) => {
-            console.error(`[github] Failed to post result for session ${sessionId}:`, err);
+            createLogger('github').error('Failed to post result', {
+              sessionId,
+              error: String(err),
+            });
           },
         );
       };
@@ -1402,6 +1407,45 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     }
   }
 
+  // --- Provisioner (shared by setup wizard + provisioning routes) ---
+
+  const { createProvisioner, createSshClient } = await import('@paws/provisioner');
+
+  // Sanitize strings that may contain credentials before sending to clients
+  function sanitize(s: string): string {
+    return s
+      .replace(/(?:AKIA|sk-|ghp_|gho_)[A-Za-z0-9/+=]{10,}/g, '[REDACTED]')
+      .replace(/-----BEGIN[^-]*-----[\s\S]*?-----END[^-]*-----/g, '[REDACTED KEY]');
+  }
+
+  const provisioner = createProvisioner({
+    ssh: createSshClient(),
+    onEvent: (event) => {
+      const safeMessage = sanitize(event.message);
+      const safeError = event.error ? sanitize(event.error) : undefined;
+
+      // Update server status in store
+      serverStore.update(event.serverId, {
+        status: event.stage as import('@paws/provisioner').ServerStatus,
+        ...(safeError ? { error: safeError } : {}),
+      });
+
+      // Emit audit event for provisioning milestones
+      auditStore.append({
+        category: 'server',
+        action: `server.${event.stage}`,
+        resourceType: 'server',
+        resourceId: event.serverId,
+        severity: event.error ? 'error' : 'info',
+        details: {
+          message: safeMessage,
+          progress: event.progress,
+          ...(safeError ? { error: safeError } : {}),
+        },
+      });
+    },
+  });
+
   // --- Setup wizard ---
 
   {
@@ -1409,11 +1453,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     const setupRoutes = createSetupRoutes({
       serverStore,
       credentialStore: deps.credentialStore ?? createCredentialStore(deps.apiKey),
-      provisioner: {
-        start: async () => {
-          /* no-op until provisioner deps are wired */
-        },
-      },
+      provisioner,
       upgradeWebSocket: deps.upgradeWebSocket,
       createSession: async (prompt) => {
         const sessionId = randomUUID();
@@ -1460,11 +1500,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   {
     const provisioningRoutes = createProvisioningRoutes({
       serverStore,
-      provisioner: {
-        start: async () => {
-          /* no-op until provisioner deps are wired */
-        },
-      },
+      provisioner,
       upgradeWebSocket: deps.upgradeWebSocket,
     });
     app.route('/', provisioningRoutes);
@@ -1546,7 +1582,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     if (err.message?.includes('Malformed JSON')) {
       return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Invalid JSON body' } }, 400);
     }
-    console.error('Unhandled error:', err);
+    createLogger('app').error('Unhandled error', { error: String(err) });
     return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } }, 500);
   });
 
