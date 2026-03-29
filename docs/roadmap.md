@@ -124,10 +124,10 @@ secret management, and the UX details that make self-hosted software delightful.
 | 42  | Secret adapter pattern — resolve secrets from 1Password/Vault/Infisical/env  | ⬜     |
 | 43  | SSH key management — first-class entities in dashboard, encrypted storage    | ⬜     |
 | 44  | Git provider abstraction — GitHub/GitLab/Bitbucket/Gitea support             | ⬜     |
-| 45  | Server management UI — add/remove/validate servers from dashboard            | ⬜     |
-| 46  | One-click worker provisioning — provision cloud servers from dashboard       | ⬜     |
-| 47  | Daemon templates — pre-built agent configurations (PR reviewer, etc.)        | ⬜     |
-| 48  | Audit log UI — searchable event history in dashboard                         | ⬜     |
+| 45  | Server management UI — add/remove/validate servers from dashboard            | ✅     |
+| 46  | One-click worker provisioning — provision cloud servers from dashboard       | ✅     |
+| 47  | Daemon templates — pre-built agent configurations (PR reviewer, etc.)        | ✅     |
+| 48  | Audit log UI — searchable event history in dashboard                         | ✅     |
 
 **Note:** `apps/gateway` has been renamed to `apps/control-plane` to better reflect its role as
 the control plane in the control-plane/worker architecture split (v1.0 #37).
