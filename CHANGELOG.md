@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.1.0] - 2026-03-29
+
+### Added
+
+- **Port exposure** — VMs can expose ports via Pangolin tunnels, giving agents public URLs for running dev servers (Next.js, Docker Compose, etc.)
+- **Snapshot configuration** — API + dashboard for managing snapshot configs with built-in templates (minimal, node, python, docker, fullstack)
+- **Port pool** — Host port allocator for inbound DNAT forwarding to VMs
+- **Inbound iptables rules** — `setupInboundPort()`/`teardownInboundPort()` for port-level VM access
+- **Pangolin resource manager** — Per-session Pangolin resource creation/cleanup for public subdomain URLs
+- **Snapshot templates** — 5 built-in templates with setup scripts and required domain lists
+- **Dashboard snapshots page** — Create configs from templates, trigger builds, view build status
+- **Exposed ports in session detail** — Clickable tunnel URLs shown in session detail page
+- **Docker-ready snapshot config** — YAML config for building Docker-equipped VM snapshots
+
 ## [0.5.0.0] - 2026-03-28
 
 First tagged release. paws is a working system: submit workloads, run in isolated Firecracker VMs, zero secrets in the sandbox.
