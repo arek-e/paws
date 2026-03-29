@@ -117,6 +117,10 @@ app:
   dashboard_url: "http://${SERVER_IP}:3000"
   log_level: "info"
 
+domains:
+  default:
+    base_domain: "${SERVER_IP}.nip.io"
+
 server:
   secret: "$(openssl rand -hex 32)"
 
