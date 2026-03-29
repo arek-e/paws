@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Dark background -->
+  <rect width="1200" height="630" fill="#09090b"/>
+
+  <!-- Subtle border -->
+  <rect x="40" y="40" width="1120" height="550" rx="16" fill="none" stroke="#27272a" stroke-width="1"/>
+
+  <!-- Emerald accent line at top -->
+  <rect x="40" y="40" width="320" height="2" fill="#34d399" rx="1"/>
+
+  <!-- ASCII cat art — prominent and centered vertically -->
+  <text font-family="'Courier New', Courier, monospace" font-size="32" fill="#34d399">
+    <tspan x="100" y="180"> /\_/\</tspan>
+    <tspan x="100" y="220">( o.o )</tspan>
+    <tspan x="100" y="260"> &gt; ^ &lt;</tspan>
+  </text>
+
+  <!-- Title -->
+  <text x="100" y="350" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="64" font-weight="700" fill="#fafafa" letter-spacing="-1">paws</text>
+
+  <!-- Full name -->
+  <text x="100" y="395" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" fill="#a1a1aa">Protected Agent Workspace Sandboxes</text>
+
+  <!-- Tagline -->
+  <text x="100" y="440" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" fill="#71717a">Zero-trust credential injection for AI agents</text>
+
+  <!-- Subtitle -->
+  <text x="100" y="480" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#52525b">Secrets never enter the sandbox</text>
+
+  <!-- URL -->
+  <text x="100" y="548" font-family="'Courier New', Courier, monospace" font-size="18" fill="#34d399">getpaws.dev</text>
+
+  <!-- Decorative dots on the right side -->
+  <circle cx="1060" cy="180" r="3" fill="#27272a"/>
+  <circle cx="1060" cy="200" r="3" fill="#27272a"/>
+  <circle cx="1060" cy="220" r="3" fill="#27272a"/>
+  <circle cx="1080" cy="190" r="3" fill="#27272a"/>
+  <circle cx="1080" cy="210" r="3" fill="#27272a"/>
+  <circle cx="1100" cy="200" r="3" fill="#27272a"/>
+
+  <!-- Right side: architecture hint -->
+  <text font-family="'Courier New', Courier, monospace" font-size="14" fill="#3f3f46">
+    <tspan x="780" y="180">Agent VM</tspan>
+    <tspan x="780" y="200">  zero secrets</tspan>
+    <tspan x="780" y="220">  zero credentials</tspan>
+    <tspan x="780" y="260">TLS Proxy</tspan>
+    <tspan x="780" y="280">  inject at network layer</tspan>
+    <tspan x="780" y="320">Firecracker</tspan>
+    <tspan x="780" y="340">  sub-second boot</tspan>
+  </text>
+
+  <!-- Emerald accent line at bottom -->
+  <rect x="840" y="548" width="280" height="2" fill="#34d399" rx="1" opacity="0.5"/>
+</svg>
