@@ -8,6 +8,7 @@ import { SessionDetail } from './pages/SessionDetail.js';
 import { Sessions } from './pages/Sessions.js';
 import { Setup } from './pages/Setup.js';
 import { Snapshots } from './pages/Snapshots.js';
+import { Tunnels } from './pages/Tunnels.js';
 
 export function App() {
   return (
@@ -18,6 +19,7 @@ export function App() {
             <Route index element={<Fleet />} />
             <Route path="daemons" element={<Daemons />} />
             <Route path="snapshots" element={<Snapshots />} />
+            <Route path="tunnels" element={<Tunnels />} />
             <Route path="setup" element={<Setup />} />
             <Route path="sessions" element={<Sessions />} />
             <Route path="sessions/:id" element={<SessionDetail />} />
