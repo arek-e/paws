@@ -98,6 +98,56 @@ const app = await createControlPlaneApp({
   ...(pangolinDiscovery && { pangolinStatus: () => pangolinDiscovery.status() }),
 });
 
+// --- Auto-register Dex as Pangolin OIDC provider (if both configured) ---
+const PANGOLIN_OIDC_SECRET = process.env['PANGOLIN_OIDC_SECRET'] ?? '';
+
+if (
+  pangolinDiscovery &&
+  PANGOLIN_API_URL &&
+  PANGOLIN_ORG_ID &&
+  OIDC_ISSUER &&
+  PANGOLIN_OIDC_SECRET
+) {
+  void (async () => {
+    try {
+      const { createPangolinAdmin } = await import('./pangolin-admin.js');
+      const admin = createPangolinAdmin({
+        apiUrl: PANGOLIN_API_URL,
+        apiKey: PANGOLIN_API_KEY || undefined,
+        email: PANGOLIN_EMAIL || undefined,
+        password: PANGOLIN_PASSWORD || undefined,
+        orgId: PANGOLIN_ORG_ID,
+      });
+
+      // Check if Dex IdP already exists
+      const existing = await admin.listIdps();
+      const hasDex = existing.some(
+        (idp) => idp.name === 'paws (Dex)' || idp.name.toLowerCase().includes('dex'),
+      );
+
+      if (!hasDex) {
+        // Derive Dex URLs from the OIDC issuer (e.g., https://fleet.tpops.dev/dex)
+        const issuerBase = OIDC_ISSUER.replace(/\/$/, '');
+        await admin.createOidcIdp({
+          name: 'paws (Dex)',
+          clientId: 'pangolin',
+          clientSecret: PANGOLIN_OIDC_SECRET,
+          authUrl: `${issuerBase}/auth`,
+          tokenUrl: `${issuerBase}/token`,
+          scopes: 'openid profile email',
+          emailPath: 'email',
+          namePath: 'name',
+          identifierPath: 'sub',
+        });
+        console.log('pangolin: auto-registered Dex as OIDC identity provider');
+      }
+    } catch (err) {
+      // Non-fatal — Pangolin might not be ready yet on first boot
+      console.warn('pangolin: failed to auto-register Dex IdP (will retry on next restart):', err);
+    }
+  })();
+}
+
 // --- Autoscaler ---
 const AUTOSCALE_ENABLED = process.env['AUTOSCALE_ENABLED'] === 'true';
 const AUTOSCALE_PROVIDER = process.env['AUTOSCALE_PROVIDER'] ?? 'hetzner-cloud';
