@@ -116,18 +116,26 @@ least-loaded.
 **Goal:** Make paws feel like a polished product. GitHub integration, onboarding wizard,
 secret management, and the UX details that make self-hosted software delightful.
 
-| #   | What                                                                         | Status |
-| --- | ---------------------------------------------------------------------------- | ------ |
-| 39  | GitHub App integration — daemons triggered by GitHub events (PR, push, etc.) | ⬜     |
-| 40  | Onboarding wizard — stepped setup flow in dashboard with validation          | ✅     |
-| 41  | Real-time setup streaming — stream worker bootstrap logs to dashboard via WS | ✅     |
-| 42  | Secret adapter pattern — resolve secrets from 1Password/Vault/Infisical/env  | ⬜     |
-| 43  | SSH key management — first-class entities in dashboard, encrypted storage    | ⬜     |
-| 44  | Git provider abstraction — GitHub/GitLab/Bitbucket/Gitea support             | ⬜     |
-| 45  | Server management UI — add/remove/validate servers from dashboard            | ✅     |
-| 46  | One-click worker provisioning — provision cloud servers from dashboard       | ✅     |
-| 47  | Daemon templates — pre-built agent configurations (PR reviewer, etc.)        | ✅     |
-| 48  | Audit log UI — searchable event history in dashboard                         | ✅     |
+| #   | What                                                                          | Status |
+| --- | ----------------------------------------------------------------------------- | ------ |
+| 39  | GitHub App integration — daemons triggered by GitHub events (PR, push, etc.)  | ⬜     |
+| 40  | Onboarding wizard — stepped setup flow in dashboard with validation           | ✅     |
+| 41  | Real-time setup streaming — stream worker bootstrap logs to dashboard via WS  | ✅     |
+| 42  | Secret adapter pattern — resolve secrets from 1Password/Vault/Infisical/env   | ⬜     |
+| 43  | SSH key management — first-class entities in dashboard, encrypted storage     | ⬜     |
+| 44  | Git provider abstraction — GitHub/GitLab/Bitbucket/Gitea support              | ⬜     |
+| 45  | Server management UI — add/remove/validate servers from dashboard             | ✅     |
+| 46  | One-click worker provisioning — provision cloud servers from dashboard        | ✅     |
+| 47  | Daemon templates — pre-built agent configurations (PR reviewer, etc.)         | ✅     |
+| 48  | Audit log UI — searchable event history in dashboard                          | ✅     |
+| 48a | React Flow topology — live infrastructure node graph in dashboard             | ✅     |
+| 48b | CLI `paws run` + `paws logs` — one-command agent execution                    | ✅     |
+| 48c | MCP gateway foundation — server config, routes, dashboard page                | ✅     |
+| 48d | Browser/computer-use foundation — types, routes, dashboard BrowserView        | ✅     |
+| 48e | Landing page — code examples, comparison table, use cases, security deep-dive | ✅     |
+| 48f | Structured logging (`@paws/logger`) + OAuth + Loki/Promtail observability     | ✅     |
+| 48g | Version manifest endpoint (`/version`) + Docker build args                    | ✅     |
+| 48h | Simplified Dockerfiles — `COPY . .` with `.dockerignore`, no manual COPY list | ✅     |
 
 **Note:** `apps/gateway` has been renamed to `apps/control-plane` to better reflect its role as
 the control plane in the control-plane/worker architecture split (v1.0 #37).
@@ -148,13 +156,13 @@ Sprites (checkpoint/restore). paws wins on: full platform, governance, self-host
 
 ### Tier 1 — Double down on what's unique (4-6 weeks)
 
-| #   | What                                                                                        | Status |
-| --- | ------------------------------------------------------------------------------------------- | ------ |
-| 49  | GitHub App integration (#39) — PR opened → daemon triggers → agent reviews → posts comment  | ⬜     |
-| 50  | Secret adapter pattern (#42) — 1Password, Vault, Infisical, env resolution                  | ⬜     |
-| 51  | In-session checkpoints — branch/rollback during execution, not just pre-session snapshots   | ⬜     |
-| 52  | Computer use (ship it) — Xvfb + Chromium in snapshot, wire to browser routes/dashboard      | ⬜     |
-| 53  | MCP protocol handling — actual stdio subprocess + SSE connections (foundation already done) | ⬜     |
+| #   | What                                                                                         | Status |
+| --- | -------------------------------------------------------------------------------------------- | ------ |
+| 49  | GitHub App integration (#39) — PR opened → daemon triggers → agent reviews → posts comment   | ⬜     |
+| 50  | Secret adapter pattern (#42) — 1Password, Vault, Infisical, env resolution                   | ⬜     |
+| 51  | In-session checkpoints — branch/rollback during execution, not just pre-session snapshots    | ⬜     |
+| 52  | Computer use (ship it) — Xvfb + Chromium in snapshot, wire to browser routes (foundation ✅) | ⬜     |
+| 53  | MCP protocol handling — stdio subprocess + SSE connections (foundation ✅)                   | ⬜     |
 
 ### Tier 2 — Close competitive gaps (6-12 weeks)
 
