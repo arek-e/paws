@@ -38,6 +38,8 @@ export interface CreateHostOptions {
   serverType: string;
   location?: string;
   sshKeys?: string[];
+  /** Security group IDs to attach to the instance */
+  securityGroupIds?: string[];
   /** cloud-init user-data script */
   userData?: string;
 }

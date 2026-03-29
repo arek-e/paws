@@ -2,6 +2,9 @@ import {
   AuthorizeSecurityGroupIngressCommand,
   CreateKeyPairCommand,
   CreateSecurityGroupCommand,
+  DeleteKeyPairCommand,
+  DeleteSecurityGroupCommand,
+  DescribeImagesCommand,
   DescribeInstancesCommand,
   EC2Client,
   RunInstancesCommand,
@@ -219,6 +222,41 @@ export function createAwsEc2Client(options: AwsEc2ClientOptions) {
       );
     },
 
+    /** Resolve the latest Ubuntu 24.04 amd64 AMI ID for the current region. */
+    resolveUbuntuAmi(): ResultAsync<string, ProviderError> {
+      return ResultAsync.fromPromise(
+        (async () => {
+          const command = new DescribeImagesCommand({
+            Filters: [
+              {
+                Name: 'name',
+                Values: ['ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*'],
+              },
+              { Name: 'state', Values: ['available'] },
+              { Name: 'architecture', Values: ['x86_64'] },
+            ],
+            Owners: ['099720109477'], // Canonical
+          });
+          const response = await ec2.send(command);
+          const images = response.Images ?? [];
+          if (images.length === 0) {
+            throw new ProviderError(
+              ProviderErrorCode.NOT_FOUND,
+              'No Ubuntu 24.04 AMI found in this region',
+            );
+          }
+          // Sort by creation date descending to get the latest
+          images.sort((a, b) => (b.CreationDate ?? '').localeCompare(a.CreationDate ?? ''));
+          const amiId = images[0]!.ImageId;
+          if (!amiId) {
+            throw new ProviderError(ProviderErrorCode.NOT_FOUND, 'Ubuntu 24.04 AMI has no ImageId');
+          }
+          return amiId;
+        })(),
+        (e) => wrapError(ProviderErrorCode.API_ERROR, 'resolveUbuntuAmi failed', e),
+      );
+    },
+
     /** Create an EC2 key pair. Returns the key pair ID and private key material (PEM). */
     createKeyPair(
       name: string,
@@ -242,6 +280,35 @@ export function createAwsEc2Client(options: AwsEc2ClientOptions) {
           return { keyPairId, privateKey };
         })(),
         (e) => wrapError(ProviderErrorCode.CREATE_FAILED, `createKeyPair(${name}) failed`, e),
+      );
+    },
+
+    /** Delete a security group by ID. Idempotent — resolves successfully if already gone. */
+    deleteSecurityGroup(groupId: string): ResultAsync<void, ProviderError> {
+      return ResultAsync.fromPromise(
+        (async () => {
+          try {
+            await ec2.send(new DeleteSecurityGroupCommand({ GroupId: groupId }));
+          } catch (error: unknown) {
+            if (error instanceof Error && error.name === 'InvalidGroup.NotFound') {
+              return; // Already gone
+            }
+            throw error;
+          }
+        })(),
+        (e) =>
+          wrapError(ProviderErrorCode.DELETE_FAILED, `deleteSecurityGroup(${groupId}) failed`, e),
+      );
+    },
+
+    /** Delete a key pair by name. Idempotent — resolves successfully if already gone. */
+    deleteKeyPair(name: string): ResultAsync<void, ProviderError> {
+      return ResultAsync.fromPromise(
+        (async () => {
+          // DeleteKeyPair is idempotent by default — no error if key doesn't exist
+          await ec2.send(new DeleteKeyPairCommand({ KeyName: name }));
+        })(),
+        (e) => wrapError(ProviderErrorCode.DELETE_FAILED, `deleteKeyPair(${name}) failed`, e),
       );
     },
   };

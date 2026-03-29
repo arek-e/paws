@@ -81,6 +81,15 @@ export interface AwsEc2Provider extends HostProvider {
   createKeyPair(
     name: string,
   ): ResultAsync<{ keyPairId: string; privateKey: string }, ProviderError>;
+
+  /** Resolve the latest Ubuntu 24.04 amd64 AMI ID for the current region. */
+  resolveUbuntuAmi(): ResultAsync<string, ProviderError>;
+
+  /** Delete a security group by ID. Idempotent. */
+  deleteSecurityGroup(groupId: string): ResultAsync<void, ProviderError>;
+
+  /** Delete a key pair by name. Idempotent. */
+  deleteKeyPair(name: string): ResultAsync<void, ProviderError>;
 }
 
 const DEFAULT_WAIT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -115,6 +124,9 @@ export function createAwsEc2Provider(config: AwsEc2Config): AwsEc2Provider {
           instanceType: options.serverType,
           imageId: config.defaultImageId,
           ...(options.sshKeys?.length ? { keyName: options.sshKeys[0] } : {}),
+          ...(options.securityGroupIds?.length
+            ? { securityGroupIds: options.securityGroupIds }
+            : {}),
           ...(options.location ? { subnetId: options.location } : {}),
           ...(options.userData ? { userData: options.userData } : {}),
         })
@@ -181,6 +193,18 @@ export function createAwsEc2Provider(config: AwsEc2Config): AwsEc2Provider {
       name: string,
     ): ResultAsync<{ keyPairId: string; privateKey: string }, ProviderError> {
       return client.createKeyPair(name);
+    },
+
+    resolveUbuntuAmi(): ResultAsync<string, ProviderError> {
+      return client.resolveUbuntuAmi();
+    },
+
+    deleteSecurityGroup(groupId: string): ResultAsync<void, ProviderError> {
+      return client.deleteSecurityGroup(groupId);
+    },
+
+    deleteKeyPair(name: string): ResultAsync<void, ProviderError> {
+      return client.deleteKeyPair(name);
     },
   };
 

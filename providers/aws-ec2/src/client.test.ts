@@ -10,8 +10,14 @@ import { ProviderErrorCode } from './provider-interface.js';
  */
 function mockEc2Client(handlers: {
   DescribeInstances?: () => unknown;
+  DescribeImages?: () => unknown;
   RunInstances?: () => unknown;
   TerminateInstances?: () => unknown;
+  CreateSecurityGroup?: () => unknown;
+  AuthorizeSecurityGroupIngress?: () => unknown;
+  CreateKeyPair?: () => unknown;
+  DeleteSecurityGroup?: () => unknown;
+  DeleteKeyPair?: () => unknown;
 }): Ec2ClientDep & { sendSpy: ReturnType<typeof vi.fn> } {
   const sendSpy = vi.fn(async (command: { constructor: { name: string } }) => {
     const name = command.constructor.name.replace('Command', '');
@@ -351,6 +357,127 @@ describe('createAwsEc2Client', () => {
       const command = ec2.sendSpy.mock.calls[0]?.[0];
       expect(command.constructor.name).toBe('TerminateInstancesCommand');
       expect(command.input.InstanceIds).toEqual(['i-5']);
+    });
+  });
+
+  describe('deleteSecurityGroup', () => {
+    it('sends DeleteSecurityGroup with correct GroupId', async () => {
+      const ec2 = mockEc2Client({
+        DeleteSecurityGroup: () => ({}),
+      });
+      const client = createAwsEc2Client({ region: 'us-east-1', ec2Client: ec2 });
+
+      const result = await client.deleteSecurityGroup('sg-123');
+
+      expect(result.isOk()).toBe(true);
+      const command = ec2.sendSpy.mock.calls[0]?.[0];
+      expect(command.constructor.name).toBe('DeleteSecurityGroupCommand');
+      expect(command.input.GroupId).toBe('sg-123');
+    });
+
+    it('succeeds when group already deleted (InvalidGroup.NotFound)', async () => {
+      const ec2 = mockEc2Client({
+        DeleteSecurityGroup: () => {
+          const err = new Error('not found');
+          err.name = 'InvalidGroup.NotFound';
+          throw err;
+        },
+      });
+      const client = createAwsEc2Client({ region: 'us-east-1', ec2Client: ec2 });
+
+      const result = await client.deleteSecurityGroup('sg-gone');
+
+      expect(result.isOk()).toBe(true);
+    });
+
+    it('returns DELETE_FAILED on other errors', async () => {
+      const ec2 = mockEc2Client({
+        DeleteSecurityGroup: () => {
+          throw new Error('access denied');
+        },
+      });
+      const client = createAwsEc2Client({ region: 'us-east-1', ec2Client: ec2 });
+
+      const result = await client.deleteSecurityGroup('sg-123');
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe(ProviderErrorCode.DELETE_FAILED);
+      }
+    });
+  });
+
+  describe('deleteKeyPair', () => {
+    it('sends DeleteKeyPair with correct KeyName', async () => {
+      const ec2 = mockEc2Client({
+        DeleteKeyPair: () => ({}),
+      });
+      const client = createAwsEc2Client({ region: 'us-east-1', ec2Client: ec2 });
+
+      const result = await client.deleteKeyPair('paws-abc');
+
+      expect(result.isOk()).toBe(true);
+      const command = ec2.sendSpy.mock.calls[0]?.[0];
+      expect(command.constructor.name).toBe('DeleteKeyPairCommand');
+      expect(command.input.KeyName).toBe('paws-abc');
+    });
+  });
+
+  describe('resolveUbuntuAmi', () => {
+    it('returns latest AMI by creation date', async () => {
+      const ec2 = mockEc2Client({
+        DescribeImages: () => ({
+          Images: [
+            { ImageId: 'ami-old', CreationDate: '2024-01-01' },
+            { ImageId: 'ami-new', CreationDate: '2024-06-15' },
+          ],
+        }),
+      });
+      const client = createAwsEc2Client({ region: 'us-east-1', ec2Client: ec2 });
+
+      const result = await client.resolveUbuntuAmi();
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value).toBe('ami-new');
+      }
+    });
+
+    it('filters by Canonical owner and Ubuntu 24.04 name pattern', async () => {
+      const ec2 = mockEc2Client({
+        DescribeImages: () => ({
+          Images: [{ ImageId: 'ami-123', CreationDate: '2024-06-01' }],
+        }),
+      });
+      const client = createAwsEc2Client({ region: 'us-east-1', ec2Client: ec2 });
+
+      await client.resolveUbuntuAmi();
+
+      const command = ec2.sendSpy.mock.calls[0]?.[0];
+      expect(command.constructor.name).toBe('DescribeImagesCommand');
+      expect(command.input.Owners).toEqual(['099720109477']);
+      expect(command.input.Filters).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            Name: 'name',
+            Values: ['ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*'],
+          }),
+        ]),
+      );
+    });
+
+    it('returns NOT_FOUND when no images match', async () => {
+      const ec2 = mockEc2Client({
+        DescribeImages: () => ({ Images: [] }),
+      });
+      const client = createAwsEc2Client({ region: 'us-east-1', ec2Client: ec2 });
+
+      const result = await client.resolveUbuntuAmi();
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe(ProviderErrorCode.NOT_FOUND);
+      }
     });
   });
 });

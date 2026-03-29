@@ -29,11 +29,14 @@ function makeAwsInstance(overrides: Record<string, unknown> = {}) {
 /** Build a mock EC2Client that returns canned responses per command type */
 function mockEc2Client(handlers: {
   DescribeInstances?: () => unknown;
+  DescribeImages?: () => unknown;
   RunInstances?: () => unknown;
   TerminateInstances?: () => unknown;
   CreateSecurityGroup?: () => unknown;
   AuthorizeSecurityGroupIngress?: () => unknown;
   CreateKeyPair?: () => unknown;
+  DeleteSecurityGroup?: () => unknown;
+  DeleteKeyPair?: () => unknown;
 }): Ec2ClientDep & { sendSpy: ReturnType<typeof vi.fn> } {
   const sendSpy = vi.fn(async (command: { constructor: { name: string } }) => {
     const name = command.constructor.name.replace('Command', '');
@@ -482,6 +485,105 @@ describe('createAwsEc2Provider', () => {
       if (result.isOk()) {
         expect(result.value.keyPairId).toBe('key-abc123');
         expect(result.value.privateKey).toContain('BEGIN PRIVATE KEY');
+      }
+    });
+  });
+
+  describe('deleteSecurityGroup', () => {
+    it('deletes successfully', async () => {
+      const ec2 = mockEc2Client({
+        DeleteSecurityGroup: () => ({}),
+      });
+      const provider = createAwsEc2Provider({
+        region: REGION,
+        defaultImageId: DEFAULT_IMAGE_ID,
+        ec2Client: ec2,
+      });
+
+      const result = await provider.deleteSecurityGroup('sg-abc123');
+
+      expect(result.isOk()).toBe(true);
+      expect(ec2.sendSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('succeeds if group already deleted', async () => {
+      const ec2 = mockEc2Client({
+        DeleteSecurityGroup: () => {
+          const err = new Error('not found');
+          err.name = 'InvalidGroup.NotFound';
+          throw err;
+        },
+      });
+      const provider = createAwsEc2Provider({
+        region: REGION,
+        defaultImageId: DEFAULT_IMAGE_ID,
+        ec2Client: ec2,
+      });
+
+      const result = await provider.deleteSecurityGroup('sg-gone');
+
+      expect(result.isOk()).toBe(true);
+    });
+  });
+
+  describe('deleteKeyPair', () => {
+    it('deletes successfully', async () => {
+      const ec2 = mockEc2Client({
+        DeleteKeyPair: () => ({}),
+      });
+      const provider = createAwsEc2Provider({
+        region: REGION,
+        defaultImageId: DEFAULT_IMAGE_ID,
+        ec2Client: ec2,
+      });
+
+      const result = await provider.deleteKeyPair('paws-abc');
+
+      expect(result.isOk()).toBe(true);
+      expect(ec2.sendSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('resolveUbuntuAmi', () => {
+    it('returns the latest AMI sorted by creation date', async () => {
+      const ec2 = mockEc2Client({
+        DescribeImages: () => ({
+          Images: [
+            { ImageId: 'ami-older', CreationDate: '2024-01-01T00:00:00Z' },
+            { ImageId: 'ami-latest', CreationDate: '2024-06-01T00:00:00Z' },
+            { ImageId: 'ami-middle', CreationDate: '2024-03-01T00:00:00Z' },
+          ],
+        }),
+      });
+      const provider = createAwsEc2Provider({
+        region: REGION,
+        defaultImageId: DEFAULT_IMAGE_ID,
+        ec2Client: ec2,
+      });
+
+      const result = await provider.resolveUbuntuAmi();
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value).toBe('ami-latest');
+      }
+    });
+
+    it('returns error when no images found', async () => {
+      const ec2 = mockEc2Client({
+        DescribeImages: () => ({ Images: [] }),
+      });
+      const provider = createAwsEc2Provider({
+        region: REGION,
+        defaultImageId: DEFAULT_IMAGE_ID,
+        ec2Client: ec2,
+      });
+
+      const result = await provider.resolveUbuntuAmi();
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe(ProviderErrorCode.NOT_FOUND);
       }
     });
   });

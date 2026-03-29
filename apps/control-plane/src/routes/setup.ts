@@ -201,54 +201,102 @@ export function createSetupRoutes(deps: SetupDeps) {
           // Phase 0: Launch EC2 instance
           const { createAwsEc2Provider } = await import('@paws/provider-aws-ec2');
 
+          serverStore.update(id, { status: 'provisioning' });
+
+          // Resolve latest Ubuntu 24.04 AMI for this region
+          const amiLookup = createAwsEc2Provider({
+            region: body.region,
+            defaultImageId: '', // only used for AMI lookup
+            credentials: {
+              accessKeyId: body.awsAccessKey,
+              secretAccessKey: body.awsSecretKey,
+            },
+          });
+          const amiResult = await amiLookup.resolveUbuntuAmi();
+          if (amiResult.isErr()) {
+            throw new Error(`Failed to resolve Ubuntu AMI: ${amiResult.error.message}`);
+          }
+
           const ec2 = createAwsEc2Provider({
             region: body.region,
-            defaultImageId: '', // Will use default Ubuntu AMI
+            defaultImageId: amiResult.value,
             credentials: {
               accessKeyId: body.awsAccessKey,
               secretAccessKey: body.awsSecretKey,
             },
           });
 
-          serverStore.update(id, { status: 'provisioning' });
+          // Track created resources for cleanup on failure
+          let createdKeyPairName: string | undefined;
+          let createdSecurityGroupId: string | undefined;
+          let createdInstanceId: string | undefined;
 
-          // Create key pair for SSH access
-          const keyPairResult = await ec2.createKeyPair(`paws-${id.slice(0, 8)}`);
-          if (keyPairResult.isErr()) {
-            throw new Error(`Failed to create key pair: ${keyPairResult.error.message}`);
+          try {
+            // Create key pair for SSH access
+            const keyPairName = `paws-${id.slice(0, 8)}`;
+            const keyPairResult = await ec2.createKeyPair(keyPairName);
+            if (keyPairResult.isErr()) {
+              throw new Error(`Failed to create key pair: ${keyPairResult.error.message}`);
+            }
+            createdKeyPairName = keyPairName;
+            sshPrivateKey = keyPairResult.value.privateKey;
+
+            // Create security group
+            const sgResult = await ec2.createSecurityGroup(
+              `paws-worker-${id.slice(0, 8)}`,
+              'paws worker - SSH and worker API',
+            );
+            if (sgResult.isErr()) {
+              throw new Error(`Failed to create security group: ${sgResult.error.message}`);
+            }
+            createdSecurityGroupId = sgResult.value;
+
+            // Launch instance with security group attached
+            const hostResult = await ec2.createHost({
+              name: server.name,
+              serverType: 'c7i.xlarge',
+              sshKeys: [keyPairName],
+              securityGroupIds: [sgResult.value],
+            });
+            if (hostResult.isErr()) {
+              throw new Error(`Failed to launch EC2 instance: ${hostResult.error.message}`);
+            }
+            createdInstanceId = hostResult.value.id;
+            serverStore.update(id, { providerServerId: createdInstanceId });
+
+            // Wait for IP
+            const readyResult = await ec2.waitForReady(createdInstanceId);
+            if (readyResult.isErr()) {
+              throw new Error(`EC2 instance failed to start: ${readyResult.error.message}`);
+            }
+
+            server.ip = readyResult.value.ip;
+            serverStore.update(id, { ip: server.ip });
+          } catch (ec2Err) {
+            // Clean up AWS resources in reverse order (best-effort)
+            if (createdInstanceId) {
+              await ec2.deleteHost(createdInstanceId).match(
+                () => {},
+                () => {},
+              );
+              // Wait briefly for instance to start terminating before deleting SG
+              // (SG can't be deleted while an instance is using it)
+              await new Promise((r) => setTimeout(r, 5_000));
+            }
+            if (createdSecurityGroupId) {
+              await ec2.deleteSecurityGroup(createdSecurityGroupId).match(
+                () => {},
+                () => {},
+              );
+            }
+            if (createdKeyPairName) {
+              await ec2.deleteKeyPair(createdKeyPairName).match(
+                () => {},
+                () => {},
+              );
+            }
+            throw ec2Err;
           }
-          sshPrivateKey = keyPairResult.value.privateKey;
-
-          // Create security group
-          const sgResult = await ec2.createSecurityGroup(
-            `paws-worker-${id.slice(0, 8)}`,
-            'paws worker - SSH and worker API',
-          );
-          if (sgResult.isErr()) {
-            throw new Error(`Failed to create security group: ${sgResult.error.message}`);
-          }
-
-          // Launch instance
-          const hostResult = await ec2.createHost({
-            name: server.name,
-            serverType: 'c7i.xlarge',
-            sshKeys: [keyPairResult.value.keyPairId],
-          });
-          if (hostResult.isErr()) {
-            throw new Error(`Failed to launch EC2 instance: ${hostResult.error.message}`);
-          }
-
-          const instanceId = hostResult.value.id;
-          serverStore.update(id, { providerServerId: instanceId });
-
-          // Wait for IP
-          const readyResult = await ec2.waitForReady(instanceId);
-          if (readyResult.isErr()) {
-            throw new Error(`EC2 instance failed to start: ${readyResult.error.message}`);
-          }
-
-          server.ip = readyResult.value.ip;
-          serverStore.update(id, { ip: server.ip });
         }
 
         // Phase 1+: SSH bootstrap (works for both manual and EC2)
