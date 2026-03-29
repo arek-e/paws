@@ -246,10 +246,14 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     );
   });
 
-  // --- Password auth (for bare IP installs without OIDC) ---
+  // --- Database + Password auth ---
+
+  const { createDatabase } = await import('./db/index.js');
+  const dataDir = process.env['DATA_DIR'] ?? '/var/lib/paws/data';
+  const db = createDatabase(`${dataDir}/paws.db`);
 
   const { createPasswordAuth } = await import('./auth/password.js');
-  const passwordAuth = createPasswordAuth(process.env['DATA_DIR'] ?? '/var/lib/paws/data');
+  const passwordAuth = createPasswordAuth(db);
 
   // Setup status — no auth, dashboard checks this on load
   app.get('/v1/setup/status', (c) => {

@@ -28,6 +28,8 @@
     "@paws/provisioner": "workspace:*",
     "@paws/scheduler": "workspace:*",
     "@paws/types": "workspace:*",
+    "better-sqlite3": "^12.8.0",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.7.0",
     "prom-client": "^15.1.3"
   },

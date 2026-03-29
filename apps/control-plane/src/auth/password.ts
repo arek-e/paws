@@ -1,55 +1,17 @@
 /**
- * Simple password-based auth for the dashboard.
- * Used on bare IP installs where OIDC/Dex isn't available.
+ * Password-based auth backed by SQLite via Drizzle ORM.
  * Admin creates an account on first visit, then logs in with email + password.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { eq } from 'drizzle-orm';
 
-export interface AdminUser {
-  email: string;
-  passwordHash: string;
-  createdAt: string;
-}
-
-export interface SessionToken {
-  token: string;
-  email: string;
-  expiresAt: number;
-}
+import type { PawsDatabase } from '../db/index.js';
+import { adminUsers, authSessions } from '../db/schema.js';
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-export function createPasswordAuth(dataDir: string) {
-  let admin: AdminUser | null = null;
-  const sessions = new Map<string, SessionToken>();
-  const filePath = `${dataDir}/admin.json`;
-
-  // Load existing admin from disk
-  try {
-    if (existsSync(filePath)) {
-      const data = readFileSync(filePath, 'utf-8');
-      admin = JSON.parse(data) as AdminUser;
-      console.log(`[auth] Loaded admin account: ${admin.email}`);
-    }
-  } catch (err) {
-    console.error('[auth] Failed to load admin.json:', err);
-  }
-
-  function save() {
-    if (!admin) return;
-    try {
-      const dir = dirname(filePath);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      writeFileSync(filePath, JSON.stringify(admin, null, 2));
-      console.log(`[auth] Saved admin account to ${filePath}`);
-    } catch (err) {
-      console.error('[auth] Failed to save admin.json:', err);
-    }
-  }
-
+export function createPasswordAuth(db: PawsDatabase) {
   async function hashPassword(password: string): Promise<string> {
     const encoder = new TextEncoder();
     const data = encoder.encode(password);
@@ -61,25 +23,28 @@ export function createPasswordAuth(dataDir: string) {
 
   return {
     isFirstRun(): boolean {
-      return admin === null;
+      const rows = db.select().from(adminUsers).limit(1).all();
+      return rows.length === 0;
     },
 
     async createAdmin(email: string, password: string): Promise<string | null> {
-      if (admin) return null;
+      if (!this.isFirstRun()) return null;
 
-      admin = {
-        email,
-        passwordHash: await hashPassword(password),
-        createdAt: new Date().toISOString(),
-      };
-      save();
+      db.insert(adminUsers)
+        .values({
+          email,
+          passwordHash: await hashPassword(password),
+          createdAt: new Date().toISOString(),
+        })
+        .run();
 
+      console.log(`[auth] Created admin account: ${email}`);
       return this.createSession(email);
     },
 
     async login(email: string, password: string): Promise<string | null> {
+      const admin = db.select().from(adminUsers).where(eq(adminUsers.email, email)).get();
       if (!admin) return null;
-      if (admin.email !== email) return null;
 
       const hash = await hashPassword(password);
       if (hash !== admin.passwordHash) return null;
@@ -89,25 +54,27 @@ export function createPasswordAuth(dataDir: string) {
 
     createSession(email: string): string {
       const token = randomUUID();
-      sessions.set(token, {
-        token,
-        email,
-        expiresAt: Date.now() + SESSION_TTL_MS,
-      });
+      const expiresAt = Date.now() + SESSION_TTL_MS;
+
+      db.insert(authSessions).values({ token, email, expiresAt }).run();
+
       return token;
     },
 
-    validateSession(token: string): SessionToken | null {
-      const session = sessions.get(token);
+    validateSession(token: string): { token: string; email: string; expiresAt: number } | null {
+      const session = db.select().from(authSessions).where(eq(authSessions.token, token)).get();
       if (!session) return null;
+
       if (Date.now() > session.expiresAt) {
-        sessions.delete(token);
+        db.delete(authSessions).where(eq(authSessions.token, token)).run();
         return null;
       }
+
       return session;
     },
 
     getAdminEmail(): string | null {
+      const admin = db.select().from(adminUsers).limit(1).get();
       return admin?.email ?? null;
     },
   };
