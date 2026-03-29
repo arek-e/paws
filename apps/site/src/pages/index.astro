@@ -138,10 +138,16 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
         pointer-events: none;
       }
 
+      .hero-cat-scene {
+        position: relative;
+        display: inline-block;
+      }
+
       .hero-cat {
         color: var(--emerald-400);
         font-size: 1rem;
         line-height: 1.4;
+        animation: cat-float 3s ease-in-out infinite;
         margin-bottom: 2rem;
         opacity: 0.7;
       }
@@ -523,6 +529,43 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
       .footer-links a:hover { color: var(--zinc-300); }
 
       /* Responsive */
+      /* Cat animations */
+      @keyframes cat-float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-6px); }
+      }
+
+      @keyframes cat-blink {
+        0%, 90%, 100% { opacity: 1; }
+        95% { opacity: 0; }
+      }
+
+      @keyframes cat-tail {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(8deg); }
+        75% { transform: rotate(-8deg); }
+      }
+
+      .cat-blink {
+        position: absolute;
+        top: 1.4em;
+        left: 2.6em;
+        width: 0.6em;
+        height: 0.2em;
+        animation: cat-blink 4s ease-in-out infinite;
+      }
+
+      /* Section cat decorations */
+      .section-cat-inline {
+        color: var(--zinc-600);
+        font-size: 0.75rem;
+        line-height: 1.3;
+        text-align: center;
+        margin: 0.5rem auto 1.5rem;
+        animation: cat-float 4s ease-in-out infinite;
+        animation-delay: 1s;
+      }
+
       @media (max-width: 768px) {
         .hero { padding: 7rem 0 4rem; }
 
@@ -572,9 +615,14 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
     <!-- Hero -->
     <section class="hero">
       <div class="container">
-        <pre class="hero-cat mono">{`  /\\_/\\
- ( o.o )
-  > ^ <`}</pre>
+        <div class="hero-cat-scene">
+          <pre class="hero-cat mono">{`   /\\_/\\
+  ( o.o )  ~  zero secrets
+   > ^ <
+  /|   |\\
+ (_|   |_)`}</pre>
+          <div class="cat-blink"></div>
+        </div>
         <h1>Your agent should have <span class="accent">nothing worth stealing</span></h1>
         <p class="hero-sub">
           Zero-trust credential injection for AI agents. Secrets never enter the sandbox —
@@ -600,6 +648,9 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
       <div class="container">
         <p class="section-label">How it works</p>
         <h2 class="section-title">Credentials injected, never exposed</h2>
+        <pre class="mono section-cat-inline">{`    /\\_/\\
+   ( -.- )  zzZ
+    > ^ <`}</pre>
         <p class="section-desc">
           Agents run in ephemeral Firecracker microVMs with zero secrets on disk, in env, or in memory.
           A per-VM TLS proxy intercepts outbound HTTPS and injects credentials on-the-fly.
@@ -706,6 +757,12 @@ const description = 'Zero-trust credential injection for AI agents. Secrets neve
       <div class="container">
         <p class="section-label">Architecture</p>
         <h2 class="section-title">Control plane + worker isolation</h2>
+        <pre class="mono section-cat-inline">{`   /\\_/\\
+  ( o.o )  < in a box!
+  |     |
+  +-----+
+  |     |
+  +-----+`}</pre>
         <p class="section-desc">
           The control plane holds all secrets and orchestrates sessions. Workers run VMs with nothing worth stealing.
         </p>
