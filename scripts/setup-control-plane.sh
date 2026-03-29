@@ -38,16 +38,24 @@ source .env
 set +a
 
 # ── Validate required vars ─────────────────────────────────────────────────
-MISSING=()
-[[ -z "${DOMAIN:-}" ]] && MISSING+=("DOMAIN")
-[[ -z "${TUNNEL_DOMAIN:-}" ]] && MISSING+=("TUNNEL_DOMAIN")
-[[ -z "${CF_DNS_API_TOKEN:-}" ]] && MISSING+=("CF_DNS_API_TOKEN")
-[[ -z "${ACME_EMAIL:-}" ]] && MISSING+=("ACME_EMAIL")
-
-if [[ ${#MISSING[@]} -gt 0 ]]; then
-  echo "Error: Missing required variables in .env:"
-  for var in "${MISSING[@]}"; do echo "  - $var"; done
+if [[ -z "${DOMAIN:-}" ]]; then
+  echo "Error: DOMAIN is required in .env"
   exit 1
+fi
+
+# TUNNEL_DOMAIN defaults to tunnel.DOMAIN
+TUNNEL_DOMAIN="${TUNNEL_DOMAIN:-tunnel.${DOMAIN}}"
+
+# CF_DNS_API_TOKEN is optional — if set, use DNS challenge; otherwise HTTP challenge
+if [[ -n "${CF_DNS_API_TOKEN:-}" ]]; then
+  TLS_MODE="cloudflare"
+  echo "TLS mode: Cloudflare DNS challenge"
+elif [[ -n "${ACME_EMAIL:-}" ]]; then
+  TLS_MODE="http"
+  echo "TLS mode: HTTP-01 challenge (no Cloudflare needed)"
+else
+  TLS_MODE="none"
+  echo "TLS mode: disabled (set ACME_EMAIL to enable Let's Encrypt)"
 fi
 
 # ── Generate secrets if not set ─────────────────────────────────────────────
@@ -150,7 +158,8 @@ EOF
 echo "==> Generating Traefik config..."
 mkdir -p config/traefik
 
-cat > config/traefik/traefik_config.yml << EOF
+if [[ "$TLS_MODE" == "cloudflare" ]]; then
+  cat > config/traefik/traefik_config.yml << EOF
 api:
   insecure: true
 
@@ -190,6 +199,65 @@ providers:
     endpoint: "http://pangolin:3001/api/v1/traefik-config"
     pollInterval: "5s"
 EOF
+elif [[ "$TLS_MODE" == "http" ]]; then
+  cat > config/traefik/traefik_config.yml << EOF
+api:
+  insecure: true
+
+log:
+  level: INFO
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+    transport:
+      respondingTimeouts:
+        readTimeout: "30s"
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: "${ACME_EMAIL}"
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
+
+providers:
+  http:
+    endpoint: "http://pangolin:3001/api/v1/traefik-config"
+    pollInterval: "5s"
+EOF
+else
+  cat > config/traefik/traefik_config.yml << EOF
+api:
+  insecure: true
+
+log:
+  level: INFO
+
+entryPoints:
+  web:
+    address: ":80"
+    transport:
+      respondingTimeouts:
+        readTimeout: "30s"
+
+providers:
+  http:
+    endpoint: "http://pangolin:3001/api/v1/traefik-config"
+    pollInterval: "5s"
+EOF
+fi
 
 # ── Build and start ─────────────────────────────────────────────────────────
 echo "==> Building control plane image..."
