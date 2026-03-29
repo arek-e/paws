@@ -60,7 +60,7 @@ describe('createPangolinResourceManager', () => {
       expect(tunnels).toHaveLength(2);
       expect(tunnels[0]?.port).toBe(3000);
       expect(tunnels[0]?.resourceId).toBe('res-1');
-      expect(tunnels[0]?.publicUrl).toBe('https://s-abcdef12-3000.fleet.tpops.dev');
+      expect(tunnels[0]?.publicUrl).toBe('https://s-abcdef12-web.fleet.tpops.dev');
       expect(tunnels[0]?.access).toBe('sso');
       expect(tunnels[0]?.shareLink).toContain('tok-1');
 
@@ -74,7 +74,7 @@ describe('createPangolinResourceManager', () => {
       const [url1, opts1] = fetchSpy.mock.calls[0]!;
       expect(url1).toBe('http://pangolin:3001/api/v1/org/org-123/resource');
       const body1 = JSON.parse((opts1 as RequestInit).body as string);
-      expect(body1.subdomain).toBe('s-abcdef12-3000');
+      expect(body1.subdomain).toBe('s-abcdef12-web');
       expect(body1.domainId).toBe('dom-789');
 
       // Verify target call

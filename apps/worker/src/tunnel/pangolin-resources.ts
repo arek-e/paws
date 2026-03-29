@@ -115,9 +115,17 @@ export function createPangolinResourceManager(config: PangolinResourceConfig) {
     }
   }
 
-  /** Generate a subdomain for a session + port */
-  function subdomain(sessionId: string, port: number): string {
+  /** Generate a subdomain for a session + port, using label if provided */
+  function subdomain(sessionId: string, port: number, label?: string): string {
     const shortId = sessionId.slice(0, 8);
+    if (label) {
+      // Sanitize label for DNS: lowercase, replace non-alphanumeric with hyphens, trim
+      const slug = label
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      if (slug) return `s-${shortId}-${slug}`;
+    }
     return `s-${shortId}-${port}`;
   }
 
@@ -141,7 +149,7 @@ export function createPangolinResourceManager(config: PangolinResourceConfig) {
         for (let i = 0; i < ports.length; i++) {
           const portConfig = ports[i]!;
           const hostPort = hostPorts[i]!;
-          const sub = subdomain(sessionId, portConfig.port);
+          const sub = subdomain(sessionId, portConfig.port, portConfig.label);
           const fullDomain = `${sub}.${baseDomain}`;
 
           // Step 1: Create resource (subdomain + domain)
