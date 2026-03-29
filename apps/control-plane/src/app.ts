@@ -172,7 +172,8 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   const sessionEvents = createSessionEvents();
 
   // Audit log
-  const auditStore = createAuditStore();
+  const dataDir = process.env['DATA_DIR'] ?? '/var/lib/paws/data';
+  const auditStore = createAuditStore(`${dataDir}/audit.json`);
 
   // Metrics
   const metrics = createControlPlaneMetrics({
@@ -343,6 +344,14 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       return c.json({ error: { code: 'SETUP_FAILED', message: 'Failed to create admin' } }, 500);
     }
 
+    auditStore.append({
+      category: 'auth',
+      action: 'auth.account_created',
+      actor: body.email,
+      severity: 'info',
+      details: { email: body.email },
+    });
+
     // Set session cookie
     c.header(
       'Set-Cookie',
@@ -363,11 +372,26 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
     const token = passwordAuth ? await passwordAuth.login(body.email, body.password) : null;
     if (!token) {
+      auditStore.append({
+        category: 'auth',
+        action: 'auth.login_failed',
+        actor: body.email,
+        severity: 'warn',
+        details: { email: body.email, reason: 'invalid_credentials' },
+      });
       return c.json(
         { error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' } },
         401,
       );
     }
+
+    auditStore.append({
+      category: 'auth',
+      action: 'auth.login',
+      actor: body.email,
+      severity: 'info',
+      details: { email: body.email },
+    });
 
     c.header(
       'Set-Cookie',
