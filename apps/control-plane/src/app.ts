@@ -246,6 +246,18 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     );
   });
 
+  // --- Setup status (no auth — dashboard checks if first run) ---
+
+  app.get('/v1/setup/status', (c) => {
+    const hasDaemons = daemonStore.list().length > 0;
+    const hasSessions = sessionStore.countActiveSessions() > 0;
+    const isFirstRun = !hasDaemons && !hasSessions;
+    return c.json({
+      isFirstRun,
+      apiKey: isFirstRun ? deps.apiKey : undefined,
+    });
+  });
+
   // --- Version (no auth — workers and dashboard check this) ---
 
   const { createVersionChecker } = await import('./version-checker.js');

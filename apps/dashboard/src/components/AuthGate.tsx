@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { hasApiKey, setApiKey, setSessionMode } from '../api/client.js';
 
-type AuthMode = 'loading' | 'authenticated' | 'login';
+type AuthMode = 'loading' | 'authenticated' | 'login' | 'first-run';
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<AuthMode>('loading');
@@ -16,26 +16,44 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function checkAuth() {
-    // Check OIDC session first
+    // Check if this is a first run (fresh install)
+    try {
+      const setupRes = await fetch('/v1/setup/status');
+      if (setupRes.ok) {
+        const setupData = (await setupRes.json()) as {
+          isFirstRun: boolean;
+          apiKey?: string;
+        };
+        if (setupData.isFirstRun && setupData.apiKey) {
+          // Auto-login with the install API key — skip the login screen
+          setApiKey(setupData.apiKey);
+          setMode('first-run');
+          return;
+        }
+      }
+    } catch {
+      // Setup endpoint not available — continue with normal auth
+    }
+
+    // Check OIDC session
     try {
       const res = await fetch('/auth/me', { credentials: 'include' });
       if (res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as { authenticated: boolean };
         if (data.authenticated) {
           setSessionMode(true);
           setMode('authenticated');
           return;
         }
       }
-      // /auth/me exists but user not authenticated — OIDC is available
       if (res.status === 401) {
         setOidcAvailable(true);
       }
     } catch {
-      // /auth/me not found — OIDC not configured
+      // OIDC not configured
     }
 
-    // Check API key
+    // Check stored API key
     if (hasApiKey()) {
       try {
         const res = await fetch('/v1/fleet', {
@@ -61,6 +79,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // First run — auto-authenticated, show children (will land on setup wizard)
+  if (mode === 'first-run') return <>{children}</>;
   if (mode === 'authenticated') return <>{children}</>;
 
   const handleApiKeySubmit = async (e: React.FormEvent) => {
@@ -95,7 +115,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
  > ^ <`}
           </pre>
           <h1 className="mt-4 text-xl font-semibold text-zinc-100">paws</h1>
-          <p className="mt-1 text-sm text-zinc-500">fleet dashboard</p>
+          <p className="mt-1 text-sm text-zinc-500">Protected Agent Workspace Sandboxes</p>
         </div>
 
         <div className="space-y-3">
@@ -144,7 +164,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         </div>
 
         <p className="mt-6 text-center text-xs text-zinc-600">
-          {oidcAvailable ? 'Contact your admin for SSO access' : 'Default dev key: paws-dev-key'}
+          {oidcAvailable ? 'Contact your admin for SSO access' : 'API key is in the install output'}
         </p>
       </div>
     </div>

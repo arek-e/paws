@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router';
 
 import { AuthGate } from './components/AuthGate.js';
+import { FirstRunRedirect } from './components/FirstRunRedirect.js';
 import { Layout } from './components/Layout.js';
 import { AuditLog } from './pages/AuditLog.js';
 import { Daemons } from './pages/Daemons.js';
@@ -20,7 +21,7 @@ export function App() {
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
-            <Route index element={<Fleet />} />
+            <Route index element={<FirstRunRedirect />} />
             <Route path="daemons" element={<Daemons />} />
             <Route path="templates" element={<Templates />} />
             <Route path="snapshots" element={<Snapshots />} />
