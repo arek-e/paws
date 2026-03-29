@@ -88,6 +88,20 @@ export const servers = sqliteTable('servers', {
   awsCredentialsEncrypted: text('aws_credentials_encrypted'),
 });
 
+// --- Cloud connections (AWS account integration) ---
+
+export const cloudConnections = sqliteTable('cloud_connections', {
+  id: text('id').primaryKey(),
+  provider: text('provider').notNull(), // 'aws-ec2'
+  name: text('name').notNull(), // User-provided label (e.g. "Production AWS")
+  region: text('region').notNull(),
+  credentialsEncrypted: text('credentials_encrypted').notNull(),
+  status: text('status').notNull().default('connected'), // 'connected' | 'error'
+  error: text('error'),
+  lastSyncAt: text('last_sync_at'),
+  createdAt: text('created_at').notNull(),
+});
+
 // --- Build jobs ---
 
 export const buildJobs = sqliteTable('build_jobs', {

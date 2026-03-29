@@ -1147,6 +1147,84 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     return c.json({ connected: false });
   });
 
+  // GET /setup/github/installations — list all installations of the GitHub App
+  app.get('/setup/github/installations', async (c) => {
+    const creds = loadCredentials();
+    if (!creds) {
+      return c.json({ installations: [], installUrl: null });
+    }
+
+    try {
+      const auth = createGitHubAuth(creds.appId, creds.privateKey);
+      const installations = await auth.listInstallations();
+      return c.json({
+        installations,
+        installUrl: `https://github.com/apps/${creds.appSlug}/installations/new`,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return c.json({ error: { code: 'GITHUB_API_ERROR', message } }, 502);
+    }
+  });
+
+  // GET /setup/github/installations/:id/repos — list repos for a specific installation
+  app.get('/setup/github/installations/:id/repos', async (c) => {
+    const creds = loadCredentials();
+    if (!creds) {
+      return c.json({ repos: [] });
+    }
+
+    const installationId = Number(c.req.param('id'));
+    if (!installationId || Number.isNaN(installationId)) {
+      return c.json({ error: { code: 'INVALID_ID', message: 'Invalid installation ID' } }, 400);
+    }
+
+    try {
+      const auth = createGitHubAuth(creds.appId, creds.privateKey);
+      const repos = await auth.listInstallationRepos(installationId);
+      return c.json({ repos });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return c.json({ error: { code: 'GITHUB_API_ERROR', message } }, 502);
+    }
+  });
+
+  // GET /setup/github/repos — flat list of all repos across all installations
+  app.get('/setup/github/repos', async (c) => {
+    const creds = loadCredentials();
+    if (!creds) {
+      return c.json({ repos: [] });
+    }
+
+    try {
+      const auth = createGitHubAuth(creds.appId, creds.privateKey);
+      const installations = await auth.listInstallations();
+      const allRepos: Array<{
+        fullName: string;
+        private: boolean;
+        htmlUrl: string;
+        installationId: number;
+      }> = [];
+
+      for (const inst of installations) {
+        const repos = await auth.listInstallationRepos(inst.id);
+        for (const repo of repos) {
+          allRepos.push({
+            fullName: repo.fullName,
+            private: repo.private,
+            htmlUrl: repo.htmlUrl,
+            installationId: inst.id,
+          });
+        }
+      }
+
+      return c.json({ repos: allRepos });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return c.json({ error: { code: 'GITHUB_API_ERROR', message } }, 502);
+    }
+  });
+
   // --- GitHub App webhooks (no auth — validated by HMAC signature) ---
 
   // Load credentials from file (manifest flow) or env vars (manual setup)
@@ -1526,6 +1604,20 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   const { createEc2Lifecycle } = await import('./ec2-lifecycle.js');
   const ec2Lifecycle = createEc2Lifecycle({ encryptionKey });
 
+  // --- Cloud connections (AWS account integration) ---
+
+  const { createSqliteCloudConnectionStore, createCloudConnectionStore } =
+    await import('./store/cloud-connections.js');
+  const connectionStore = deps.db
+    ? createSqliteCloudConnectionStore(deps.db)
+    : createCloudConnectionStore();
+
+  {
+    const { createCloudConnectionRoutes } = await import('./routes/cloud-connections.js');
+    const cloudRoutes = createCloudConnectionRoutes({ connectionStore, encryptionKey });
+    app.route('/', cloudRoutes);
+  }
+
   // --- Setup wizard ---
 
   {
@@ -1702,7 +1794,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   // --- EC2 state sync (background polling for instance state changes) ---
 
   const { createEc2Sync } = await import('./ec2-sync.js');
-  const ec2Sync = createEc2Sync({ serverStore, ec2Lifecycle });
+  const ec2Sync = createEc2Sync({ serverStore, connectionStore, ec2Lifecycle, encryptionKey });
   void ec2Sync.start();
 
   return app;

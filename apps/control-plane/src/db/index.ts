@@ -168,6 +168,25 @@ export function createDatabase(dbPath: string) {
     }
   };
 
+  // v0.5.3: cloud connections table
+  try {
+    raw.exec(`
+      CREATE TABLE IF NOT EXISTS cloud_connections (
+        id TEXT PRIMARY KEY,
+        provider TEXT NOT NULL,
+        name TEXT NOT NULL,
+        region TEXT NOT NULL,
+        credentials_encrypted TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'connected',
+        error TEXT,
+        last_sync_at TEXT,
+        created_at TEXT NOT NULL
+      );
+    `);
+  } catch {
+    // Table may already exist
+  }
+
   // v0.5.3: AWS EC2 resource tracking
   addColumnIfMissing('servers', 'aws_region', 'TEXT');
   addColumnIfMissing('servers', 'aws_security_group_id', 'TEXT');
