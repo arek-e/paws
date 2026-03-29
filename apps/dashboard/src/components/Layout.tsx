@@ -10,7 +10,7 @@ function SidebarLink({ to, label, onClick }: { to: string; label: string; onClic
       end
       onClick={onClick}
       className={({ isActive }) =>
-        `block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+        `block px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
           isActive
             ? 'bg-zinc-800 text-emerald-400'
             : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50'
@@ -22,18 +22,52 @@ function SidebarLink({ to, label, onClick }: { to: string; label: string; onClic
   );
 }
 
-function handleLogout() {
-  localStorage.removeItem('paws_api_key');
-  window.location.reload();
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <p className="px-4 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-600">
+      {children}
+    </p>
+  );
 }
 
-/** Routes that need full-bleed canvas (no padding/max-width constraint) */
-const FULL_BLEED_ROUTES = ['/topology'];
+function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <>
+      <SectionLabel>Infrastructure</SectionLabel>
+      <SidebarLink to="/" label="Fleet" onClick={onNavigate} />
+      <SidebarLink to="/servers" label="Servers" onClick={onNavigate} />
+      <SidebarLink to="/snapshots" label="Snapshots" onClick={onNavigate} />
+      <SidebarLink to="/tunnels" label="Tunnels" onClick={onNavigate} />
+
+      <SectionLabel>Agents</SectionLabel>
+      <SidebarLink to="/daemons" label="Daemons" onClick={onNavigate} />
+      <SidebarLink to="/templates" label="Templates" onClick={onNavigate} />
+      <SidebarLink to="/sessions" label="Sessions" onClick={onNavigate} />
+
+      <SectionLabel>Configuration</SectionLabel>
+      <SidebarLink to="/mcp" label="MCP Servers" onClick={onNavigate} />
+      <SidebarLink to="/audit" label="Audit Log" onClick={onNavigate} />
+      <SidebarLink to="/setup" label="Setup Wizard" onClick={onNavigate} />
+    </>
+  );
+}
+
+async function handleLogout() {
+  // Clear password auth session cookie
+  await fetch('/auth/password-logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+  // Clear OIDC session cookie
+  await fetch('/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+  // Clear local state
+  localStorage.removeItem('paws_api_key');
+  localStorage.removeItem('paws_setup_skipped');
+  document.cookie = 'paws_session=; Path=/; Max-Age=0';
+  window.location.href = '/';
+}
 
 export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
-  const isFullBleed = FULL_BLEED_ROUTES.includes(location.pathname);
+  const isFullBleed = location.pathname === '/topology';
 
   return (
     <div className="flex flex-col md:flex-row h-screen">
@@ -71,55 +105,35 @@ export function Layout() {
 
       {/* Mobile dropdown menu */}
       {menuOpen && (
-        <div className="md:hidden border-b border-zinc-800 bg-zinc-950 p-3 space-y-1">
-          <SidebarLink to="/topology" label="Topology" onClick={() => setMenuOpen(false)} />
-          <SidebarLink to="/" label="Fleet" onClick={() => setMenuOpen(false)} />
-          <SidebarLink to="/daemons" label="Daemons" onClick={() => setMenuOpen(false)} />
-          <SidebarLink to="/templates" label="Templates" onClick={() => setMenuOpen(false)} />
-          <SidebarLink to="/snapshots" label="Snapshots" onClick={() => setMenuOpen(false)} />
-          <SidebarLink to="/tunnels" label="Tunnels" onClick={() => setMenuOpen(false)} />
-          <SidebarLink to="/servers" label="Servers" onClick={() => setMenuOpen(false)} />
-          <SidebarLink to="/sessions" label="Sessions" onClick={() => setMenuOpen(false)} />
-          <SidebarLink to="/provision" label="Provision" onClick={() => setMenuOpen(false)} />
-          <SidebarLink to="/mcp" label="MCP Servers" onClick={() => setMenuOpen(false)} />
-          <SidebarLink to="/audit" label="Audit Log" onClick={() => setMenuOpen(false)} />
-          <SidebarLink to="/setup" label="Setup" onClick={() => setMenuOpen(false)} />
-          <button
-            onClick={handleLogout}
-            className="w-full px-4 py-2 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-md transition-colors text-left"
-          >
-            Disconnect
-          </button>
+        <div className="md:hidden border-b border-zinc-800 bg-zinc-950 p-3 space-y-0.5">
+          <SidebarNav onNavigate={() => setMenuOpen(false)} />
+          <div className="pt-3">
+            <button
+              onClick={handleLogout}
+              className="w-full px-4 py-2 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-md transition-colors text-left"
+            >
+              Log out
+            </button>
+          </div>
         </div>
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-56 flex-shrink-0 border-r border-zinc-800 bg-zinc-950 flex-col">
+      <aside className="hidden md:flex w-52 flex-shrink-0 border-r border-zinc-800 bg-zinc-950 flex-col">
         <div className="p-4 border-b border-zinc-800">
           <img src="/logo.svg" alt="paws" className="w-8 h-8" />
           <p className="mt-2 text-sm font-semibold text-zinc-100">paws</p>
           <p className="text-xs text-zinc-500">fleet dashboard</p>
         </div>
-        <nav className="flex-1 p-3 space-y-1">
-          <SidebarLink to="/topology" label="Topology" />
-          <SidebarLink to="/" label="Fleet" />
-          <SidebarLink to="/daemons" label="Daemons" />
-          <SidebarLink to="/templates" label="Templates" />
-          <SidebarLink to="/snapshots" label="Snapshots" />
-          <SidebarLink to="/tunnels" label="Tunnels" />
-          <SidebarLink to="/servers" label="Servers" />
-          <SidebarLink to="/sessions" label="Sessions" />
-          <SidebarLink to="/provision" label="Provision" />
-          <SidebarLink to="/mcp" label="MCP Servers" />
-          <SidebarLink to="/audit" label="Audit Log" />
-          <SidebarLink to="/setup" label="Setup" />
+        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
+          <SidebarNav />
         </nav>
         <div className="p-3 border-t border-zinc-800 space-y-2">
           <button
             onClick={handleLogout}
             className="w-full px-4 py-1.5 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-md transition-colors text-left"
           >
-            Disconnect
+            Log out
           </button>
           <div className="px-4">
             <VersionBadge />

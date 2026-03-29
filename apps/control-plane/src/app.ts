@@ -416,6 +416,25 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     return c.json({ authenticated: true, email: session.email });
   });
 
+  // Password logout
+  app.post('/auth/password-logout', (c) => {
+    const cookies = c.req.header('cookie') ?? '';
+    const match = cookies.match(/paws_session=([^;]+)/);
+    if (match && passwordAuth) {
+      // Get email before deleting session
+      const session = passwordAuth.validateSession(match[1]);
+      passwordAuth.logout(match[1]);
+      auditStore.append({
+        category: 'auth',
+        action: 'auth.logout',
+        actor: session?.email ?? 'unknown',
+        severity: 'info',
+      });
+    }
+    c.header('Set-Cookie', 'paws_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+    return c.json({ status: 'logged_out' });
+  });
+
   // --- Version (no auth — workers and dashboard check this) ---
 
   const { createVersionChecker } = await import('./version-checker.js');

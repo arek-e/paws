@@ -77,6 +77,10 @@ export function createPasswordAuth(db: PawsDatabase) {
       return session;
     },
 
+    logout(token: string): void {
+      db.delete(authSessions).where(eq(authSessions.token, token)).run();
+    },
+
     getAdminEmail(): string | null {
       const admin = db.select().from(adminUsers).limit(1).get();
       return admin?.email ?? null;
