@@ -22,3 +22,22 @@ export const FleetOverviewSchema = z.object({
 });
 
 export type FleetOverview = z.infer<typeof FleetOverviewSchema>;
+
+/** Per-daemon cost breakdown */
+export const DaemonCostSchema = z.object({
+  role: z.string(),
+  totalInvocations: z.number().int().nonnegative(),
+  totalVcpuSeconds: z.number().nonnegative(),
+  totalDurationMs: z.number().nonnegative(),
+});
+
+export type DaemonCost = z.infer<typeof DaemonCostSchema>;
+
+/** Fleet-wide cost summary */
+export const CostSummarySchema = z.object({
+  totalVcpuSeconds: z.number().nonnegative(),
+  totalSessions: z.number().int().nonnegative(),
+  byDaemon: z.array(DaemonCostSchema),
+});
+
+export type CostSummary = z.infer<typeof CostSummarySchema>;

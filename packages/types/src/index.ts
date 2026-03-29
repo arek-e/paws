@@ -43,16 +43,27 @@ export type {
 export { ErrorCode, ErrorResponseSchema } from './error.js';
 export type { ErrorResponse } from './error.js';
 
-export { FleetOverviewSchema } from './fleet.js';
-export type { FleetOverview } from './fleet.js';
+export { CostSummarySchema, DaemonCostSchema, FleetOverviewSchema } from './fleet.js';
+export type { CostSummary, DaemonCost, FleetOverview } from './fleet.js';
 
-export { DomainCredentialSchema, NetworkAllocationSchema, NetworkConfigSchema } from './network.js';
-export type { DomainCredential, NetworkAllocation, NetworkConfig } from './network.js';
+export {
+  DomainCredentialSchema,
+  NetworkAllocationSchema,
+  NetworkConfigSchema,
+  PortExposureSchema,
+} from './network.js';
+export type {
+  DomainCredential,
+  NetworkAllocation,
+  NetworkConfig,
+  PortExposure,
+} from './network.js';
 
 export {
   CancelSessionResponseSchema,
   CreateSessionRequestSchema,
   CreateSessionResponseSchema,
+  ExposedPortSchema,
   ResourcesSchema,
   SessionListResponseSchema,
   SessionSchema,
@@ -64,11 +75,24 @@ export type {
   CreateSessionInput,
   CreateSessionRequest,
   CreateSessionResponse,
+  ExposedPort,
   Resources,
   Session,
   SessionListResponse,
   Workload,
 } from './session.js';
+
+export {
+  CreateSnapshotConfigRequestSchema,
+  SnapshotConfigListResponseSchema,
+  SnapshotConfigSchema,
+  SnapshotTemplateId,
+} from './snapshot-config.js';
+export type {
+  CreateSnapshotConfigRequest,
+  SnapshotConfig,
+  SnapshotConfigListResponse,
+} from './snapshot-config.js';
 
 export {
   SnapshotBuildJobSchema,

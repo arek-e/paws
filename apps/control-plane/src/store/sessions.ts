@@ -14,6 +14,10 @@ export interface StoredSession {
   durationMs?: number | undefined;
   worker?: string | undefined;
   metadata?: Record<string, unknown> | undefined;
+  /** VM resources allocated (captured from request at creation) */
+  resources?: { vcpus: number; memoryMB: number } | undefined;
+  /** Cost in vCPU-seconds — computed on completion */
+  vcpuSeconds?: number | undefined;
 }
 
 export interface SessionStore {
@@ -37,6 +41,9 @@ export function createSessionStore(): SessionStore {
         request,
         daemonRole,
         metadata: request.metadata as Record<string, unknown> | undefined,
+        resources: request.resources
+          ? { vcpus: request.resources.vcpus, memoryMB: request.resources.memoryMB }
+          : { vcpus: 2, memoryMB: 4096 }, // defaults match ResourcesSchema
       };
       sessions.set(sessionId, session);
       return session;
@@ -52,6 +59,11 @@ export function createSessionStore(): SessionStore {
       session.status = status;
       if (result) {
         Object.assign(session, result);
+      }
+      // Compute vcpuSeconds on terminal states when duration is known
+      const terminal = ['completed', 'failed', 'timeout', 'cancelled'];
+      if (terminal.includes(status) && session.durationMs && session.resources) {
+        session.vcpuSeconds = (session.resources.vcpus * session.durationMs) / 1000;
       }
     },
 

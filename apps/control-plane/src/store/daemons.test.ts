@@ -70,4 +70,31 @@ describe('createDaemonStore', () => {
     store.delete('d2');
     expect(store.countActive()).toBe(1);
   });
+
+  test('initializes totalVcpuSeconds to 0', () => {
+    const store = createDaemonStore();
+    store.create(makeDaemonRequest());
+    const daemon = store.get('test-daemon')!;
+    expect(daemon.stats.totalVcpuSeconds).toBe(0);
+  });
+
+  test('records vcpuSeconds on invocation', () => {
+    const store = createDaemonStore();
+    store.create(makeDaemonRequest());
+    store.recordInvocation('test-daemon', 5000, 10);
+    store.recordInvocation('test-daemon', 3000, 6);
+
+    const daemon = store.get('test-daemon')!;
+    expect(daemon.stats.totalVcpuSeconds).toBe(16);
+    expect(daemon.stats.totalDurationMs).toBe(8000);
+  });
+
+  test('handles invocation without vcpuSeconds', () => {
+    const store = createDaemonStore();
+    store.create(makeDaemonRequest());
+    store.recordInvocation('test-daemon', 5000);
+
+    const daemon = store.get('test-daemon')!;
+    expect(daemon.stats.totalVcpuSeconds).toBe(0);
+  });
 });

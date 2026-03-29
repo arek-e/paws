@@ -1,5 +1,6 @@
 import type {
   CancelSessionResponse,
+  CostSummary,
   CreateDaemonInput,
   CreateDaemonResponse,
   CreateSessionInput,
@@ -63,6 +64,7 @@ export interface PawsClient {
   readonly fleet: {
     overview(): ResultAsync<FleetOverview, PawsError>;
     workers(): ResultAsync<WorkerListResponse, PawsError>;
+    cost(): ResultAsync<CostSummary, PawsError>;
   };
   readonly snapshots: {
     list(): ResultAsync<SnapshotListResponse, PawsError>;
@@ -183,6 +185,7 @@ export function createClient(config: ClientConfig): PawsClient {
     fleet: {
       overview: () => request('GET', '/v1/fleet'),
       workers: () => request('GET', '/v1/fleet/workers'),
+      cost: () => request('GET', '/v1/fleet/cost'),
     },
     snapshots: {
       list: () => request('GET', '/v1/snapshots'),

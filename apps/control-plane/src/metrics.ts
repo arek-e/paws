@@ -107,6 +107,13 @@ export function createControlPlaneMetrics(deps: MetricsDeps) {
     registers: [promRegistry],
   });
 
+  const sessionVcpuSeconds = new Counter({
+    name: 'paws_session_vcpu_seconds_total',
+    help: 'Total vCPU-seconds consumed by sessions',
+    labelNames: ['daemon'] as const,
+    registers: [promRegistry],
+  });
+
   return {
     promRegistry,
     sessionsActive,
@@ -118,12 +125,16 @@ export function createControlPlaneMetrics(deps: MetricsDeps) {
     sessionDuration,
     httpRequestsTotal,
     httpRequestDuration,
+    sessionVcpuSeconds,
 
     /** Record a completed session */
-    recordSession(status: string, durationMs?: number) {
+    recordSession(status: string, durationMs?: number, vcpuSeconds?: number, daemon?: string) {
       sessionsTotal.inc({ status });
       if (durationMs !== undefined) {
         sessionDuration.observe(durationMs / 1000);
+      }
+      if (vcpuSeconds !== undefined) {
+        sessionVcpuSeconds.inc({ daemon: daemon ?? 'ad-hoc' }, vcpuSeconds);
       }
     },
 

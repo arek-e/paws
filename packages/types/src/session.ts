@@ -62,6 +62,18 @@ export const CreateSessionResponseSchema = z.object({
 
 export type CreateSessionResponse = z.infer<typeof CreateSessionResponseSchema>;
 
+/** A port exposed from the VM via Pangolin tunnel */
+export const ExposedPortSchema = z.object({
+  /** Port number inside the VM */
+  port: z.number().int().min(1).max(65535),
+  /** Public URL to access this port */
+  url: z.string().url(),
+  /** Human-readable label */
+  label: z.string().optional(),
+});
+
+export type ExposedPort = z.infer<typeof ExposedPortSchema>;
+
 /** Full session state (GET response) */
 export const SessionSchema = z.object({
   sessionId: IdSchema,
@@ -75,6 +87,12 @@ export const SessionSchema = z.object({
   durationMs: DurationMsSchema.optional(),
   worker: z.string().optional(),
   metadata: MetadataSchema.optional(),
+  /** VM resources allocated for this session */
+  resources: ResourcesSchema.optional(),
+  /** Cost in vCPU-seconds (vcpus × durationSec) — set on completion */
+  vcpuSeconds: z.number().nonnegative().optional(),
+  /** Ports exposed from the VM via Pangolin tunnel */
+  exposedPorts: z.array(ExposedPortSchema).optional(),
 });
 
 export type Session = z.infer<typeof SessionSchema>;

@@ -61,6 +61,8 @@ export const DaemonStatsSchema = z.object({
   totalInvocations: z.number().int().nonnegative(),
   lastInvokedAt: TimestampSchema.optional(),
   avgDurationMs: DurationMsSchema.optional(),
+  /** Cumulative vCPU-seconds across all completed sessions */
+  totalVcpuSeconds: z.number().nonnegative().optional(),
 });
 
 export type DaemonStats = z.infer<typeof DaemonStatsSchema>;

@@ -16,6 +16,7 @@ export interface StoredDaemon {
     totalInvocations: number;
     lastInvokedAt?: string | undefined;
     totalDurationMs: number;
+    totalVcpuSeconds: number;
   };
 }
 
@@ -25,7 +26,7 @@ export interface DaemonStore {
   list(): StoredDaemon[];
   update(role: string, patch: Partial<StoredDaemon>): StoredDaemon | undefined;
   delete(role: string): boolean;
-  recordInvocation(role: string, durationMs?: number): void;
+  recordInvocation(role: string, durationMs?: number, vcpuSeconds?: number): void;
   countActive(): number;
 }
 
@@ -52,6 +53,7 @@ export function createDaemonStore(): DaemonStore {
         stats: {
           totalInvocations: 0,
           totalDurationMs: 0,
+          totalVcpuSeconds: 0,
         },
       };
       daemons.set(request.role, daemon);
@@ -81,13 +83,16 @@ export function createDaemonStore(): DaemonStore {
       return true;
     },
 
-    recordInvocation(role, durationMs) {
+    recordInvocation(role, durationMs, vcpuSeconds) {
       const daemon = daemons.get(role);
       if (!daemon) return;
       daemon.stats.totalInvocations++;
       daemon.stats.lastInvokedAt = new Date().toISOString();
       if (durationMs !== undefined) {
         daemon.stats.totalDurationMs += durationMs;
+      }
+      if (vcpuSeconds !== undefined) {
+        daemon.stats.totalVcpuSeconds += vcpuSeconds;
       }
     },
 

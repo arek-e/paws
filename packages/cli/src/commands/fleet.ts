@@ -12,8 +12,12 @@ export async function fleetCommand(
       return fleetStatus(client, pretty);
     case 'workers':
       return fleetWorkers(client, pretty);
+    case 'cost':
+      return fleetCost(client, pretty);
     default:
-      printError(`Unknown fleet action: ${args.action ?? '(none)'}. Available: status, workers`);
+      printError(
+        `Unknown fleet action: ${args.action ?? '(none)'}. Available: status, workers, cost`,
+      );
       return 1;
   }
 }
@@ -35,6 +39,21 @@ async function fleetStatus(client: PawsClient, pretty: boolean): Promise<number>
 
 async function fleetWorkers(client: PawsClient, pretty: boolean): Promise<number> {
   const result = await client.fleet.workers();
+
+  return result.match(
+    (data) => {
+      process.stdout.write(formatOutput(data, pretty) + '\n');
+      return 0;
+    },
+    (err) => {
+      printError(err.message);
+      return 1;
+    },
+  );
+}
+
+async function fleetCost(client: PawsClient, pretty: boolean): Promise<number> {
+  const result = await client.fleet.cost();
 
   return result.match(
     (data) => {

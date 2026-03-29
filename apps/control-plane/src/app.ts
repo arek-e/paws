@@ -30,7 +30,7 @@ import {
   listDaemonsRoute,
   updateDaemonRoute,
 } from './routes/daemons.js';
-import { fleetOverviewRoute, listWorkersRoute } from './routes/fleet.js';
+import { costSummaryRoute, fleetOverviewRoute, listWorkersRoute } from './routes/fleet.js';
 import { healthRoute } from './routes/health.js';
 import {
   cancelSessionRoute,
@@ -101,12 +101,14 @@ function daemonStats(d: {
   totalInvocations: number;
   lastInvokedAt?: string | undefined;
   totalDurationMs: number;
+  totalVcpuSeconds: number;
 }) {
   return {
     totalInvocations: d.totalInvocations,
     lastInvokedAt: d.lastInvokedAt,
     avgDurationMs:
       d.totalInvocations > 0 ? Math.round(d.totalDurationMs / d.totalInvocations) : undefined,
+    totalVcpuSeconds: d.totalVcpuSeconds,
   };
 }
 
@@ -123,6 +125,8 @@ function sessionToJson(s: StoredSession) {
     ...(s.durationMs !== undefined && { durationMs: s.durationMs }),
     ...(s.worker !== undefined && { worker: s.worker }),
     ...(s.metadata !== undefined && { metadata: s.metadata }),
+    ...(s.resources !== undefined && { resources: s.resources }),
+    ...(s.vcpuSeconds !== undefined && { vcpuSeconds: s.vcpuSeconds }),
   };
 }
 
@@ -141,7 +145,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     registry: deps.workerRegistry,
   });
 
-  // Wrap session store to emit events on status updates (for WebSocket streaming)
+  // Wrap session store to emit events + record metrics on status updates
   const sessionStore: SessionStore = {
     ...rawSessionStore,
     updateStatus(sessionId, status, result) {
@@ -149,6 +153,24 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       const session = rawSessionStore.get(sessionId);
       if (session) {
         sessionEvents.emit('update', sessionId, session);
+
+        // Record metrics + daemon cost on terminal states
+        const terminal = ['completed', 'failed', 'timeout', 'cancelled'];
+        if (terminal.includes(status)) {
+          metrics.recordSession(
+            status,
+            session.durationMs,
+            session.vcpuSeconds,
+            session.daemonRole,
+          );
+          // Accumulate cost on the daemon (invocation count already incremented at trigger time)
+          if (session.daemonRole && session.vcpuSeconds) {
+            const daemon = daemonStore.get(session.daemonRole);
+            if (daemon) {
+              daemon.stats.totalVcpuSeconds += session.vcpuSeconds;
+            }
+          }
+        }
       }
     },
   };
@@ -722,6 +744,23 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   app.openapi(listWorkersRoute, async (c) => {
     const workers = await resolveAllWorkers(discovery, legacyWorkerClient);
     return c.json({ workers }, 200);
+  });
+
+  // --- Cost ---
+
+  app.use('/v1/fleet/cost', authMiddleware(authConfig));
+  app.openapi(costSummaryRoute, (c) => {
+    const daemons = daemonStore.list();
+    const byDaemon = daemons.map((d) => ({
+      role: d.role,
+      totalInvocations: d.stats.totalInvocations,
+      totalVcpuSeconds: d.stats.totalVcpuSeconds,
+      totalDurationMs: d.stats.totalDurationMs,
+    }));
+    const totalVcpuSeconds = byDaemon.reduce((sum, d) => sum + d.totalVcpuSeconds, 0);
+    const totalSessions = byDaemon.reduce((sum, d) => sum + d.totalInvocations, 0);
+
+    return c.json({ totalVcpuSeconds, totalSessions, byDaemon }, 200);
   });
 
   // --- Snapshots ---

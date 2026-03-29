@@ -78,4 +78,46 @@ describe('createSessionStore', () => {
 
     expect(store.countActiveSessions()).toBe(2);
   });
+
+  test('captures default resources at creation', () => {
+    const store = createSessionStore();
+    const session = store.create('s1', makeRequest());
+    expect(session.resources).toEqual({ vcpus: 2, memoryMB: 4096 });
+  });
+
+  test('captures explicit resources at creation', () => {
+    const store = createSessionStore();
+    const session = store.create('s1', {
+      ...makeRequest(),
+      resources: { vcpus: 4, memoryMB: 8192 },
+    });
+    expect(session.resources).toEqual({ vcpus: 4, memoryMB: 8192 });
+  });
+
+  test('computes vcpuSeconds on completion with duration', () => {
+    const store = createSessionStore();
+    store.create('s1', {
+      ...makeRequest(),
+      resources: { vcpus: 4, memoryMB: 8192 },
+    });
+    store.updateStatus('s1', 'completed', { durationMs: 10_000 });
+    const session = store.get('s1')!;
+    expect(session.vcpuSeconds).toBe(40); // 4 vcpus × 10 seconds
+  });
+
+  test('does not compute vcpuSeconds without duration', () => {
+    const store = createSessionStore();
+    store.create('s1', makeRequest());
+    store.updateStatus('s1', 'completed');
+    const session = store.get('s1')!;
+    expect(session.vcpuSeconds).toBeUndefined();
+  });
+
+  test('computes vcpuSeconds on failed/timeout states', () => {
+    const store = createSessionStore();
+    store.create('s1', makeRequest()); // default 2 vcpus
+    store.updateStatus('s1', 'timeout', { durationMs: 600_000 });
+    const session = store.get('s1')!;
+    expect(session.vcpuSeconds).toBe(1200); // 2 vcpus × 600 seconds
+  });
 });
