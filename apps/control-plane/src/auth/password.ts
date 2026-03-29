@@ -4,7 +4,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { eq, lt, ne } from 'drizzle-orm';
 
 import { createLogger } from '@paws/logger';
 
@@ -84,6 +84,26 @@ export function createPasswordAuth(db: PawsDatabase) {
     getAdminEmail(): string | null {
       const admin = db.select().from(adminUsers).limit(1).get();
       return admin?.email ?? null;
+    },
+
+    async updatePassword(email: string, newPassword: string): Promise<void> {
+      const hash = await hashPassword(newPassword);
+      db.update(adminUsers).set({ passwordHash: hash }).where(eq(adminUsers.email, email)).run();
+      log.info('Password updated', { email });
+    },
+
+    listSessions(): Array<{ token: string; email: string; expiresAt: number }> {
+      const now = Date.now();
+      // Clean up expired sessions
+      db.delete(authSessions).where(lt(authSessions.expiresAt, now)).run();
+      return db.select().from(authSessions).all();
+    },
+
+    invalidateAllExcept(keepToken: string): number {
+      const before = db.select().from(authSessions).all().length;
+      db.delete(authSessions).where(ne(authSessions.token, keepToken)).run();
+      const after = db.select().from(authSessions).all().length;
+      return before - after;
     },
   };
 }

@@ -524,6 +524,8 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   app.use('/v1/audit', authMiddleware(authConfig));
   app.use('/v1/mcp/*', authMiddleware(authConfig));
   app.use('/v1/mcp', authMiddleware(authConfig));
+  app.use('/v1/settings', authMiddleware(authConfig));
+  app.use('/v1/settings/*', authMiddleware(authConfig));
 
   // Snapshot config store — hoisted so mergeSnapshotDomains can use it in session dispatch
   const snapshotConfigStore = deps.db
@@ -1548,6 +1550,20 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       workerRegistry: deps.workerRegistry,
     });
     app.route('/', serverRoutes);
+  }
+
+  // --- Settings/admin routes ---
+
+  if (passwordAuth) {
+    const { createSettingsRoutes } = await import('./routes/settings.js');
+    const settingsRoutes = createSettingsRoutes({
+      passwordAuth,
+      auditStore,
+      daemonStore,
+      sessionStore,
+      discovery,
+    });
+    app.route('/', settingsRoutes);
   }
 
   // --- Provisioning routes (dashboard one-click provisioning) ---

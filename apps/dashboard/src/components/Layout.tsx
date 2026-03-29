@@ -47,6 +47,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       <SectionLabel>Configuration</SectionLabel>
       <SidebarLink to="/mcp" label="MCP Servers" onClick={onNavigate} />
       <SidebarLink to="/audit" label="Audit Log" onClick={onNavigate} />
+      <SidebarLink to="/settings" label="Settings" onClick={onNavigate} />
       <SidebarLink to="/setup" label="Setup Wizard" onClick={onNavigate} />
     </>
   );

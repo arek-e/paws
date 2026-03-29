@@ -15,6 +15,7 @@ import { Setup } from './pages/Setup.js';
 import { Snapshots } from './pages/Snapshots.js';
 import { Templates } from './pages/Templates.js';
 import { Topology } from './pages/Topology.js';
+import { Settings } from './pages/Settings.js';
 import { Tunnels } from './pages/Tunnels.js';
 
 export function App() {
@@ -39,6 +40,7 @@ export function App() {
             <Route path="sessions/:id" element={<SessionDetail />} />
             <Route path="mcp" element={<McpServers />} />
             <Route path="audit" element={<AuditLog />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
       </BrowserRouter>

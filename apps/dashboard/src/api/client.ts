@@ -527,3 +527,85 @@ export async function executeBrowserAction(
   });
   if (!res.ok) throw new Error(`Failed to execute browser action: ${res.status}`);
 }
+
+// --- Settings ---
+
+export interface AccountInfo {
+  email: string;
+}
+
+export interface SessionInfo {
+  tokenPrefix: string;
+  email: string;
+  expiresAt: number;
+  isCurrent: boolean;
+}
+
+export interface SystemInfo {
+  version: string;
+  commit: string;
+  buildDate: string;
+  uptime: number;
+  workers: number;
+  daemons: number;
+  authSessions: number;
+  activeSessions: number;
+  dbSizeBytes: number | null;
+}
+
+function credentialFetchOpts(): RequestInit {
+  return { credentials: 'include', headers: apiKeyHeaders() };
+}
+
+export async function getAccount(): Promise<AccountInfo> {
+  const res = await fetch('/v1/settings/account', credentialFetchOpts());
+  if (!res.ok) throw new Error(`Failed to fetch account: ${res.status}`);
+  return res.json();
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const res = await fetch('/v1/settings/change-password', {
+    method: 'POST',
+    credentials: 'include',
+    headers: apiKeyHeaders(),
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    const msg =
+      (data as { error?: { message?: string } }).error?.message ??
+      `Failed to change password: ${res.status}`;
+    throw new Error(msg);
+  }
+}
+
+export async function getActiveSessions(): Promise<SessionInfo[]> {
+  const res = await fetch('/v1/settings/sessions', credentialFetchOpts());
+  if (!res.ok) throw new Error(`Failed to fetch sessions: ${res.status}`);
+  const body = (await res.json()) as { sessions: SessionInfo[] };
+  return body.sessions;
+}
+
+export async function revokeSession(tokenPrefix: string): Promise<void> {
+  const res = await fetch(`/v1/settings/sessions/${encodeURIComponent(tokenPrefix)}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: apiKeyHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to revoke session: ${res.status}`);
+}
+
+export async function revokeOtherSessions(): Promise<void> {
+  const res = await fetch('/v1/settings/sessions', {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: apiKeyHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to revoke sessions: ${res.status}`);
+}
+
+export async function getSystemInfo(): Promise<SystemInfo> {
+  const res = await fetch('/v1/settings/info', credentialFetchOpts());
+  if (!res.ok) throw new Error(`Failed to fetch system info: ${res.status}`);
+  return res.json();
+}
