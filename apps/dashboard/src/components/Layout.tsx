@@ -69,6 +69,7 @@ export function Layout() {
           <SidebarLink to="/daemons" label="Daemons" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/snapshots" label="Snapshots" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/tunnels" label="Tunnels" onClick={() => setMenuOpen(false)} />
+          <SidebarLink to="/servers" label="Servers" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/sessions" label="Sessions" onClick={() => setMenuOpen(false)} />
           <SidebarLink to="/setup" label="Setup" onClick={() => setMenuOpen(false)} />
           <button
@@ -92,6 +93,7 @@ export function Layout() {
           <SidebarLink to="/daemons" label="Daemons" />
           <SidebarLink to="/snapshots" label="Snapshots" />
           <SidebarLink to="/tunnels" label="Tunnels" />
+          <SidebarLink to="/servers" label="Servers" />
           <SidebarLink to="/sessions" label="Sessions" />
           <SidebarLink to="/setup" label="Setup" />
         </nav>

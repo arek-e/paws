@@ -238,3 +238,71 @@ export async function deletePangolinIdp(idpId: number): Promise<void> {
   });
   if (!res.ok) throw new Error(`Failed to delete IdP: ${res.status}`);
 }
+
+// --- Servers ---
+
+export interface ServerInfo {
+  id: string;
+  name: string;
+  ip: string;
+  status: string;
+  provider: string;
+  createdAt: string;
+  error?: string;
+}
+
+export interface ValidationCheck {
+  label: string;
+  status: 'pass' | 'fail' | 'pending';
+  message?: string;
+}
+
+export interface ValidationResult {
+  serverId: string;
+  checks: ValidationCheck[];
+}
+
+export async function getServers(): Promise<ServerInfo[]> {
+  const res = await fetch('/v1/servers', { headers: apiKeyHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch servers: ${res.status}`);
+  const body = (await res.json()) as { servers: ServerInfo[] };
+  return body.servers;
+}
+
+export async function addServer(body: {
+  provider: 'manual';
+  name: string;
+  ip: string;
+  password: string;
+}): Promise<{ serverId: string }> {
+  const res = await fetch('/v1/servers', {
+    method: 'POST',
+    headers: apiKeyHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(
+      (data as { error?: { message?: string } }).error?.message ??
+        `Failed to add server: ${res.status}`,
+    );
+  }
+  return (await res.json()) as { serverId: string };
+}
+
+export async function deleteServer(id: string): Promise<void> {
+  const res = await fetch(`/v1/servers/${id}`, {
+    method: 'DELETE',
+    headers: apiKeyHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to delete server: ${res.status}`);
+}
+
+export async function validateServer(id: string): Promise<ValidationResult> {
+  const res = await fetch(`/v1/servers/${id}/validate`, {
+    method: 'POST',
+    headers: apiKeyHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to validate server: ${res.status}`);
+  return (await res.json()) as ValidationResult;
+}

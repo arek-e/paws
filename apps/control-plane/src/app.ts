@@ -46,6 +46,7 @@ import {
   updateSnapshotConfigRoute,
 } from './routes/snapshot-configs.js';
 import { buildSnapshotRoute, listSnapshotsRoute } from './routes/snapshots.js';
+import { createServerRoutes } from './routes/servers.js';
 import { receiveWebhookRoute } from './routes/webhooks.js';
 import { createDaemonStore, type DaemonStore } from './store/daemons.js';
 import { createSnapshotConfigStore } from './store/snapshot-configs.js';
@@ -288,6 +289,8 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   app.use('/v1/setup', authMiddleware(authConfig));
   app.use('/v1/pangolin/*', authMiddleware(authConfig));
   app.use('/v1/pangolin', authMiddleware(authConfig));
+  app.use('/v1/servers', authMiddleware(authConfig));
+  app.use('/v1/servers/*', authMiddleware(authConfig));
 
   // Snapshot config store — hoisted so mergeSnapshotDomains can use it in session dispatch
   const snapshotConfigStore = createSnapshotConfigStore();
@@ -981,6 +984,16 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       },
     });
     app.route('/', setupRoutes);
+  }
+
+  // --- Server management routes ---
+
+  {
+    const serverRoutes = createServerRoutes({
+      serverStore: deps.serverStore ?? createServerStore(),
+      workerRegistry: deps.workerRegistry,
+    });
+    app.route('/', serverRoutes);
   }
 
   // --- WebSocket routes (require Bun runtime) ---
