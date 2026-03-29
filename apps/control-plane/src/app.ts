@@ -269,6 +269,18 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     );
   });
 
+  // --- Version manifest (no auth) ---
+
+  app.get('/version', (c) => {
+    return c.json({
+      version: process.env['PAWS_VERSION'] ?? '0.0.0',
+      commit: process.env['PAWS_COMMIT'] ?? 'unknown',
+      buildDate: process.env['PAWS_BUILD_DATE'] ?? 'unknown',
+      node: process.version,
+      runtime: 'bun',
+    });
+  });
+
   // --- Database + Password auth ---
 
   let db = deps.db;
