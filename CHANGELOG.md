@@ -1,18 +1,33 @@
 # Changelog
 
+## [0.5.2.0] - 2026-03-29
+
+### Added
+
+- **Claude Code agent harness** — `agent` field in daemon config auto-generates workload scripts. Just provide a prompt, framework, and constraints.
+- **Pangolin admin dashboard** — Tunnels page with 4 tabs: active tunnels, sites, users, SSO. Manage Pangolin entirely from the paws dashboard.
+- **Per-port access control** — SSO (default), PIN, or email whitelist per exposed port. Every port also gets a time-limited shareable link.
+- **Unified SSO** — Pangolin auto-registers Dex as OIDC provider on startup. Single login for dashboard and tunnel URLs.
+- **One-line installer** — `curl | bash` like Coolify/Dokploy. Installs Docker, generates secrets, starts everything. Works on bare IP without a domain.
+- **No Cloudflare required** — TLS via HTTP-01 challenge. Domain and DNS configured after install, not before.
+- **Label-based subdomains** — `s-abc-frontend.fleet.dev` instead of `s-abc-3000.fleet.dev`. 12 hex chars for collision safety to ~420k concurrent sessions.
+- **Forwarded headers** — Pangolin passes `Remote-User`, `Remote-Email`, `Remote-Name` to apps inside VMs when using SSO auth.
+- **paws acronym** — Protected Agent Workspace Sandboxes.
+
+### Changed
+
+- Pangolin resource API aligned with real two-step flow (PUT resource + PUT target)
+- Port pool validates range on release to prevent corruption
+
 ## [0.5.1.0] - 2026-03-29
 
 ### Added
 
 - **Port exposure** — VMs can expose ports via Pangolin tunnels, giving agents public URLs for running dev servers (Next.js, Docker Compose, etc.)
-- **Snapshot configuration** — API + dashboard for managing snapshot configs with built-in templates (minimal, node, python, docker, fullstack)
-- **Port pool** — Host port allocator for inbound DNAT forwarding to VMs
-- **Inbound iptables rules** — `setupInboundPort()`/`teardownInboundPort()` for port-level VM access
-- **Pangolin resource manager** — Per-session Pangolin resource creation/cleanup for public subdomain URLs
-- **Snapshot templates** — 5 built-in templates with setup scripts and required domain lists
-- **Dashboard snapshots page** — Create configs from templates, trigger builds, view build status
-- **Exposed ports in session detail** — Clickable tunnel URLs shown in session detail page
-- **Docker-ready snapshot config** — YAML config for building Docker-equipped VM snapshots
+- **Snapshot configuration** — API + dashboard for managing snapshot configs with built-in templates (minimal, node, python, docker, fullstack, claude-code)
+- **Worker build endpoint** — POST /v1/snapshots/{id}/build runs setup script in VM, saves snapshot
+- **Control plane exposed ports polling** — GET /v1/sessions/{id} surfaces tunnel URLs from workers
+- **Auto-merge required domains** — Snapshot requiredDomains merged into proxy allowlist before dispatch
 
 ## [0.5.0.0] - 2026-03-28
 
