@@ -1,4 +1,4 @@
-import type { CreateSessionRequest } from '@paws/types';
+import type { CreateSessionRequest } from '@paws/domain-session';
 
 export interface WorkerHealth {
   status: string;

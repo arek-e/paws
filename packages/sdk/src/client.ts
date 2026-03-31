@@ -1,15 +1,17 @@
 import type {
   CancelSessionResponse,
+  CreateSessionInput,
+  CreateSessionResponse,
+  Session,
+  SessionListResponse,
+} from '@paws/domain-session';
+import type {
   CostSummary,
   CreateDaemonInput,
   CreateDaemonResponse,
-  CreateSessionInput,
-  CreateSessionResponse,
   DaemonDetail,
   DaemonListResponse,
   FleetOverview,
-  Session,
-  SessionListResponse,
   SnapshotBuildRequest,
   SnapshotBuildResponse,
   SnapshotListResponse,

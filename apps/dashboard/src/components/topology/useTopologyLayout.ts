@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import Dagre from '@dagrejs/dagre';
 import type { Edge, Node } from '@xyflow/react';
 import { MarkerType } from '@xyflow/react';
-import type { FleetOverview, Session, Worker } from '@paws/types';
+import type { Session } from '@paws/domain-session';
+import type { FleetOverview, Worker } from '@paws/types';
 
 interface DaemonItem {
   role: string;

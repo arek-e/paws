@@ -1,4 +1,4 @@
-import type { WsSessionMsg as WsSessionMessage } from '@paws/types';
+import type { WsSessionMsg as WsSessionMessage } from '@paws/domain-session';
 import { useEffect, useRef, useState } from 'react';
 
 interface UseWebSocketResult {

@@ -1,6 +1,7 @@
 import { render, Box, Text } from 'ink';
 import type { PawsClient } from '@paws/sdk';
-import type { FleetOverview, Session, Worker, WorkerListResponse } from '@paws/types';
+import type { Session } from '@paws/domain-session';
+import type { FleetOverview, Worker, WorkerListResponse } from '@paws/types';
 import type { ParsedArgs } from '../config.js';
 import { printError } from '../output.js';
 import { Banner } from '../ui/Banner.js';

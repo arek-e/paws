@@ -2,11 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 import { Hono } from 'hono';
 import { createLogger } from '@paws/logger';
-import {
-  BrowserActionSchema,
-  CreateSessionRequestSchema,
-  SnapshotBuildRequestSchema,
-} from '@paws/types';
+import { BrowserActionSchema, SnapshotBuildRequestSchema } from '@paws/types';
+import { CreateSessionRequestSchema } from '@paws/domain-session';
 
 import { buildSnapshot, type SnapshotBuilderConfig } from './build/snapshot-builder.js';
 import { createWorkerMetrics } from './metrics.js';

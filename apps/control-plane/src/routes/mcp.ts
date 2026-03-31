@@ -8,7 +8,7 @@ import {
 } from '@paws/types';
 
 import type { McpServerStore } from '../store/mcp.js';
-import type { SessionStore } from '../store/sessions.js';
+import type { SessionStore } from '@paws/domain-session';
 
 // ---------------------------------------------------------------------------
 // Schemas

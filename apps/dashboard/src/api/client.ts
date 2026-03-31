@@ -1,9 +1,8 @@
+import type { Session, SessionListResponse } from '@paws/domain-session';
 import type {
   BrowserAction,
   FleetOverview,
   ScreenshotResponse,
-  Session,
-  SessionListResponse,
   SnapshotConfig,
   WorkerListResponse,
 } from '@paws/types';
@@ -653,7 +652,10 @@ export async function createCloudConnection(body: {
 }
 
 export async function deleteCloudConnection(id: string): Promise<void> {
-  const res = await fetch(`/v1/cloud-connections/${id}`, { method: 'DELETE', headers: apiKeyHeaders() });
+  const res = await fetch(`/v1/cloud-connections/${id}`, {
+    method: 'DELETE',
+    headers: apiKeyHeaders(),
+  });
   if (!res.ok) throw new Error(`Failed to delete connection: ${res.status}`);
 }
 
@@ -661,7 +663,10 @@ export async function syncCloudConnection(id: string): Promise<{
   instances: { id: string; name: string; status: string; ip: string | null }[];
   syncedAt: string;
 }> {
-  const res = await fetch(`/v1/cloud-connections/${id}/sync`, { method: 'POST', headers: apiKeyHeaders() });
+  const res = await fetch(`/v1/cloud-connections/${id}/sync`, {
+    method: 'POST',
+    headers: apiKeyHeaders(),
+  });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(

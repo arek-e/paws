@@ -1,8 +1,8 @@
 {
-  "name": "@paws/domain-session",
+  "name": "@paws/domain-common",
   "version": "0.1.0",
   "private": true,
-  "description": "Session domain — Session, SessionStore, events, routes, WebSocket messages",
+  "description": "Shared primitive schemas — IdSchema, ErrorCode, ErrorResponse",
   "type": "module",
   "exports": {
     ".": {
@@ -13,13 +13,9 @@
   "scripts": {
     "build": "bun build ./src/index.ts --outdir dist --target bun",
     "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc --build"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hono/zod-openapi": "^1.2.3",
-    "@paws/domain-browser": "workspace:*",
-    "@paws/domain-common": "workspace:*",
-    "@paws/domain-network": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {

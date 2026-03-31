@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import type { FleetOverview, Session, WorkerListResponse } from '@paws/types';
+import type { Session } from '@paws/domain-session';
+import type { FleetOverview, WorkerListResponse } from '@paws/types';
 import { buildShortIds, formatStatusOutput } from './status.js';
 
 function makeFleet(overrides: Partial<FleetOverview> = {}): FleetOverview {

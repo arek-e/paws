@@ -21,7 +21,8 @@ import { WorkerNode } from '../components/topology/WorkerNode.js';
 import { SessionNode } from '../components/topology/SessionNode.js';
 import { DaemonNode } from '../components/topology/DaemonNode.js';
 import { ExposedPortNode } from '../components/topology/ExposedPortNode.js';
-import type { FleetOverview, Worker, Session } from '@paws/types';
+import type { Session } from '@paws/domain-session';
+import type { FleetOverview, Worker } from '@paws/types';
 import { useEffect } from 'react';
 
 const nodeTypes: NodeTypes = {

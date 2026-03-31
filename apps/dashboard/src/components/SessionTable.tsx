@@ -1,5 +1,14 @@
-import type { Session } from '@paws/types';
+import type { Session } from '@paws/domain-session';
 import { useNavigate } from '@tanstack/react-router';
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 import { StatusBadge } from './StatusBadge.js';
 
@@ -22,39 +31,37 @@ export function SessionTable({ sessions }: { sessions: Session[] }) {
   const navigate = useNavigate();
 
   if (sessions.length === 0) {
-    return <div className="text-center text-zinc-500 py-12 text-sm">No sessions found.</div>;
+    return <div className="text-center text-muted-foreground py-12 text-sm">No sessions found.</div>;
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-zinc-800 text-zinc-400 text-left">
-            <th className="pb-2 pr-4 font-medium">ID</th>
-            <th className="pb-2 pr-4 font-medium">Status</th>
-            <th className="pb-2 pr-4 font-medium">Worker</th>
-            <th className="pb-2 pr-4 font-medium">Duration</th>
-            <th className="pb-2 font-medium">Started</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sessions.map((session) => (
-            <tr
-              key={session.sessionId}
-              onClick={() => void navigate({ to: `/sessions/${session.sessionId}` })}
-              className="border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer transition-colors"
-            >
-              <td className="py-2 pr-4 font-mono text-zinc-300">{truncateId(session.sessionId)}</td>
-              <td className="py-2 pr-4">
-                <StatusBadge status={session.status} />
-              </td>
-              <td className="py-2 pr-4 text-zinc-400">{session.worker ?? '-'}</td>
-              <td className="py-2 pr-4 text-zinc-400">{formatDuration(session.durationMs)}</td>
-              <td className="py-2 text-zinc-400">{formatTime(session.startedAt)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>ID</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Worker</TableHead>
+          <TableHead>Duration</TableHead>
+          <TableHead>Started</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {sessions.map((session) => (
+          <TableRow
+            key={session.sessionId}
+            onClick={() => void navigate({ to: `/sessions/${session.sessionId}` })}
+            className="cursor-pointer"
+          >
+            <TableCell className="font-mono">{truncateId(session.sessionId)}</TableCell>
+            <TableCell>
+              <StatusBadge status={session.status} />
+            </TableCell>
+            <TableCell className="text-muted-foreground">{session.worker ?? '-'}</TableCell>
+            <TableCell className="text-muted-foreground">{formatDuration(session.durationMs)}</TableCell>
+            <TableCell className="text-muted-foreground">{formatTime(session.startedAt)}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
