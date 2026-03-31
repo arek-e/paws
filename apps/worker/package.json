@@ -15,9 +15,13 @@
     "start": "bun run src/server.ts",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --build"
   },
   "dependencies": {
+    "@paws/domain-browser": "workspace:*",
+    "@paws/domain-network": "workspace:*",
+    "@paws/domain-session": "workspace:*",
+    "@paws/domain-snapshot": "workspace:*",
     "@paws/firecracker": "workspace:*",
     "@paws/logger": "workspace:*",
     "@paws/proxy": "workspace:*",

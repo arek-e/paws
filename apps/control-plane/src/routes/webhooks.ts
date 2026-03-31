@@ -1,5 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
-import { ErrorResponseSchema, WebhookTriggerResponseSchema } from '@paws/types';
+import { ErrorResponseSchema } from '@paws/domain-common';
+import { WebhookTriggerResponseSchema } from '@paws/domain-daemon';
 
 export const receiveWebhookRoute = createRoute({
   method: 'post',

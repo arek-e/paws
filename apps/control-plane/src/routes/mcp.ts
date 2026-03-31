@@ -1,13 +1,12 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { OpenAPIHono } from '@hono/zod-openapi';
+import { ErrorResponseSchema } from '@paws/domain-common';
 import {
-  ErrorResponseSchema,
   McpServerConfigSchema,
   McpToolCallSchema,
   McpToolCallResponseSchema,
-} from '@paws/types';
-
-import type { McpServerStore } from '../store/mcp.js';
+} from '@paws/domain-mcp';
+import type { McpServerStore } from '@paws/domain-mcp';
 import type { SessionStore } from '@paws/domain-session';
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,9 @@
 import { createRoute } from '@hono/zod-openapi';
-import { CostSummarySchema, FleetOverviewSchema, WorkerListResponseSchema } from '@paws/types';
+import {
+  CostSummarySchema,
+  FleetOverviewSchema,
+  WorkerListResponseSchema,
+} from '@paws/domain-fleet';
 
 export const fleetOverviewRoute = createRoute({
   method: 'get',

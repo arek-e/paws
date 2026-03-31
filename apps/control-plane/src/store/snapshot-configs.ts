@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 
-import type { SnapshotConfig } from '@paws/types';
+import type { SnapshotConfig } from '@paws/domain-snapshot';
 
 import type { PawsDatabase } from '../db/index.js';
 import { snapshotConfigs as snapshotConfigsTable } from '../db/schema.js';

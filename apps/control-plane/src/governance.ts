@@ -1,4 +1,4 @@
-import type { Governance } from '@paws/types';
+import type { Governance } from '@paws/domain-daemon';
 
 interface RateWindow {
   count: number;

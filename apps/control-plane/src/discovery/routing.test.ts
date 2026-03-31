@@ -8,7 +8,7 @@ import { describe, expect, test } from 'vitest';
 
 import { createControlPlaneApp } from '../app.js';
 import type { WorkerDiscovery } from './index.js';
-import type { Worker } from '@paws/types';
+import type { Worker } from '@paws/domain-fleet';
 
 const API_KEY = 'test-key';
 const JSON_HEADERS = {

@@ -13,10 +13,13 @@
   "scripts": {
     "build": "bun build ./src/index.ts --outdir dist --target bun",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --build"
   },
   "dependencies": {
-    "@paws/types": "workspace:*",
+    "@paws/domain-daemon": "workspace:*",
+    "@paws/domain-fleet": "workspace:*",
+    "@paws/domain-session": "workspace:*",
+    "@paws/domain-snapshot": "workspace:*",
     "neverthrow": "^8.2.0"
   },
   "devDependencies": {

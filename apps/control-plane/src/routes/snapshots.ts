@@ -1,10 +1,10 @@
 import { createRoute, z } from '@hono/zod-openapi';
+import { ErrorResponseSchema } from '@paws/domain-common';
 import {
-  ErrorResponseSchema,
   SnapshotBuildRequestSchema,
   SnapshotBuildResponseSchema,
   SnapshotListResponseSchema,
-} from '@paws/types';
+} from '@paws/domain-snapshot';
 
 export const buildSnapshotRoute = createRoute({
   method: 'post',

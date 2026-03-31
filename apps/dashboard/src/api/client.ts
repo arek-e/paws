@@ -1,11 +1,7 @@
 import type { Session, SessionListResponse } from '@paws/domain-session';
-import type {
-  BrowserAction,
-  FleetOverview,
-  ScreenshotResponse,
-  SnapshotConfig,
-  WorkerListResponse,
-} from '@paws/types';
+import type { BrowserAction, ScreenshotResponse } from '@paws/domain-browser';
+import type { FleetOverview, WorkerListResponse } from '@paws/domain-fleet';
+import type { SnapshotConfig } from '@paws/domain-snapshot';
 import { createClient, type PawsClient } from '@paws/sdk';
 
 let _client: PawsClient | null = null;

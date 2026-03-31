@@ -1,12 +1,12 @@
 import { createRoute, z } from '@hono/zod-openapi';
+import { ErrorResponseSchema } from '@paws/domain-common';
 import {
   CreateDaemonRequestSchema,
   CreateDaemonResponseSchema,
   DaemonDetailSchema,
   DaemonListResponseSchema,
-  ErrorResponseSchema,
   UpdateDaemonRequestSchema,
-} from '@paws/types';
+} from '@paws/domain-daemon';
 
 export const createDaemonRoute = createRoute({
   method: 'post',

@@ -1,5 +1,5 @@
 import type { CreateSessionRequest } from '@paws/domain-session';
-import type { NetworkAllocation, NetworkConfig } from '@paws/types';
+import type { NetworkAllocation, NetworkConfig } from '@paws/domain-network';
 import {
   createIpPool,
   createTap,

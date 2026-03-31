@@ -6,19 +6,19 @@ import type {
   SessionListResponse,
 } from '@paws/domain-session';
 import type {
-  CostSummary,
   CreateDaemonInput,
   CreateDaemonResponse,
   DaemonDetail,
   DaemonListResponse,
-  FleetOverview,
+  UpdateDaemonRequest,
+  WebhookTriggerResponse,
+} from '@paws/domain-daemon';
+import type { CostSummary, FleetOverview, WorkerListResponse } from '@paws/domain-fleet';
+import type {
   SnapshotBuildRequest,
   SnapshotBuildResponse,
   SnapshotListResponse,
-  UpdateDaemonRequest,
-  WebhookTriggerResponse,
-  WorkerListResponse,
-} from '@paws/types';
+} from '@paws/domain-snapshot';
 import { ResultAsync } from 'neverthrow';
 
 import { PawsApiError, PawsNetworkError } from './errors.js';

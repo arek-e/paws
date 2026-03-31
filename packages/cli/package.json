@@ -16,10 +16,12 @@
   "scripts": {
     "build": "bun build --compile --outfile dist/paws src/index.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --build"
   },
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
+    "@paws/domain-fleet": "workspace:*",
+    "@paws/domain-session": "workspace:*",
     "@paws/sdk": "workspace:*",
     "@paws/types": "workspace:*",
     "ink": "^6.0.0",

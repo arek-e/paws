@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { createRoute, z } from '@hono/zod-openapi';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import type { Server } from '@paws/provisioner';
-import { ErrorResponseSchema } from '@paws/types';
+import { ErrorResponseSchema } from '@paws/domain-common';
 
 import type { Ec2Lifecycle } from '../ec2-lifecycle.js';
 import type { ServerStore } from '../store/servers.js';

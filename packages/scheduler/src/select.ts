@@ -1,4 +1,4 @@
-import type { Worker } from '@paws/types';
+import type { Worker } from '@paws/domain-fleet';
 
 /**
  * Compute the available capacity for a worker.

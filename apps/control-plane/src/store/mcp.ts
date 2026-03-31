@@ -1,4 +1,4 @@
-import type { McpServerConfig } from '@paws/types';
+import type { McpServerConfig } from '@paws/domain-mcp';
 
 export interface McpServerStore {
   add(config: McpServerConfig): void;

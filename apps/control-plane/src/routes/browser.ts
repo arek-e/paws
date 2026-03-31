@@ -1,10 +1,10 @@
 import { createRoute, z } from '@hono/zod-openapi';
+import { ErrorResponseSchema } from '@paws/domain-common';
 import {
   BrowserActionResultSchema,
   BrowserActionSchema,
-  ErrorResponseSchema,
   ScreenshotResponseSchema,
-} from '@paws/types';
+} from '@paws/domain-browser';
 
 /** Execute a browser action (click, type, goto, screenshot, etc.) */
 export const browserActionRoute = createRoute({

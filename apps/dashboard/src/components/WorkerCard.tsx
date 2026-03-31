@@ -1,4 +1,7 @@
-import type { Worker } from '@paws/types';
+import type { Worker } from '@paws/domain-fleet';
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
 import { StatusBadge } from './StatusBadge.js';
 
@@ -29,47 +32,42 @@ export function WorkerCard({ worker }: { worker: Worker }) {
   const treeName = extractTreeName(worker.name);
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-zinc-100">{treeName}</h3>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm">{treeName}</CardTitle>
         <StatusBadge status={worker.status} />
-      </div>
-
-      <div>
-        <div className="flex justify-between text-xs text-zinc-400 mb-1">
-          <span>Capacity</span>
-          <span>
-            {capacity.running}/{capacity.maxConcurrent}
-          </span>
-        </div>
-        <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-emerald-500 rounded-full transition-all"
-            style={{ width: `${usedPct}%` }}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 text-xs">
+      </CardHeader>
+      <CardContent className="space-y-3">
         <div>
-          <span className="text-zinc-500">Uptime</span>
-          <p className="text-zinc-300">{formatUptime(worker.uptime)}</p>
+          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+            <span>Capacity</span>
+            <span>
+              {capacity.running}/{capacity.maxConcurrent}
+            </span>
+          </div>
+          <Progress value={usedPct} />
         </div>
-        <div>
-          <span className="text-zinc-500">Queued</span>
-          <p className="text-zinc-300">{capacity.queued}</p>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <span className="text-muted-foreground">Uptime</span>
+            <p className="text-foreground">{formatUptime(worker.uptime)}</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Queued</span>
+            <p className="text-foreground">{capacity.queued}</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Available</span>
+            <p className="text-foreground">{capacity.available} slots</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Snapshot</span>
+            <p className="text-foreground">
+              {worker.snapshot.id} v{worker.snapshot.version}
+            </p>
+          </div>
         </div>
-        <div>
-          <span className="text-zinc-500">Available</span>
-          <p className="text-zinc-300">{capacity.available} slots</p>
-        </div>
-        <div>
-          <span className="text-zinc-500">Snapshot</span>
-          <p className="text-zinc-300">
-            {worker.snapshot.id} v{worker.snapshot.version}
-          </p>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

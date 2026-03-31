@@ -1,4 +1,4 @@
-import type { Worker } from '@paws/types';
+import type { Worker } from '@paws/domain-fleet';
 import { describe, expect, it } from 'vitest';
 
 import { selectWorker, workerAvailableCapacity } from './select.js';

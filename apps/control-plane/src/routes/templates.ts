@@ -1,5 +1,5 @@
 import { createRoute, z } from '@hono/zod-openapi';
-import { ErrorResponseSchema } from '@paws/types';
+import { ErrorResponseSchema } from '@paws/domain-common';
 
 const TemplateCategorySchema = z.enum(['code-review', 'devops', 'security', 'general']);
 
