@@ -9,6 +9,19 @@ import {
   type ProvisionStatus,
 } from '../api/client.js';
 import { Terminal } from '../components/Terminal.js';
+import { Alert, AlertDescription } from '../components/ui/alert.js';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '../components/ui/breadcrumb.js';
+import { Button } from '../components/ui/button.js';
+import { Card, CardContent } from '../components/ui/card.js';
+import { Input } from '../components/ui/input.js';
+import { Label } from '../components/ui/label.js';
 
 interface TerminalLine {
   stream: 'stdout' | 'stderr';
@@ -216,7 +229,21 @@ export function Provision() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-zinc-100">Provision Server</h1>
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink render={<Link to="/" />}>Topology</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink render={<Link to="/servers" />}>Servers</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Provision</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
         <p className="text-sm text-zinc-500">Loading providers...</p>
       </div>
     );
@@ -225,10 +252,24 @@ export function Provision() {
   if (fetchError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-zinc-100">Provision Server</h1>
-        <div className="p-4 bg-red-900/20 border border-red-800 rounded-lg">
-          <p className="text-sm text-red-400">{fetchError}</p>
-        </div>
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink render={<Link to="/" />}>Topology</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink render={<Link to="/servers" />}>Servers</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Provision</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <Alert variant="destructive" className="bg-red-900/20 border-red-800">
+          <AlertDescription className="text-sm text-red-400">{fetchError}</AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -236,17 +277,32 @@ export function Provision() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Provision Server</h1>
-          <p className="text-sm text-zinc-500 mt-1">Add a new worker node to your fleet</p>
+        <div className="space-y-1">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink render={<Link to="/" />}>Topology</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink render={<Link to="/servers" />}>Servers</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Provision</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+          <p className="text-sm text-zinc-500">Add a new worker node to your fleet</p>
         </div>
         {phase !== 'select' && phase !== 'provisioning' && (
-          <button
+          <Button
+            variant="outline"
             onClick={resetFlow}
-            className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-100 border border-zinc-700 rounded-lg hover:bg-zinc-800 transition-colors"
+            className="text-zinc-400 hover:text-zinc-100 border-zinc-700 hover:bg-zinc-800"
           >
             Start Over
-          </button>
+          </Button>
         )}
       </div>
 
@@ -257,39 +313,43 @@ export function Provision() {
             <button
               key={provider.name}
               onClick={() => selectProvider(provider)}
-              className="text-left p-5 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-emerald-600/50 hover:bg-zinc-900/80 transition-all group"
+              className="text-left group"
             >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-lg group-hover:bg-emerald-900/30 transition-colors">
-                  {provider.name === 'manual' && (
-                    <svg
-                      className="w-5 h-5 text-zinc-400 group-hover:text-emerald-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M5 12h14M12 5l7 7-7 7"
-                      />
-                    </svg>
-                  )}
-                  {provider.name === 'hetzner-cloud' && (
-                    <span className="text-zinc-400 group-hover:text-emerald-400 text-sm font-bold">
-                      H
-                    </span>
-                  )}
-                  {provider.name === 'aws-ec2' && (
-                    <span className="text-zinc-400 group-hover:text-emerald-400 text-sm font-bold">
-                      A
-                    </span>
-                  )}
-                </div>
-                <h3 className="text-sm font-semibold text-zinc-100">{provider.label}</h3>
-              </div>
-              <p className="text-xs text-zinc-500">{provider.description}</p>
+              <Card className="bg-zinc-900 border-zinc-800 hover:border-emerald-600/50 hover:bg-zinc-900/80 transition-all cursor-pointer gap-0 py-0">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-lg group-hover:bg-emerald-900/30 transition-colors">
+                      {provider.name === 'manual' && (
+                        <svg
+                          className="w-5 h-5 text-zinc-400 group-hover:text-emerald-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M5 12h14M12 5l7 7-7 7"
+                          />
+                        </svg>
+                      )}
+                      {provider.name === 'hetzner-cloud' && (
+                        <span className="text-zinc-400 group-hover:text-emerald-400 text-sm font-bold">
+                          H
+                        </span>
+                      )}
+                      {provider.name === 'aws-ec2' && (
+                        <span className="text-zinc-400 group-hover:text-emerald-400 text-sm font-bold">
+                          A
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-sm font-semibold text-zinc-100">{provider.label}</h3>
+                  </div>
+                  <p className="text-xs text-zinc-500">{provider.description}</p>
+                </CardContent>
+              </Card>
             </button>
           ))}
         </div>
@@ -299,9 +359,11 @@ export function Provision() {
       {phase === 'configure' && selectedProvider && (
         <div className="max-w-lg">
           <div className="flex items-center gap-2 mb-5">
-            <button
+            <Button
+              variant="ghost"
+              size="icon-xs"
               onClick={() => setPhase('select')}
-              className="text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="text-zinc-500 hover:text-zinc-300"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -311,27 +373,27 @@ export function Provision() {
                   d="M15 19l-7-7 7-7"
                 />
               </svg>
-            </button>
+            </Button>
             <h2 className="text-lg font-semibold text-zinc-100">{selectedProvider.label}</h2>
           </div>
 
           <div className="space-y-4">
             {/* Server name (always present) */}
             <div>
-              <label className="block text-xs text-zinc-400 mb-1">Server Name</label>
-              <input
+              <Label className="text-xs text-zinc-400 mb-1">Server Name</Label>
+              <Input
                 type="text"
                 value={serverName}
                 onChange={(e) => setServerName(e.target.value)}
                 placeholder="e.g. worker-eu-1"
-                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-600"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus-visible:border-emerald-600 focus-visible:ring-emerald-600/20"
               />
             </div>
 
             {/* Dynamic fields */}
             {selectedProvider.fields.map((field) => (
               <div key={field.name}>
-                <label className="block text-xs text-zinc-400 mb-1">{field.label}</label>
+                <Label className="text-xs text-zinc-400 mb-1">{field.label}</Label>
                 {field.type === 'select' && field.options ? (
                   <select
                     value={formValues[field.name] ?? ''}
@@ -345,25 +407,25 @@ export function Provision() {
                     ))}
                   </select>
                 ) : (
-                  <input
+                  <Input
                     type={field.type}
                     value={formValues[field.name] ?? ''}
                     onChange={(e) => handleFieldChange(field.name, e.target.value)}
                     placeholder={field.placeholder}
-                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-600"
+                    className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus-visible:border-emerald-600 focus-visible:ring-emerald-600/20"
                   />
                 )}
                 {field.hint && <p className="text-xs text-zinc-600 mt-1">{field.hint}</p>}
               </div>
             ))}
 
-            <button
+            <Button
               onClick={startProvisioning}
               disabled={!canSubmit()}
-              className="mt-2 w-full py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="mt-2 w-full bg-emerald-600 text-white hover:bg-emerald-500"
             >
               {selectedProvider.name === 'manual' ? 'Connect & Bootstrap' : 'Provision & Bootstrap'}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -403,32 +465,36 @@ export function Provision() {
           </div>
 
           {phase === 'complete' && (
-            <div className="mt-6 p-4 bg-emerald-900/20 border border-emerald-800/40 rounded-lg">
-              <p className="text-sm text-emerald-400 font-medium">
-                Server provisioned successfully!
-              </p>
-              <p className="text-xs text-zinc-500 mt-1">
-                Your new worker is ready to accept sessions.
-              </p>
-              <Link
-                to="/"
-                className="inline-block mt-3 px-4 py-2 text-sm text-emerald-400 border border-emerald-700/50 rounded-lg hover:bg-emerald-900/20 transition-colors"
-              >
-                View Fleet
-              </Link>
-            </div>
+            <Alert className="mt-6 bg-emerald-900/20 border-emerald-800/40">
+              <AlertDescription>
+                <p className="text-sm text-emerald-400 font-medium">
+                  Server provisioned successfully!
+                </p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Your new worker is ready to accept sessions.
+                </p>
+                <Link
+                  to="/"
+                  className="inline-block mt-3 px-4 py-2 text-sm text-emerald-400 border border-emerald-700/50 rounded-lg hover:bg-emerald-900/20 transition-colors"
+                >
+                  View Fleet
+                </Link>
+              </AlertDescription>
+            </Alert>
           )}
 
           {phase === 'error' && provisionError && (
-            <div className="mt-4 p-3 bg-red-900/20 border border-red-800 rounded-lg">
-              <p className="text-sm text-red-400">{provisionError}</p>
-              <button
-                onClick={resetFlow}
-                className="mt-2 text-xs text-red-400 hover:text-red-300 underline"
-              >
-                Try Again
-              </button>
-            </div>
+            <Alert variant="destructive" className="mt-4 bg-red-900/20 border-red-800">
+              <AlertDescription>
+                <p className="text-sm text-red-400">{provisionError}</p>
+                <button
+                  onClick={resetFlow}
+                  className="mt-2 text-xs text-red-400 hover:text-red-300 underline"
+                >
+                  Try Again
+                </button>
+              </AlertDescription>
+            </Alert>
           )}
         </div>
       )}

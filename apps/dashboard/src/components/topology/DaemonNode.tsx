@@ -1,5 +1,7 @@
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 export type DaemonNodeData = {
   role: string;
@@ -47,9 +49,9 @@ export function DaemonNode({ data }: NodeProps<DaemonNodeType>) {
     >
       <div className="flex items-center gap-1.5 justify-center">
         <span className="text-xs font-medium text-zinc-200 truncate max-w-[90px]">{data.role}</span>
-        <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${colors.badge}`}>
+        <Badge variant="outline" className={cn('text-[9px] px-1.5 py-0.5', colors.badge)}>
           {colors.text}
-        </span>
+        </Badge>
       </div>
 
       <Handle

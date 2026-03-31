@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 
+import { ScrollArea } from '@/components/ui/scroll-area';
+
 interface TerminalLine {
   stream: 'stdout' | 'stderr';
   text: string;
@@ -27,7 +29,7 @@ export function Terminal({ lines, title = 'Output' }: TerminalProps) {
         </div>
         <span className="text-xs text-zinc-500 ml-2">{title}</span>
       </div>
-      <div className="p-4 font-mono text-sm h-80 overflow-auto">
+      <ScrollArea className="h-80 p-4 font-mono text-sm">
         {lines.length === 0 && (
           <p className="text-zinc-600">
             <span className="animate-pulse">_</span> Waiting for output...
@@ -42,7 +44,7 @@ export function Terminal({ lines, title = 'Output' }: TerminalProps) {
           </div>
         ))}
         <div ref={bottomRef} />
-      </div>
+      </ScrollArea>
     </div>
   );
 }

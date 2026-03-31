@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 
-import { setApiKey, setSessionMode } from '../api/client.js';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+
+import { setSessionMode } from '../api/client.js';
 
 type AuthMode = 'loading' | 'authenticated' | 'create-account' | 'login';
 
@@ -158,7 +162,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         </div>
 
         <form onSubmit={isCreating ? handleCreateAccount : handleLogin} className="space-y-3">
-          <input
+          <Input
             type="email"
             value={email}
             onChange={(e) => {
@@ -167,9 +171,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             }}
             placeholder="Email"
             autoFocus
-            className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 text-sm placeholder-zinc-500 focus:outline-none focus:border-emerald-400"
+            className="h-10 bg-zinc-900 border-zinc-700 text-zinc-100 placeholder-zinc-500 focus-visible:border-emerald-400 focus-visible:ring-emerald-400/50"
           />
-          <input
+          <Input
             type="password"
             value={password}
             onChange={(e) => {
@@ -177,21 +181,25 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               setError('');
             }}
             placeholder={isCreating ? 'Password (min 8 characters)' : 'Password'}
-            className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 text-sm placeholder-zinc-500 focus:outline-none focus:border-emerald-400"
+            className="h-10 bg-zinc-900 border-zinc-700 text-zinc-100 placeholder-zinc-500 focus-visible:border-emerald-400 focus-visible:ring-emerald-400/50"
           />
-          {error && <p className="text-xs text-red-400">{error}</p>}
-          <button
+          {error && (
+            <Alert variant="destructive" className="bg-red-400/10 border-red-400/20">
+              <AlertDescription className="text-red-400">{error}</AlertDescription>
+            </Alert>
+          )}
+          <Button
             type="submit"
-            className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm rounded-lg transition-colors"
+            className="w-full h-10 bg-emerald-600 hover:bg-emerald-500 text-white font-medium"
           >
             {isCreating ? 'Create Account' : 'Login'}
-          </button>
+          </Button>
         </form>
 
         {!isCreating && oidcAvailable && (
           <a
             href="/auth/login"
-            className="block mt-3 w-full py-2.5 border border-zinc-700 hover:border-zinc-600 text-zinc-300 text-sm rounded-lg transition-colors text-center"
+            className="mt-3 flex w-full items-center justify-center h-10 rounded-md border border-zinc-700 hover:border-zinc-600 text-zinc-300 text-sm transition-colors"
           >
             Login with SSO
           </a>

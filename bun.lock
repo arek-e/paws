@@ -45,7 +45,6 @@
         "@paws/provider-hetzner-cloud": "workspace:*",
         "@paws/providers": "workspace:*",
         "@paws/provisioner": "workspace:*",
-        "@paws/scheduler": "workspace:*",
         "better-sqlite3": "^12.8.0",
         "drizzle-orm": "^0.45.2",
         "hono": "^4.7.0",
@@ -220,6 +219,7 @@
       "name": "@paws/domain-fleet",
       "version": "0.1.0",
       "dependencies": {
+        "@hono/zod-openapi": "^1.2.3",
         "@paws/domain-common": "workspace:*",
         "zod": "^4.3.6",
       },
@@ -354,16 +354,6 @@
       },
       "devDependencies": {
         "bun-types": "^1.3.11",
-        "vitest": "^4.1.2",
-      },
-    },
-    "packages/scheduler": {
-      "name": "@paws/scheduler",
-      "version": "0.1.0",
-      "dependencies": {
-        "@paws/domain-fleet": "workspace:*",
-      },
-      "devDependencies": {
         "vitest": "^4.1.2",
       },
     },
@@ -1107,8 +1097,6 @@
     "@paws/provisioner": ["@paws/provisioner@workspace:packages/provisioner"],
 
     "@paws/proxy": ["@paws/proxy@workspace:packages/proxy"],
-
-    "@paws/scheduler": ["@paws/scheduler@workspace:packages/scheduler"],
 
     "@paws/sdk": ["@paws/sdk@workspace:packages/sdk"],
 

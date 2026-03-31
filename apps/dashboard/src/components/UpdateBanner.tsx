@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+
 import { usePolling } from '../hooks/usePolling.js';
 
 interface VersionInfo {
@@ -22,7 +25,7 @@ export function UpdateBanner() {
   if (!version.data?.updateAvailable || dismissed) return null;
 
   return (
-    <div className="bg-emerald-400/10 border border-emerald-400/20 rounded-lg p-3 mb-6 flex items-center justify-between">
+    <Alert className="bg-emerald-400/10 border-emerald-400/20 mb-6 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
         <p className="text-sm text-emerald-400">
@@ -44,9 +47,11 @@ export function UpdateBanner() {
         <code className="text-xs text-zinc-400 bg-zinc-800 px-2 py-1 rounded font-mono">
           paws update
         </code>
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => setDismissed(true)}
-          className="text-zinc-600 hover:text-zinc-400 transition-colors ml-2"
+          className="text-zinc-600 hover:text-zinc-400 ml-2 size-7"
         >
           <svg
             width="14"
@@ -58,9 +63,9 @@ export function UpdateBanner() {
           >
             <path d="M1 1l12 12M13 1L1 13" />
           </svg>
-        </button>
+        </Button>
       </div>
-    </div>
+    </Alert>
   );
 }
 

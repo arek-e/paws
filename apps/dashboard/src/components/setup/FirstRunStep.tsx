@@ -1,5 +1,10 @@
 import { useState } from 'react';
 
+import { Alert, AlertDescription } from '@/components/ui/alert.js';
+import { Button } from '@/components/ui/button.js';
+import { Label } from '@/components/ui/label.js';
+import { Textarea } from '@/components/ui/textarea.js';
+
 import { Terminal } from '../Terminal.js';
 
 interface TerminalLine {
@@ -121,23 +126,23 @@ export function FirstRunStep({ onComplete, onBack }: FirstRunStepProps) {
       {status === 'idle' && (
         <>
           <div>
-            <label className="block text-xs text-zinc-400 mb-1">Prompt</label>
-            <textarea
+            <Label className="text-xs text-zinc-400 mb-1">Prompt</Label>
+            <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={4}
-              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 font-mono resize-none"
+              className="bg-zinc-900 border-zinc-700 text-zinc-100 font-mono resize-none"
             />
           </div>
 
           <div className="flex justify-center mt-5">
-            <button
+            <Button
               onClick={runAgent}
               disabled={!prompt}
-              className="px-8 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-500 disabled:opacity-40 transition-colors"
+              className="px-8 bg-emerald-600 hover:bg-emerald-500 text-white"
             >
               ▶ Run Agent
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -156,37 +161,33 @@ export function FirstRunStep({ onComplete, onBack }: FirstRunStepProps) {
           )}
 
           {error && (
-            <div className="mt-4 p-3 bg-red-900/20 border border-red-800 rounded-lg">
-              <p className="text-sm text-red-400">{error}</p>
-              <button
-                onClick={() => {
-                  setStatus('idle');
-                  setError(null);
-                  setLines([]);
-                }}
-                className="mt-2 text-xs text-red-400 hover:text-red-300 underline"
-              >
-                Try Again
-              </button>
-            </div>
+            <Alert variant="destructive" className="mt-4 bg-red-900/20 border-red-800">
+              <AlertDescription>
+                <p className="text-sm text-red-400">{error}</p>
+                <button
+                  onClick={() => {
+                    setStatus('idle');
+                    setError(null);
+                    setLines([]);
+                  }}
+                  className="mt-2 text-xs text-red-400 hover:text-red-300 underline"
+                >
+                  Try Again
+                </button>
+              </AlertDescription>
+            </Alert>
           )}
         </>
       )}
 
       <div className="flex justify-between mt-6">
-        <button
-          onClick={onBack}
-          className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-        >
+        <Button variant="ghost" onClick={onBack} className="text-zinc-400 hover:text-zinc-200">
           ← Back
-        </button>
+        </Button>
         {status === 'complete' && (
-          <button
-            onClick={onComplete}
-            className="px-5 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-500 transition-colors"
-          >
+          <Button onClick={onComplete} className="bg-emerald-600 hover:bg-emerald-500 text-white">
             Go to Dashboard →
-          </button>
+          </Button>
         )}
       </div>
     </div>

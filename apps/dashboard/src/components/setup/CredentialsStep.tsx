@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
 
+import { Alert, AlertDescription } from '@/components/ui/alert.js';
+import { Button } from '@/components/ui/button.js';
+import { Card } from '@/components/ui/card.js';
+import { Input } from '@/components/ui/input.js';
+
 interface Credential {
   provider: string;
   masked: string;
@@ -84,9 +89,9 @@ export function CredentialsStep({ onComplete, onBack }: CredentialsStepProps) {
           const isEditing = editing === prov.id;
 
           return (
-            <div
+            <Card
               key={prov.id}
-              className={`border rounded-lg p-3 transition-colors ${
+              className={`p-3 gap-0 ${
                 cred ? 'border-emerald-700 bg-emerald-900/10' : 'border-zinc-700 bg-zinc-900'
               }`}
             >
@@ -100,62 +105,67 @@ export function CredentialsStep({ onComplete, onBack }: CredentialsStepProps) {
                   {!cred && !isEditing && <p className="text-xs text-zinc-500">Not configured</p>}
                 </div>
                 {!isEditing && (
-                  <button
+                  <Button
+                    variant="link"
+                    size="xs"
                     onClick={() => {
                       setEditing(prov.id);
                       setInputValue('');
                       setError(null);
                     }}
-                    className="text-xs text-blue-400 hover:text-blue-300"
+                    className="text-blue-400 hover:text-blue-300"
                   >
                     {cred ? 'Edit' : '+ Add'}
-                  </button>
+                  </Button>
                 )}
               </div>
 
               {isEditing && (
                 <div className="mt-3">
-                  <input
+                  <Input
                     type="password"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     placeholder={prov.placeholder}
-                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+                    className="bg-zinc-800 border-zinc-600 text-zinc-100 placeholder:text-zinc-600"
                     autoFocus
                   />
                   {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
                   <div className="flex gap-2 mt-2">
-                    <button
+                    <Button
+                      size="sm"
                       onClick={() => saveCredential(prov.id)}
                       disabled={!inputValue || saving}
-                      className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-md hover:bg-emerald-500 disabled:opacity-40 transition-colors"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs"
                     >
                       {saving ? 'Saving...' : 'Save'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={() => {
                         setEditing(null);
                         setError(null);
                       }}
-                      className="px-3 py-1.5 bg-zinc-700 text-zinc-300 text-xs rounded-md hover:bg-zinc-600 transition-colors"
+                      className="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-xs"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
-            </div>
+            </Card>
           );
         })}
       </div>
 
       {/* Security callout */}
-      <div className="mt-4 p-3 bg-blue-900/10 border border-blue-800/30 rounded-lg">
-        <p className="text-xs text-blue-300">
+      <Alert className="mt-4 bg-blue-900/10 border-blue-800/30">
+        <AlertDescription className="text-xs text-blue-300">
           🔒 <strong>Zero-trust:</strong> Credentials are stored encrypted in the control plane.
           They're injected into HTTP requests by the per-VM TLS proxy. The VM never sees them.
-        </p>
-      </div>
+        </AlertDescription>
+      </Alert>
 
       {!hasLlmProvider && (
         <p className="text-xs text-zinc-500 mt-3 italic">
@@ -164,19 +174,16 @@ export function CredentialsStep({ onComplete, onBack }: CredentialsStepProps) {
       )}
 
       <div className="flex justify-between mt-6">
-        <button
-          onClick={onBack}
-          className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-        >
+        <Button variant="ghost" onClick={onBack} className="text-zinc-400 hover:text-zinc-200">
           ← Back
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={onComplete}
           disabled={!hasLlmProvider}
-          className="px-5 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Next →
-        </button>
+        </Button>
       </div>
     </div>
   );

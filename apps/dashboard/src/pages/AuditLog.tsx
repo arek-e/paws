@@ -8,6 +8,11 @@ import {
   type AuditFilters,
   type AuditStats,
 } from '../api/client.js';
+import { Alert, AlertDescription } from '../components/ui/alert.js';
+import { Button } from '../components/ui/button.js';
+import { Card, CardContent } from '../components/ui/card.js';
+import { Input } from '../components/ui/input.js';
+import { Skeleton } from '../components/ui/skeleton.js';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -205,65 +210,70 @@ export function AuditLog() {
             </option>
           ))}
         </select>
-        <input
+        <Input
           type="text"
           placeholder="Search events..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-zinc-900 border border-zinc-800 rounded-md px-3 py-1.5 text-sm text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-emerald-400/50 flex-1 min-w-48"
+          className="bg-zinc-900 border-zinc-800 text-zinc-300 placeholder-zinc-600 focus-visible:border-emerald-400/50 focus-visible:ring-emerald-400/20 flex-1 min-w-48"
         />
       </div>
 
       {/* Content */}
       {loading && events.length === 0 ? (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 animate-pulse h-48" />
+        <Skeleton className="h-48" />
       ) : error ? (
-        <div className="bg-red-400/10 border border-red-400/20 rounded-lg p-4">
-          <p className="text-red-400 text-sm">{error.message}</p>
-        </div>
+        <Alert variant="destructive" className="bg-red-400/10 border-red-400/20 text-red-400">
+          <AlertDescription>{error.message}</AlertDescription>
+        </Alert>
       ) : events.length === 0 ? (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center space-y-3">
-          <pre className="text-zinc-600 text-xs leading-tight font-mono inline-block">
-            {` /\\_/\\
+        <Card className="bg-zinc-900 border-zinc-800 py-0 shadow-none">
+          <CardContent className="p-8 text-center space-y-3">
+            <pre className="text-zinc-600 text-xs leading-tight font-mono inline-block">
+              {` /\\_/\\
 ( o.o )  nothing here yet
  > ^ <`}
-          </pre>
-          <p className="text-zinc-400 text-sm">No audit events recorded.</p>
-          <p className="text-zinc-500 text-xs">
-            Events will appear here as sessions run and daemons are triggered.
-          </p>
-        </div>
+            </pre>
+            <p className="text-zinc-400 text-sm">No audit events recorded.</p>
+            <p className="text-zinc-500 text-xs">
+              Events will appear here as sessions run and daemons are triggered.
+            </p>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
-          {/* Table header */}
-          <div className="px-4 py-2 flex items-center gap-3 border-b border-zinc-800 text-xs text-zinc-600 font-medium">
-            <span className="w-2" />
-            <span className="w-24">Time</span>
-            <span className="w-48">Action</span>
-            <span className="w-24">Actor</span>
-            <span className="flex-1">Resource</span>
-          </div>
-          {/* Events */}
-          {events.map((event) => (
-            <EventRow
-              key={event.id}
-              event={event}
-              expanded={expandedId === event.id}
-              onToggle={() => setExpandedId(expandedId === event.id ? null : event.id)}
-            />
-          ))}
-        </div>
+        <Card className="bg-zinc-900 border-zinc-800 py-0 shadow-none overflow-hidden">
+          <CardContent className="p-0">
+            {/* Table header */}
+            <div className="px-4 py-2 flex items-center gap-3 border-b border-zinc-800 text-xs text-zinc-600 font-medium">
+              <span className="w-2" />
+              <span className="w-24">Time</span>
+              <span className="w-48">Action</span>
+              <span className="w-24">Actor</span>
+              <span className="flex-1">Resource</span>
+            </div>
+            {/* Events */}
+            {events.map((event) => (
+              <EventRow
+                key={event.id}
+                event={event}
+                expanded={expandedId === event.id}
+                onToggle={() => setExpandedId(expandedId === event.id ? null : event.id)}
+              />
+            ))}
+          </CardContent>
+        </Card>
       )}
 
       {/* Load more */}
       {hasMore && !loading && (
         <div className="text-center">
-          <button
+          <Button
+            variant="outline"
             onClick={() => setOffset(events.length)}
-            className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 bg-zinc-900 border border-zinc-800 rounded-md hover:bg-zinc-800 transition-colors"
+            className="bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
           >
             Load more ({total - events.length} remaining)
-          </button>
+          </Button>
         </div>
       )}
       {loading && events.length > 0 && (

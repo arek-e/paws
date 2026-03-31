@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 
+import { Button } from '@/components/ui/button.js';
+
 import { CredentialsStep } from '../components/setup/CredentialsStep.js';
 import { FirstRunStep } from '../components/setup/FirstRunStep.js';
 import { GitHubStep } from '../components/setup/GitHubStep.js';
@@ -35,15 +37,17 @@ export function Setup() {
             <p className="text-xs text-zinc-500">Let's get your agent infrastructure running</p>
           </div>
         </div>
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => {
             localStorage.setItem('paws_setup_skipped', 'true');
             window.location.href = '/';
           }}
-          className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
+          className="text-zinc-600 hover:text-zinc-400"
         >
           Skip setup →
-        </button>
+        </Button>
       </div>
 
       {/* Main content */}
@@ -101,18 +105,19 @@ export function Setup() {
             <div>
               <GitHubStep />
               <div className="flex justify-between mt-6">
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => setStep('credentials')}
-                  className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+                  className="text-zinc-400 hover:text-zinc-200"
                 >
                   ← Back
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setStep('first-run')}
-                  className="px-5 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-500 transition-colors"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white"
                 >
                   Next →
-                </button>
+                </Button>
               </div>
             </div>
           )}

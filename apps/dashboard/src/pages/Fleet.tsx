@@ -3,6 +3,10 @@ import { UpdateBanner } from '../components/UpdateBanner.js';
 import { MiniChart } from '../components/MiniChart.js';
 import { StatCard } from '../components/StatCard.js';
 import { WorkerCard } from '../components/WorkerCard.js';
+import { Alert, AlertDescription } from '../components/ui/alert.js';
+import { Badge } from '../components/ui/badge.js';
+import { Card, CardContent } from '../components/ui/card.js';
+import { Skeleton } from '../components/ui/skeleton.js';
 import { useMetrics } from '../hooks/useMetrics.js';
 import { usePolling } from '../hooks/usePolling.js';
 
@@ -14,11 +18,12 @@ function TunnelStatus({
   if (!pangolin) return null;
 
   return (
-    <div
-      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs ${
+    <Badge
+      variant="outline"
+      className={`gap-2 px-3 py-1.5 rounded-full ${
         pangolin.connected
-          ? 'bg-emerald-400/10 text-emerald-400 border border-emerald-400/20'
-          : 'bg-red-400/10 text-red-400 border border-red-400/20'
+          ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20'
+          : 'bg-red-400/10 text-red-400 border-red-400/20'
       }`}
     >
       <span
@@ -27,7 +32,7 @@ function TunnelStatus({
       {pangolin.connected
         ? `Tunnel active \u00b7 ${pangolin.tunnelWorkers} worker${pangolin.tunnelWorkers !== 1 ? 's' : ''} connected`
         : 'Tunnel disconnected'}
-    </div>
+    </Badge>
   );
 }
 
@@ -58,16 +63,13 @@ export function Fleet() {
       {fleet.loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {Array.from({ length: 4 }, (_, i) => (
-            <div
-              key={i}
-              className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 h-20 animate-pulse"
-            />
+            <Skeleton key={i} className="h-20" />
           ))}
         </div>
       ) : fleet.error ? (
-        <div className="bg-red-400/10 border border-red-400/20 rounded-lg p-4 text-red-400 text-sm">
-          Failed to load fleet data: {fleet.error.message}
-        </div>
+        <Alert variant="destructive" className="bg-red-400/10 border-red-400/20 text-red-400">
+          <AlertDescription>Failed to load fleet data: {fleet.error.message}</AlertDescription>
+        </Alert>
       ) : fleet.data ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard label="Workers" value={fleet.data.totalWorkers} />
@@ -93,16 +95,13 @@ export function Fleet() {
         {workers.loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 3 }, (_, i) => (
-              <div
-                key={i}
-                className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 h-40 animate-pulse"
-              />
+              <Skeleton key={i} className="h-40" />
             ))}
           </div>
         ) : workers.error ? (
-          <div className="bg-red-400/10 border border-red-400/20 rounded-lg p-4 text-red-400 text-sm">
-            Failed to load trees: {workers.error.message}
-          </div>
+          <Alert variant="destructive" className="bg-red-400/10 border-red-400/20 text-red-400">
+            <AlertDescription>Failed to load trees: {workers.error.message}</AlertDescription>
+          </Alert>
         ) : workers.data && workers.data.workers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {workers.data.workers.map((w) => (
@@ -110,22 +109,24 @@ export function Fleet() {
             ))}
           </div>
         ) : (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center">
-            <pre className="text-zinc-600 text-xs font-mono mb-2">{`   /\\_/\\
+          <Card className="bg-zinc-900 border-zinc-800 py-0 shadow-none">
+            <CardContent className="p-8 text-center">
+              <pre className="text-zinc-600 text-xs font-mono mb-2">{`   /\\_/\\
   ( -.- )
    > ^ <`}</pre>
-            <p className="text-zinc-500 text-sm">No workers connected.</p>
-            <p className="text-zinc-600 text-xs mt-1">
-              Add a server from{' '}
-              <a href="/servers" className="text-emerald-500 hover:text-emerald-400">
-                Servers
-              </a>{' '}
-              or run the{' '}
-              <a href="/setup" className="text-emerald-500 hover:text-emerald-400">
-                setup wizard
-              </a>
-            </p>
-          </div>
+              <p className="text-zinc-500 text-sm">No workers connected.</p>
+              <p className="text-zinc-600 text-xs mt-1">
+                Add a server from{' '}
+                <a href="/servers" className="text-emerald-500 hover:text-emerald-400">
+                  Servers
+                </a>{' '}
+                or run the{' '}
+                <a href="/setup" className="text-emerald-500 hover:text-emerald-400">
+                  setup wizard
+                </a>
+              </p>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

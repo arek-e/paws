@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 import {
   changePassword,
@@ -10,6 +11,20 @@ import {
   type AccountInfo,
   type SessionInfo,
 } from '../api/client.js';
+import { Badge } from '../components/ui/badge.js';
+import { Button } from '../components/ui/button.js';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.js';
+import { Input } from '../components/ui/input.js';
+import { Label } from '../components/ui/label.js';
+import { Skeleton } from '../components/ui/skeleton.js';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui/table.js';
 import { usePolling } from '../hooks/usePolling.js';
 
 // ---------------------------------------------------------------------------
@@ -52,7 +67,6 @@ function AccountSection() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -64,7 +78,6 @@ function AccountSection() {
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    setSuccess('');
 
     if (!currentPassword) {
       setError('Current password is required');
@@ -82,78 +95,77 @@ function AccountSection() {
     setSubmitting(true);
     try {
       await changePassword(currentPassword, newPassword);
-      setSuccess('Password changed successfully. Other sessions have been invalidated.');
+      toast.success('Password changed successfully. Other sessions have been invalidated.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to change password');
+      toast.error(err instanceof Error ? err.message : 'Failed to change password');
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
-      <h2 className="text-sm font-semibold text-zinc-100">Account</h2>
-
-      {/* Email display */}
-      <div>
-        <label className="block text-xs text-zinc-500 mb-1">Email</label>
-        <div className="px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm">
-          {account?.email ?? 'Loading...'}
+    <Card className="bg-zinc-900 border-zinc-800 gap-0 py-0">
+      <CardHeader className="p-6 pb-0">
+        <CardTitle className="text-sm text-zinc-100">Account</CardTitle>
+      </CardHeader>
+      <CardContent className="p-6 space-y-4">
+        {/* Email display */}
+        <div>
+          <Label className="text-xs text-zinc-500 mb-1">Email</Label>
+          <div className="px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm">
+            {account?.email ?? 'Loading...'}
+          </div>
         </div>
-      </div>
 
-      {/* Change password form */}
-      <form onSubmit={handleChangePassword} className="space-y-3 pt-2">
-        <p className="text-xs text-zinc-500 font-medium">Change Password</p>
-        <input
-          type="password"
-          value={currentPassword}
-          onChange={(e) => {
-            setCurrentPassword(e.target.value);
-            setError('');
-            setSuccess('');
-          }}
-          placeholder="Current password"
-          className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm placeholder-zinc-500 focus:outline-none focus:border-emerald-400"
-        />
-        <input
-          type="password"
-          value={newPassword}
-          onChange={(e) => {
-            setNewPassword(e.target.value);
-            setError('');
-            setSuccess('');
-          }}
-          placeholder="New password (min 8 characters)"
-          className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm placeholder-zinc-500 focus:outline-none focus:border-emerald-400"
-        />
-        <input
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => {
-            setConfirmPassword(e.target.value);
-            setError('');
-            setSuccess('');
-          }}
-          placeholder="Confirm new password"
-          className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm placeholder-zinc-500 focus:outline-none focus:border-emerald-400"
-        />
+        {/* Change password form */}
+        <form onSubmit={handleChangePassword} className="space-y-3 pt-2">
+          <p className="text-xs text-zinc-500 font-medium">Change Password</p>
+          <Input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => {
+              setCurrentPassword(e.target.value);
+              setError('');
+            }}
+            placeholder="Current password"
+            className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-500 focus-visible:border-emerald-400 focus-visible:ring-emerald-400/20"
+          />
+          <Input
+            type="password"
+            value={newPassword}
+            onChange={(e) => {
+              setNewPassword(e.target.value);
+              setError('');
+            }}
+            placeholder="New password (min 8 characters)"
+            className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-500 focus-visible:border-emerald-400 focus-visible:ring-emerald-400/20"
+          />
+          <Input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              setError('');
+            }}
+            placeholder="Confirm new password"
+            className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-500 focus-visible:border-emerald-400 focus-visible:ring-emerald-400/20"
+          />
 
-        {error && <p className="text-xs text-red-400">{error}</p>}
-        {success && <p className="text-xs text-emerald-400">{success}</p>}
+          {error && <p className="text-xs text-red-400">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          {submitting ? 'Changing...' : 'Change Password'}
-        </button>
-      </form>
-    </div>
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white"
+          >
+            {submitting ? 'Changing...' : 'Change Password'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -208,66 +220,76 @@ function ActiveSessionsSection() {
   const otherSessions = sessions.filter((s) => !s.isCurrent);
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-zinc-100">Active Sessions</h2>
-        {otherSessions.length > 0 && (
-          <button
-            onClick={handleRevokeAll}
-            disabled={revoking === 'all'}
-            className="px-3 py-1.5 text-xs text-red-400 border border-red-400/30 hover:bg-red-400/10 rounded-md transition-colors disabled:opacity-50"
-          >
-            {revoking === 'all' ? 'Revoking...' : 'Revoke all other sessions'}
-          </button>
-        )}
-      </div>
-
-      {loading ? (
-        <div className="animate-pulse h-24 bg-zinc-800 rounded-lg" />
-      ) : sessions.length === 0 ? (
-        <p className="text-sm text-zinc-500">No active sessions.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-zinc-500 border-b border-zinc-800">
-                <th className="pb-2 font-medium">Token</th>
-                <th className="pb-2 font-medium">Email</th>
-                <th className="pb-2 font-medium">Expires</th>
-                <th className="pb-2 font-medium" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800">
+    <Card className="bg-zinc-900 border-zinc-800 gap-0 py-0">
+      <CardHeader className="p-6 pb-0">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm text-zinc-100">Active Sessions</CardTitle>
+          {otherSessions.length > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleRevokeAll}
+              disabled={revoking === 'all'}
+              className="bg-transparent border border-red-400/30 text-red-400 hover:bg-red-400/10 hover:text-red-400"
+            >
+              {revoking === 'all' ? 'Revoking...' : 'Revoke all other sessions'}
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="p-6 space-y-4">
+        {loading ? (
+          <Skeleton className="h-24 bg-zinc-800" />
+        ) : sessions.length === 0 ? (
+          <p className="text-sm text-zinc-500">No active sessions.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="border-zinc-800 hover:bg-transparent">
+                <TableHead className="text-xs text-zinc-500 font-medium">Token</TableHead>
+                <TableHead className="text-xs text-zinc-500 font-medium">Email</TableHead>
+                <TableHead className="text-xs text-zinc-500 font-medium">Expires</TableHead>
+                <TableHead className="text-xs text-zinc-500 font-medium" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {sessions.map((s) => (
-                <tr key={s.tokenPrefix} className="text-zinc-300">
-                  <td className="py-2.5 font-mono text-xs">
+                <TableRow
+                  key={s.tokenPrefix}
+                  className="border-zinc-800 text-zinc-300 hover:bg-transparent"
+                >
+                  <TableCell className="py-2.5 font-mono text-xs">
                     {s.tokenPrefix}
                     {s.isCurrent && (
-                      <span className="ml-2 px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-400/10 text-emerald-400 rounded">
+                      <Badge className="ml-2 bg-emerald-400/10 text-emerald-400 border-emerald-400/20 text-[10px] font-semibold">
                         current
-                      </span>
+                      </Badge>
                     )}
-                  </td>
-                  <td className="py-2.5">{s.email}</td>
-                  <td className="py-2.5 text-zinc-500 text-xs">{formatExpiry(s.expiresAt)}</td>
-                  <td className="py-2.5 text-right">
+                  </TableCell>
+                  <TableCell className="py-2.5">{s.email}</TableCell>
+                  <TableCell className="py-2.5 text-zinc-500 text-xs">
+                    {formatExpiry(s.expiresAt)}
+                  </TableCell>
+                  <TableCell className="py-2.5 text-right">
                     {!s.isCurrent && (
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleRevoke(s.tokenPrefix)}
                         disabled={revoking === s.tokenPrefix}
-                        className="px-2 py-1 text-xs text-red-400 hover:bg-red-400/10 rounded transition-colors disabled:opacity-50"
+                        className="text-red-400 hover:bg-red-400/10 hover:text-red-400"
                       >
                         {revoking === s.tokenPrefix ? 'Revoking...' : 'Revoke'}
-                      </button>
+                      </Button>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -279,36 +301,39 @@ function SystemInfoSection() {
   const info = usePolling(getSystemInfo, 10000);
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
-      <h2 className="text-sm font-semibold text-zinc-100">System Info</h2>
-
-      {info.loading && !info.data ? (
-        <div className="animate-pulse h-32 bg-zinc-800 rounded-lg" />
-      ) : info.data ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <InfoItem label="Version" value={info.data.version} />
-          <InfoItem
-            label="Commit"
-            value={info.data.commit === 'unknown' ? 'dev' : info.data.commit.slice(0, 8)}
-          />
-          <InfoItem
-            label="Build Date"
-            value={info.data.buildDate === 'unknown' ? 'dev' : info.data.buildDate}
-          />
-          <InfoItem label="Uptime" value={formatUptime(info.data.uptime)} />
-          <InfoItem label="Workers" value={String(info.data.workers)} />
-          <InfoItem label="Daemons" value={String(info.data.daemons)} />
-          <InfoItem label="Auth Sessions" value={String(info.data.authSessions)} />
-          <InfoItem label="Active VM Sessions" value={String(info.data.activeSessions)} />
-          <InfoItem
-            label="DB Size"
-            value={info.data.dbSizeBytes != null ? formatBytes(info.data.dbSizeBytes) : 'N/A'}
-          />
-        </div>
-      ) : info.error ? (
-        <p className="text-sm text-zinc-500">Failed to load system info.</p>
-      ) : null}
-    </div>
+    <Card className="bg-zinc-900 border-zinc-800 gap-0 py-0">
+      <CardHeader className="p-6 pb-0">
+        <CardTitle className="text-sm text-zinc-100">System Info</CardTitle>
+      </CardHeader>
+      <CardContent className="p-6 space-y-4">
+        {info.loading && !info.data ? (
+          <Skeleton className="h-32 bg-zinc-800" />
+        ) : info.data ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <InfoItem label="Version" value={info.data.version} />
+            <InfoItem
+              label="Commit"
+              value={info.data.commit === 'unknown' ? 'dev' : info.data.commit.slice(0, 8)}
+            />
+            <InfoItem
+              label="Build Date"
+              value={info.data.buildDate === 'unknown' ? 'dev' : info.data.buildDate}
+            />
+            <InfoItem label="Uptime" value={formatUptime(info.data.uptime)} />
+            <InfoItem label="Workers" value={String(info.data.workers)} />
+            <InfoItem label="Daemons" value={String(info.data.daemons)} />
+            <InfoItem label="Auth Sessions" value={String(info.data.authSessions)} />
+            <InfoItem label="Active VM Sessions" value={String(info.data.activeSessions)} />
+            <InfoItem
+              label="DB Size"
+              value={info.data.dbSizeBytes != null ? formatBytes(info.data.dbSizeBytes) : 'N/A'}
+            />
+          </div>
+        ) : info.error ? (
+          <p className="text-sm text-zinc-500">Failed to load system info.</p>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 

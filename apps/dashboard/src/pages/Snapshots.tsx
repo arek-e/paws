@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { getSnapshotConfigs, createSnapshotConfig, buildSnapshot } from '../api/client.js';
 import { usePolling } from '../hooks/usePolling.js';
@@ -49,11 +50,13 @@ export function Snapshots() {
         setup: setupScript,
         requiredDomains,
       });
+      toast.success('Snapshot config created');
       setShowCreate(false);
       setNewId('');
       setSetupScript('');
       setSelectedTemplate('');
     } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create snapshot config');
       console.error('Failed to create snapshot config:', err);
     } finally {
       setCreating(false);
@@ -66,8 +69,10 @@ export function Snapshots() {
     try {
       await buildSnapshot(id);
       setBuildStatus('ready');
+      toast.success('Build started');
     } catch {
       setBuildStatus('failed');
+      toast.error('Build failed');
     }
   }
 

@@ -1,3 +1,6 @@
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
 type Status =
   | 'active'
   | 'paused'
@@ -27,10 +30,8 @@ const styles: Record<string, string> = {
 export function StatusBadge({ status }: { status: Status }) {
   const cls = styles[status] ?? 'bg-zinc-400/10 text-zinc-400 border-zinc-400/20';
   return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${cls}`}
-    >
+    <Badge variant="outline" className={cn(cls)}>
       {status}
-    </span>
+    </Badge>
   );
 }

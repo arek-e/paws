@@ -3,6 +3,14 @@ import { useNavigate } from '@tanstack/react-router';
 
 import { getTemplates, deployTemplate, type DaemonTemplate } from '../api/client.js';
 import { usePolling } from '../hooks/usePolling.js';
+import { Alert, AlertDescription } from '../components/ui/alert.js';
+import { Badge } from '../components/ui/badge.js';
+import { Button } from '../components/ui/button.js';
+import { Card, CardContent } from '../components/ui/card.js';
+import { Input } from '../components/ui/input.js';
+import { Label } from '../components/ui/label.js';
+import { Skeleton } from '../components/ui/skeleton.js';
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs.js';
 
 type Category = 'all' | 'code-review' | 'devops' | 'security' | 'general';
 
@@ -24,11 +32,7 @@ const categoryColors: Record<string, string> = {
 function CategoryBadge({ category }: { category: string }) {
   const cls = categoryColors[category] ?? 'bg-zinc-400/10 text-zinc-400 border-zinc-400/20';
   return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${cls}`}
-    >
-      {categoryLabels[category as Category] ?? category}
-    </span>
+    <Badge className={`border ${cls}`}>{categoryLabels[category as Category] ?? category}</Badge>
   );
 }
 
@@ -60,26 +64,26 @@ function DeployForm({ template, onClose }: { template: DaemonTemplate; onClose: 
   return (
     <div className="mt-3 border-t border-zinc-800 pt-3 space-y-3">
       <div>
-        <label className="block text-xs text-zinc-500 mb-1">Role name</label>
-        <input
+        <Label className="text-xs text-zinc-500 mb-1">Role name</Label>
+        <Input
           type="text"
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"
+          className="bg-zinc-800 border-zinc-700 text-zinc-100 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20"
         />
       </div>
       <div>
-        <label className="block text-xs text-zinc-500 mb-1">Snapshot</label>
-        <input
+        <Label className="text-xs text-zinc-500 mb-1">Snapshot</Label>
+        <Input
           type="text"
           value={snapshot}
           onChange={(e) => setSnapshot(e.target.value)}
-          className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"
+          className="bg-zinc-800 border-zinc-700 text-zinc-100 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20"
         />
       </div>
       {trigger && (
         <div>
-          <label className="block text-xs text-zinc-500 mb-1">Trigger</label>
+          <Label className="text-xs text-zinc-500 mb-1">Trigger</Label>
           <div className="bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-zinc-400">
             {trigger.type === 'schedule' && `Cron: ${trigger.cron}`}
             {trigger.type === 'webhook' && `Webhook: ${trigger.events?.join(', ')}`}
@@ -88,24 +92,21 @@ function DeployForm({ template, onClose }: { template: DaemonTemplate; onClose: 
         </div>
       )}
       {error && (
-        <div className="bg-red-400/10 border border-red-400/20 rounded px-3 py-2 text-red-400 text-xs">
-          {error}
-        </div>
+        <Alert variant="destructive" className="bg-red-400/10 border-red-400/20 px-3 py-2">
+          <AlertDescription className="text-red-400 text-xs">{error}</AlertDescription>
+        </Alert>
       )}
       <div className="flex items-center gap-2">
-        <button
+        <Button
           onClick={handleDeploy}
           disabled={deploying || !role.trim()}
-          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white text-sm rounded transition-colors"
+          className="bg-emerald-600 hover:bg-emerald-500 text-white"
         >
           {deploying ? 'Deploying...' : 'Deploy'}
-        </button>
-        <button
-          onClick={onClose}
-          className="px-4 py-1.5 text-zinc-400 hover:text-zinc-200 text-sm transition-colors"
-        >
+        </Button>
+        <Button variant="ghost" onClick={onClose} className="text-zinc-400 hover:text-zinc-200">
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -121,21 +122,23 @@ function TemplateCard({
   onToggle: () => void;
 }) {
   return (
-    <div
-      className={`bg-zinc-900 border rounded-lg p-4 transition-colors ${expanded ? 'border-emerald-500/40' : 'border-zinc-800 hover:border-zinc-700'}`}
+    <Card
+      className={`bg-zinc-900 gap-0 py-0 transition-colors ${expanded ? 'border-emerald-500/40' : 'border-zinc-800 hover:border-zinc-700'}`}
     >
-      <button onClick={onToggle} className="w-full text-left">
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">{template.icon}</span>
-            <h3 className="text-sm font-semibold text-zinc-100">{template.name}</h3>
+      <CardContent className="p-4">
+        <button onClick={onToggle} className="w-full text-left">
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">{template.icon}</span>
+              <h3 className="text-sm font-semibold text-zinc-100">{template.name}</h3>
+            </div>
+            <CategoryBadge category={template.category} />
           </div>
-          <CategoryBadge category={template.category} />
-        </div>
-        <p className="text-xs text-zinc-400 leading-relaxed">{template.description}</p>
-      </button>
-      {expanded && <DeployForm template={template} onClose={onToggle} />}
-    </div>
+          <p className="text-xs text-zinc-400 leading-relaxed">{template.description}</p>
+        </button>
+        {expanded && <DeployForm template={template} onClose={onToggle} />}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -155,38 +158,38 @@ export function Templates() {
       </div>
 
       {/* Category filter tabs */}
-      <div className="flex gap-1 border-b border-zinc-800 pb-2">
-        {(Object.keys(categoryLabels) as Category[]).map((cat) => (
-          <button
-            key={cat}
-            onClick={() => {
-              setActiveCategory(cat);
-              setExpandedId(null);
-            }}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              activeCategory === cat
-                ? 'bg-zinc-800 text-emerald-400'
-                : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
-            }`}
-          >
-            {categoryLabels[cat]}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        value={activeCategory}
+        onValueChange={(val) => {
+          setActiveCategory(val as Category);
+          setExpandedId(null);
+        }}
+      >
+        <TabsList variant="line" className="border-b border-zinc-800 pb-2 w-full justify-start">
+          {(Object.keys(categoryLabels) as Category[]).map((cat) => (
+            <TabsTrigger
+              key={cat}
+              value={cat}
+              className="text-xs data-[state=active]:text-emerald-400"
+            >
+              {categoryLabels[cat]}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {templates.loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Array.from({ length: 4 }, (_, i) => (
-            <div
-              key={i}
-              className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 h-32 animate-pulse"
-            />
+            <Skeleton key={i} className="h-32 bg-zinc-800 rounded-lg" />
           ))}
         </div>
       ) : templates.error ? (
-        <div className="bg-red-400/10 border border-red-400/20 rounded-lg p-4 text-red-400 text-sm">
-          Failed to load templates: {templates.error.message}
-        </div>
+        <Alert variant="destructive" className="bg-red-400/10 border-red-400/20">
+          <AlertDescription className="text-red-400 text-sm">
+            Failed to load templates: {templates.error.message}
+          </AlertDescription>
+        </Alert>
       ) : templates.data && templates.data.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {templates.data.map((t) => (
@@ -199,9 +202,11 @@ export function Templates() {
           ))}
         </div>
       ) : (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center">
-          <p className="text-zinc-500 text-sm">No templates found for this category.</p>
-        </div>
+        <Card className="bg-zinc-900 border-zinc-800 py-0">
+          <CardContent className="p-8 text-center">
+            <p className="text-zinc-500 text-sm">No templates found for this category.</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import {
   addServer,
@@ -8,18 +9,26 @@ import {
   type ServerInfo,
   type ValidationCheck,
 } from '../api/client.js';
+import { Copyable } from '../components/CopyButton.js';
+import { RelativeTime } from '../components/RelativeTime.js';
 import { StatusBadge } from '../components/StatusBadge.js';
+import { Alert, AlertDescription } from '../components/ui/alert.js';
+import { Badge } from '../components/ui/badge.js';
+import { Button } from '../components/ui/button.js';
+import { Card, CardContent } from '../components/ui/card.js';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog.js';
+import { Input } from '../components/ui/input.js';
+import { Label } from '../components/ui/label.js';
+import { Skeleton } from '../components/ui/skeleton.js';
 import { usePolling } from '../hooks/usePolling.js';
-
-function formatTimeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
 
 function CheckIcon({ status }: { status: ValidationCheck['status'] }) {
   if (status === 'pass') {
@@ -89,24 +98,31 @@ function ServerCard({
   const [checks, setChecks] = useState<ValidationCheck[] | null>(null);
   const [validating, setValidating] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   async function handleValidate() {
     setValidating(true);
     try {
       const result = await validateServer(server.id);
       setChecks(result.checks);
+      const allPassed = result.checks.every((c: ValidationCheck) => c.status === 'pass');
+      if (allPassed) {
+        toast.success(`Server "${server.name}" validation passed`);
+      } else {
+        toast.error(`Server "${server.name}" has validation failures`);
+      }
     } catch {
       setChecks([
         { label: 'Validation failed', status: 'fail', message: 'Could not reach server' },
       ]);
+      toast.error(`Could not reach server "${server.name}"`);
     } finally {
       setValidating(false);
     }
     onValidate();
   }
 
-  async function handleRemove() {
-    if (!confirm(`Remove server "${server.name}" (${server.ip})?`)) return;
+  async function doRemove() {
     setRemoving(true);
     try {
       await deleteServer(server.id);
@@ -114,6 +130,10 @@ function ServerCard({
     } catch {
       setRemoving(false);
     }
+  }
+
+  function handleRemove() {
+    setConfirmOpen(true);
   }
 
   const statusMap: Record<string, string> = {
@@ -126,65 +146,99 @@ function ServerCard({
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-3">
-          <h3 className="text-sm font-semibold text-zinc-100">{server.name}</h3>
-          <StatusBadge
-            status={
-              (statusMap[server.status] ?? server.status) as
-                | 'healthy'
-                | 'failed'
-                | 'pending'
-                | 'running'
-            }
-          />
+    <Card className="bg-zinc-900 border-zinc-800 gap-0 py-0">
+      <CardContent className="p-4 space-y-0">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm font-semibold text-zinc-100">{server.name}</h3>
+            <StatusBadge
+              status={
+                (statusMap[server.status] ?? server.status) as
+                  | 'healthy'
+                  | 'failed'
+                  | 'pending'
+                  | 'running'
+              }
+            />
+          </div>
+          <Badge variant="outline" className="bg-zinc-800 text-zinc-400 border-zinc-700">
+            {server.provider}
+          </Badge>
         </div>
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs border bg-zinc-800 text-zinc-400 border-zinc-700">
-          {server.provider}
-        </span>
-      </div>
 
-      <div className="flex gap-6 text-xs mb-3">
-        <div>
-          <span className="text-zinc-500">IP</span>
-          <p className="text-zinc-300 font-mono">{server.ip || '-'}</p>
+        <div className="flex gap-6 text-xs mb-3">
+          <div>
+            <span className="text-zinc-500">IP</span>
+            {server.ip ? (
+              <Copyable value={server.ip}>
+                <span className="text-zinc-300 font-mono">{server.ip}</span>
+              </Copyable>
+            ) : (
+              <p className="text-zinc-300 font-mono">-</p>
+            )}
+          </div>
+          <div>
+            <span className="text-zinc-500">Added</span>
+            <RelativeTime timestamp={server.createdAt} className="text-zinc-300" />
+          </div>
+          <div>
+            <span className="text-zinc-500">Status</span>
+            <p className="text-zinc-300">{server.status}</p>
+          </div>
         </div>
-        <div>
-          <span className="text-zinc-500">Added</span>
-          <p className="text-zinc-300">{formatTimeAgo(server.createdAt)}</p>
-        </div>
-        <div>
-          <span className="text-zinc-500">Status</span>
-          <p className="text-zinc-300">{server.status}</p>
-        </div>
-      </div>
 
-      {server.error && (
-        <div className="bg-red-400/10 border border-red-400/20 rounded p-2 text-red-400 text-xs mb-3">
-          {server.error}
+        {server.error && (
+          <Alert variant="destructive" className="bg-red-400/10 border-red-400/20 mb-3 p-2">
+            <AlertDescription className="text-red-400 text-xs">{server.error}</AlertDescription>
+          </Alert>
+        )}
+
+        {checks && <ValidationChecklist checks={checks} />}
+
+        <div className="flex gap-2 mt-3">
+          <Button
+            size="sm"
+            onClick={handleValidate}
+            disabled={validating}
+            className="bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 hover:bg-emerald-400/20"
+          >
+            {validating ? 'Validating...' : 'Validate'}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleRemove}
+            disabled={removing}
+            className="bg-red-400/10 text-red-400 border border-red-400/20 hover:bg-red-400/20 hover:text-red-400"
+          >
+            {removing ? 'Removing...' : 'Remove'}
+          </Button>
         </div>
-      )}
 
-      {checks && <ValidationChecklist checks={checks} />}
-
-      <div className="flex gap-2 mt-3">
-        <button
-          onClick={handleValidate}
-          disabled={validating}
-          className="px-3 py-1.5 text-xs font-medium rounded bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 hover:bg-emerald-400/20 transition-colors disabled:opacity-50"
-        >
-          {validating ? 'Validating...' : 'Validate'}
-        </button>
-        <button
-          onClick={handleRemove}
-          disabled={removing}
-          className="px-3 py-1.5 text-xs font-medium rounded bg-red-400/10 text-red-400 border border-red-400/20 hover:bg-red-400/20 transition-colors disabled:opacity-50"
-        >
-          {removing ? 'Removing...' : 'Remove'}
-        </button>
-      </div>
-    </div>
+        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Remove Server</DialogTitle>
+              <DialogDescription>
+                Remove server "{server.name}" ({server.ip})?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setConfirmOpen(false);
+                  doRemove();
+                }}
+              >
+                Remove
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -201,73 +255,80 @@ function AddServerForm({ onAdded }: { onAdded: () => void }) {
     setError(null);
     try {
       await addServer({ provider: 'manual', name, ip, password });
+      toast.success('Server added');
       setName('');
       setIp('');
       setPassword('');
       onAdded();
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(message);
+      setError(message);
     } finally {
       setAdding(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-      <h3 className="text-sm font-semibold text-zinc-100 mb-3">Add Server (BYO)</h3>
-      <p className="text-xs text-zinc-500 mb-4">
-        Provide SSH access to a bare metal server with /dev/kvm support.
-      </p>
+    <form onSubmit={handleSubmit}>
+      <Card className="bg-zinc-900 border-zinc-800 gap-0 py-0">
+        <CardContent className="p-4 space-y-0">
+          <h3 className="text-sm font-semibold text-zinc-100 mb-3">Add Server (BYO)</h3>
+          <p className="text-xs text-zinc-500 mb-4">
+            Provide SSH access to a bare metal server with /dev/kvm support.
+          </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-        <div>
-          <label className="block text-xs text-zinc-400 mb-1">Name</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="worker-1"
-            required
-            className="w-full px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-emerald-400/50"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-zinc-400 mb-1">IP Address</label>
-          <input
-            type="text"
-            value={ip}
-            onChange={(e) => setIp(e.target.value)}
-            placeholder="65.108.10.170"
-            required
-            className="w-full px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-emerald-400/50"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-zinc-400 mb-1">Root Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="password"
-            required
-            className="w-full px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-emerald-400/50"
-          />
-        </div>
-      </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+            <div>
+              <Label className="text-xs text-zinc-400 mb-1">Name</Label>
+              <Input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="worker-1"
+                required
+                className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-600 focus-visible:border-emerald-400/50 focus-visible:ring-emerald-400/20"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-zinc-400 mb-1">IP Address</Label>
+              <Input
+                type="text"
+                value={ip}
+                onChange={(e) => setIp(e.target.value)}
+                placeholder="65.108.10.170"
+                required
+                className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-600 focus-visible:border-emerald-400/50 focus-visible:ring-emerald-400/20"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-zinc-400 mb-1">Root Password</Label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="password"
+                required
+                className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-600 focus-visible:border-emerald-400/50 focus-visible:ring-emerald-400/20"
+              />
+            </div>
+          </div>
 
-      {error && (
-        <div className="bg-red-400/10 border border-red-400/20 rounded p-2 text-red-400 text-xs mb-3">
-          {error}
-        </div>
-      )}
+          {error && (
+            <Alert variant="destructive" className="bg-red-400/10 border-red-400/20 mb-3 p-2">
+              <AlertDescription className="text-red-400 text-xs">{error}</AlertDescription>
+            </Alert>
+          )}
 
-      <button
-        type="submit"
-        disabled={adding || !name || !ip || !password}
-        className="px-4 py-2 text-sm font-medium rounded bg-emerald-500 text-zinc-950 hover:bg-emerald-400 transition-colors disabled:opacity-50"
-      >
-        {adding ? 'Adding...' : 'Add Server'}
-      </button>
+          <Button
+            type="submit"
+            disabled={adding || !name || !ip || !password}
+            className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
+          >
+            {adding ? 'Adding...' : 'Add Server'}
+          </Button>
+        </CardContent>
+      </Card>
     </form>
   );
 }
@@ -280,12 +341,13 @@ export function Servers() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Servers</h1>
-        <button
+        <Button
+          size="sm"
           onClick={() => setShowForm(!showForm)}
-          className="px-3 py-1.5 text-xs font-medium rounded bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 hover:bg-emerald-400/20 transition-colors"
+          className="bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 hover:bg-emerald-400/20"
         >
           {showForm ? 'Cancel' : 'Add Server'}
-        </button>
+        </Button>
       </div>
 
       {showForm && (
@@ -299,16 +361,15 @@ export function Servers() {
       {servers.loading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }, (_, i) => (
-            <div
-              key={i}
-              className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 h-32 animate-pulse"
-            />
+            <Skeleton key={i} className="h-32 bg-zinc-800 rounded-lg" />
           ))}
         </div>
       ) : servers.error ? (
-        <div className="bg-red-400/10 border border-red-400/20 rounded-lg p-4 text-red-400 text-sm">
-          Failed to load servers: {servers.error.message}
-        </div>
+        <Alert variant="destructive" className="bg-red-400/10 border-red-400/20">
+          <AlertDescription className="text-red-400 text-sm">
+            Failed to load servers: {servers.error.message}
+          </AlertDescription>
+        </Alert>
       ) : servers.data && servers.data.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {servers.data.map((s) => (
@@ -316,16 +377,18 @@ export function Servers() {
           ))}
         </div>
       ) : (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center">
-          <pre className="text-zinc-600 text-xs font-mono mb-2">{`   /\\_/\\
+        <Card className="bg-zinc-900 border-zinc-800 py-0">
+          <CardContent className="p-8 text-center">
+            <pre className="text-zinc-600 text-xs font-mono mb-2">{`   /\\_/\\
   ( o.o )
    > ^ <`}</pre>
-          <p className="text-zinc-500 text-sm">No servers registered yet.</p>
-          <p className="text-zinc-600 text-xs mt-1">
-            Click <strong className="text-zinc-500">Add Server</strong> to connect a bare metal
-            worker node
-          </p>
-        </div>
+            <p className="text-zinc-500 text-sm">No servers registered yet.</p>
+            <p className="text-zinc-600 text-xs mt-1">
+              Click <strong className="text-zinc-500">Add Server</strong> to connect a bare metal
+              worker node
+            </p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

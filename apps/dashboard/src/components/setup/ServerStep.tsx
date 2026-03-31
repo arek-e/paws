@@ -1,5 +1,13 @@
 import { useState } from 'react';
 
+import { Copyable } from '@/components/CopyButton.js';
+import { Alert, AlertDescription } from '@/components/ui/alert.js';
+import { Button } from '@/components/ui/button.js';
+import { Card } from '@/components/ui/card.js';
+import { Input } from '@/components/ui/input.js';
+import { Label } from '@/components/ui/label.js';
+import { Textarea } from '@/components/ui/textarea.js';
+
 import { Terminal } from '../Terminal.js';
 
 interface TerminalLine {
@@ -134,9 +142,9 @@ const CLOUD_PROVIDERS: ProviderInfo[] = [
 
 function ProviderCard({ provider, onClick }: { provider: ProviderInfo; onClick: () => void }) {
   return (
-    <button
+    <Card
       onClick={onClick}
-      className="flex items-center gap-3 p-4 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-emerald-500/50 hover:bg-zinc-800/50 transition-all text-left group"
+      className="cursor-pointer flex-row items-center gap-3 p-4 bg-zinc-900 border-zinc-800 rounded-xl hover:border-emerald-500/50 hover:bg-zinc-800/50 transition-all text-left group"
     >
       <div className="text-zinc-400 group-hover:text-emerald-400 transition-colors shrink-0">
         <provider.icon />
@@ -145,7 +153,7 @@ function ProviderCard({ provider, onClick }: { provider: ProviderInfo; onClick: 
         <p className="text-sm font-medium text-zinc-200">{provider.label}</p>
         <p className="text-xs text-zinc-500 mt-0.5">{provider.desc}</p>
       </div>
-    </button>
+    </Card>
   );
 }
 
@@ -372,31 +380,33 @@ export function ServerStep({ onComplete }: ServerStepProps) {
     const cmd = `curl -fsSL ${location.origin}/v1/setup/worker-script | bash`;
     return (
       <div>
-        <button
+        <Button
+          variant="ghost"
+          size="xs"
           onClick={() => setProvider(null)}
-          className="text-xs text-zinc-500 hover:text-zinc-300 mb-4"
+          className="text-zinc-500 hover:text-zinc-300 mb-4"
         >
           ← Back
-        </button>
+        </Button>
         <h2 className="text-xl font-semibold text-zinc-100 mb-1">Run on your server</h2>
         <p className="text-sm text-zinc-500 mb-4">SSH into your server and run this command:</p>
-        <div
-          className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 cursor-pointer hover:border-zinc-700 transition-colors"
-          onClick={() => navigator.clipboard.writeText(cmd)}
-        >
-          <code className="text-sm text-emerald-400 font-mono break-all">{cmd}</code>
+        <Card className="bg-zinc-900 border-zinc-800 p-4 gap-0 hover:border-zinc-700 transition-colors">
+          <Copyable value={cmd}>
+            <code className="text-sm text-emerald-400 font-mono break-all">{cmd}</code>
+          </Copyable>
           <p className="text-xs text-zinc-600 mt-2">Click to copy</p>
-        </div>
+        </Card>
         <p className="text-xs text-zinc-600 mt-3">
           The server needs: Linux, root access, /dev/kvm. The script installs Firecracker and
           connects the worker to this control plane.
         </p>
-        <button
+        <Button
+          variant="secondary"
           onClick={() => onComplete('manual')}
-          className="mt-6 w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm rounded-lg transition-colors"
+          className="mt-6 w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
         >
           I've run it, continue →
-        </button>
+        </Button>
       </div>
     );
   }
@@ -405,35 +415,37 @@ export function ServerStep({ onComplete }: ServerStepProps) {
   if (provider === 'hetzner' && status === 'idle') {
     return (
       <div>
-        <button
+        <Button
+          variant="ghost"
+          size="xs"
           onClick={() => setProvider(null)}
-          className="text-xs text-zinc-500 hover:text-zinc-300 mb-4"
+          className="text-zinc-500 hover:text-zinc-300 mb-4"
         >
           ← Back
-        </button>
+        </Button>
         <h2 className="text-xl font-semibold text-zinc-100 mb-1">Hetzner Dedicated</h2>
         <p className="text-sm text-zinc-500 mb-4">
           Provision a Hetzner dedicated server via the Robot API.
         </p>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs text-zinc-400 mb-1">Robot API User</label>
-            <input
+            <Label className="text-xs text-zinc-400 mb-1">Robot API User</Label>
+            <Input
               type="text"
               value={hetznerUser}
               onChange={(e) => setHetznerUser(e.target.value)}
               placeholder="#ws+xxxxx"
-              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+              className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600"
             />
           </div>
           <div>
-            <label className="block text-xs text-zinc-400 mb-1">Robot API Password</label>
-            <input
+            <Label className="text-xs text-zinc-400 mb-1">Robot API Password</Label>
+            <Input
               type="password"
               value={hetznerPass}
               onChange={(e) => setHetznerPass(e.target.value)}
               placeholder="Your Robot API password"
-              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+              className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600"
             />
           </div>
           <p className="text-xs text-zinc-600">
@@ -449,13 +461,13 @@ export function ServerStep({ onComplete }: ServerStepProps) {
             . We'll provision an AX-series server (~€40/mo).
           </p>
         </div>
-        <button
+        <Button
           onClick={startProvisioning}
           disabled={!hetznerUser || !hetznerPass}
-          className="mt-5 w-full py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-500 disabled:opacity-40 transition-colors"
+          className="mt-5 w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white"
         >
           Provision Server
-        </button>
+        </Button>
       </div>
     );
   }
@@ -464,12 +476,14 @@ export function ServerStep({ onComplete }: ServerStepProps) {
   if (status === 'idle') {
     return (
       <div>
-        <button
+        <Button
+          variant="ghost"
+          size="xs"
           onClick={() => setProvider(null)}
-          className="text-xs text-zinc-500 hover:text-zinc-300 mb-4"
+          className="text-zinc-500 hover:text-zinc-300 mb-4"
         >
           ← Back
-        </button>
+        </Button>
 
         {provider === 'ssh' ? (
           <>
@@ -479,46 +493,46 @@ export function ServerStep({ onComplete }: ServerStepProps) {
             </p>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-zinc-400 mb-1">Server name</label>
-                <input
+                <Label className="text-xs text-zinc-400 mb-1">Server name</Label>
+                <Input
                   type="text"
                   value={serverName}
                   onChange={(e) => setServerName(cleanName(e.target.value))}
                   placeholder="worker-01"
-                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+                  className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-zinc-400 mb-1">IP address / hostname</label>
-                  <input
+                  <Label className="text-xs text-zinc-400 mb-1">IP address / hostname</Label>
+                  <Input
                     type="text"
                     value={ip}
                     onChange={(e) => setIp(cleanIp(e.target.value))}
                     placeholder="65.108.x.x"
-                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+                    className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1">User</label>
-                    <input
+                    <Label className="text-xs text-zinc-400 mb-1">User</Label>
+                    <Input
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(cleanUsername(e.target.value))}
                       placeholder="root"
-                      className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+                      className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1">Port</label>
-                    <input
+                    <Label className="text-xs text-zinc-400 mb-1">Port</Label>
+                    <Input
                       type="text"
                       inputMode="numeric"
                       value={sshPort}
                       onChange={(e) => setSshPort(cleanPort(e.target.value))}
                       placeholder="22"
-                      className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+                      className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600"
                     />
                   </div>
                 </div>
@@ -526,7 +540,7 @@ export function ServerStep({ onComplete }: ServerStepProps) {
 
               {/* Auth method tabs */}
               <div>
-                <label className="block text-xs text-zinc-400 mb-2">Authentication</label>
+                <Label className="text-xs text-zinc-400 mb-2">Authentication</Label>
                 <div className="flex gap-1 p-0.5 bg-zinc-900 border border-zinc-800 rounded-lg mb-3">
                   <button
                     onClick={() => setAuthMethod('password')}
@@ -552,12 +566,12 @@ export function ServerStep({ onComplete }: ServerStepProps) {
 
                 {authMethod === 'password' ? (
                   <div>
-                    <input
+                    <Input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="SSH password"
-                      className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+                      className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600"
                     />
                     <p className="text-xs text-zinc-600 mt-1">
                       Used to connect and run the bootstrap script. Not stored after setup.
@@ -583,26 +597,26 @@ export function ServerStep({ onComplete }: ServerStepProps) {
                           />
                         </label>
                       </div>
-                      <textarea
+                      <Textarea
                         value={privateKey}
                         onChange={(e) => setPrivateKey(e.target.value)}
                         placeholder={
                           '-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----'
                         }
                         rows={4}
-                        className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 font-mono resize-none"
+                        className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 font-mono resize-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-zinc-400 mb-1">
+                      <Label className="text-xs text-zinc-400 mb-1">
                         Passphrase <span className="text-zinc-600">(optional)</span>
-                      </label>
-                      <input
+                      </Label>
+                      <Input
                         type="password"
                         value={passphrase}
                         onChange={(e) => setPassphrase(e.target.value)}
                         placeholder="Key passphrase"
-                        className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+                        className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600"
                       />
                     </div>
                     <p className="text-xs text-zinc-600">
@@ -615,40 +629,43 @@ export function ServerStep({ onComplete }: ServerStepProps) {
             </div>
             {/* Test result */}
             {testResult && (
-              <div
-                className={`mt-3 p-3 rounded-lg border ${testResult.success ? 'bg-emerald-900/20 border-emerald-800' : 'bg-red-900/20 border-red-800'}`}
+              <Alert
+                className={`mt-3 ${testResult.success ? 'bg-emerald-900/20 border-emerald-800' : 'bg-red-900/20 border-red-800'}`}
               >
-                {testResult.checks.map((ch, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm">
-                    <span className={ch.status === 'pass' ? 'text-emerald-400' : 'text-red-400'}>
-                      {ch.status === 'pass' ? '✓' : '✗'}
-                    </span>
-                    <span className={ch.status === 'pass' ? 'text-emerald-300' : 'text-red-300'}>
-                      {ch.message}
-                    </span>
-                    {ch.ms !== undefined && (
-                      <span className="text-zinc-600 text-xs">{ch.ms}ms</span>
-                    )}
-                  </div>
-                ))}
-              </div>
+                <AlertDescription>
+                  {testResult.checks.map((ch, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      <span className={ch.status === 'pass' ? 'text-emerald-400' : 'text-red-400'}>
+                        {ch.status === 'pass' ? '✓' : '✗'}
+                      </span>
+                      <span className={ch.status === 'pass' ? 'text-emerald-300' : 'text-red-300'}>
+                        {ch.message}
+                      </span>
+                      {ch.ms !== undefined && (
+                        <span className="text-zinc-600 text-xs">{ch.ms}ms</span>
+                      )}
+                    </div>
+                  ))}
+                </AlertDescription>
+              </Alert>
             )}
 
             <div className="mt-5 flex gap-2">
-              <button
+              <Button
+                variant="secondary"
                 onClick={testConnection}
                 disabled={!ip || (authMethod === 'password' ? !password : !privateKey) || testing}
-                className="flex-1 py-2.5 bg-zinc-800 text-zinc-300 text-sm font-medium rounded-lg hover:bg-zinc-700 disabled:opacity-40 transition-colors"
+                className="flex-1 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
               >
                 {testing ? 'Testing...' : 'Test Connection'}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={startProvisioning}
                 disabled={!ip || (authMethod === 'password' ? !password : !privateKey)}
-                className="flex-1 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-500 disabled:opacity-40 transition-colors"
+                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white"
               >
                 Connect & Bootstrap
-              </button>
+              </Button>
             </div>
           </>
         ) : (
@@ -659,27 +676,27 @@ export function ServerStep({ onComplete }: ServerStepProps) {
             </p>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-zinc-400 mb-1">Access Key ID</label>
-                <input
+                <Label className="text-xs text-zinc-400 mb-1">Access Key ID</Label>
+                <Input
                   type="text"
                   value={awsAccessKey}
                   onChange={(e) => setAwsAccessKey(e.target.value)}
                   placeholder="AKIA..."
-                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+                  className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600"
                 />
               </div>
               <div>
-                <label className="block text-xs text-zinc-400 mb-1">Secret Access Key</label>
-                <input
+                <Label className="text-xs text-zinc-400 mb-1">Secret Access Key</Label>
+                <Input
                   type="password"
                   value={awsSecretKey}
                   onChange={(e) => setAwsSecretKey(e.target.value)}
                   placeholder="Your secret key"
-                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600"
+                  className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600"
                 />
               </div>
               <div>
-                <label className="block text-xs text-zinc-400 mb-1">Region</label>
+                <Label className="text-xs text-zinc-400 mb-1">Region</Label>
                 <select
                   value={awsRegion}
                   onChange={(e) => setAwsRegion(e.target.value)}
@@ -696,13 +713,13 @@ export function ServerStep({ onComplete }: ServerStepProps) {
                 c7i.xlarge with nested virtualization (~$0.17/hr).
               </p>
             </div>
-            <button
+            <Button
               onClick={startProvisioning}
               disabled={!awsAccessKey || !awsSecretKey}
-              className="mt-5 w-full py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-500 disabled:opacity-40 transition-colors"
+              className="mt-5 w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white"
             >
               Launch & Bootstrap
-            </button>
+            </Button>
           </>
         )}
       </div>
@@ -744,20 +761,22 @@ export function ServerStep({ onComplete }: ServerStepProps) {
       </div>
 
       {error && (
-        <div className="mt-4 p-3 bg-red-900/20 border border-red-800 rounded-lg">
-          <p className="text-sm text-red-400">{error}</p>
-          <button
-            onClick={() => {
-              setStatus('idle');
-              setError(null);
-              setLines([]);
-              setChecks((prev) => prev.map((c) => ({ ...c, status: 'pending' as const })));
-            }}
-            className="mt-2 text-xs text-red-400 hover:text-red-300 underline"
-          >
-            Try Again
-          </button>
-        </div>
+        <Alert variant="destructive" className="mt-4 bg-red-900/20 border-red-800">
+          <AlertDescription>
+            <p className="text-sm text-red-400">{error}</p>
+            <button
+              onClick={() => {
+                setStatus('idle');
+                setError(null);
+                setLines([]);
+                setChecks((prev) => prev.map((c) => ({ ...c, status: 'pending' as const })));
+              }}
+              className="mt-2 text-xs text-red-400 hover:text-red-300 underline"
+            >
+              Try Again
+            </button>
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   );
