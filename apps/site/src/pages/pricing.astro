@@ -1,0 +1,280 @@
+---
+import '@/styles/global.css';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import PricingSection from '@/components/PricingSection';
+import ContactForm from '@/components/ContactForm';
+
+const title = 'Pricing — paws';
+const description = 'Simple, transparent pricing. Free self-hosted, managed cloud options for teams.';
+---
+
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://getpaws.dev/pricing" />
+    <meta property="og:image" content="https://getpaws.dev/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://getpaws.dev/og.png" />
+    <style>
+      @keyframes cat-float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-6px); }
+      }
+    </style>
+  </head>
+
+  <body class="font-sans bg-zinc-950 text-zinc-300 leading-relaxed overflow-x-hidden antialiased scroll-smooth">
+    <!-- Nav -->
+    <nav class="fixed top-0 left-0 right-0 z-[100] bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800">
+      <div class="max-w-[1120px] mx-auto px-6 flex items-center justify-between h-16">
+        <a href="/" class="flex items-center gap-2 font-semibold text-zinc-50 text-lg no-underline">
+          <img src="/favicon.svg" alt="" width="28" height="28" />
+          paws
+        </a>
+        <ul class="flex items-center gap-4 md:gap-8 list-none">
+          <li><a href="/#how-it-works" class="hidden sm:inline text-zinc-400 text-sm transition-colors hover:text-zinc-50 no-underline">How it works</a></li>
+          <li><a href="/#features" class="hidden sm:inline text-zinc-400 text-sm transition-colors hover:text-zinc-50 no-underline">Features</a></li>
+          <li><a href="/pricing" class="text-zinc-50 text-sm font-medium no-underline">Pricing</a></li>
+          <li><a href="/getting-started/install/" class="text-zinc-400 text-sm transition-colors hover:text-zinc-50 no-underline">Docs</a></li>
+          <li>
+            <a href="https://github.com/arek-e/paws" class="flex items-center gap-1.5 text-zinc-400 text-sm transition-colors hover:text-zinc-50 no-underline" target="_blank" rel="noopener">
+              <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+              <span>GitHub</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="pt-40 pb-16 text-center relative">
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[radial-gradient(ellipse,rgba(52,211,153,0.06)_0%,transparent_70%)] pointer-events-none"></div>
+      <div class="max-w-[1120px] mx-auto px-6 relative">
+        <pre class="text-emerald-400 font-mono text-base leading-[1.4] mb-8 opacity-70" style="animation: cat-float 3s ease-in-out infinite;">{`  /\\_/\\
+ ( o.o )  ~  fair pricing
+  > ^ <`}</pre>
+        <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-zinc-50 tracking-tight leading-[1.15] max-w-[720px] mx-auto mb-6">
+          Simple, transparent <span class="text-emerald-400">pricing</span>
+        </h1>
+        <p class="text-lg text-zinc-400 max-w-[560px] mx-auto mb-4 leading-relaxed">
+          100% free to self-host with all features. Pay only when you want us to manage it for you.
+        </p>
+      </div>
+    </section>
+
+    <!-- Pricing Cards -->
+    <section class="pb-24">
+      <div class="max-w-[1120px] mx-auto px-6">
+        <PricingSection client:load />
+      </div>
+    </section>
+
+    <!-- All Plans Include -->
+    <Separator className="bg-zinc-800" />
+    <section class="py-24">
+      <div class="max-w-[1120px] mx-auto px-6">
+        <p class="text-xs font-semibold tracking-widest uppercase text-emerald-400 mb-4">Every plan</p>
+        <h2 class="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-zinc-50 tracking-tight mb-4">All plans include</h2>
+        <p class="text-zinc-400 text-[1.0625rem] max-w-[560px] mb-12">
+          No feature gates between tiers. Self-hosted gets everything. Managed tiers add operational convenience.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center mb-4 text-emerald-400">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">Zero-trust credential injection</h3>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">API keys never enter the sandbox. Injected at the network layer by a per-VM TLS proxy.</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center mb-4 text-emerald-400">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">Per-VM TLS proxy</h3>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Every VM gets its own proxy with an ephemeral CA. One proxy per VM, never shared.</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center mb-4 text-emerald-400">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+              </div>
+              <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">Governance built-in</h3>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Rate limits, approval gates, and audit logging are core features, not paid add-ons.</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center mb-4 text-emerald-400">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+              </div>
+              <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">SSO / OIDC</h3>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Enterprise SSO via OIDC with Dex. Okta, Azure AD, LDAP support included on every tier.</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center mb-4 text-emerald-400">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </div>
+              <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">Dashboard</h3>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Full dashboard with fleet status, daemon activity, session history, and topology view.</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-zinc-900 border-zinc-800 rounded-xl transition-colors hover:border-zinc-700 ring-0 py-0">
+            <CardContent className="p-6">
+              <div class="w-9 h-9 rounded-lg bg-emerald-900 flex items-center justify-center mb-4 text-emerald-400">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+              </div>
+              <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">CLI + SDKs</h3>
+              <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">TypeScript and Python SDKs, plus a full CLI. 100% open source, Apache 2.0 licensed.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comparison Table -->
+    <Separator className="bg-zinc-800" />
+    <section class="py-24">
+      <div class="max-w-[1120px] mx-auto px-6">
+        <p class="text-xs font-semibold tracking-widest uppercase text-emerald-400 mb-4">How we compare</p>
+        <h2 class="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-zinc-50 tracking-tight mb-4">paws vs. the competition</h2>
+        <p class="text-zinc-400 text-[1.0625rem] max-w-[560px] mb-12">
+          paws prices the platform, not the compute. Every competitor charges per compute-second. We give away the compute and charge for what's hard to replicate.
+        </p>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="border-b border-zinc-800">
+                <th class="text-left text-zinc-500 font-medium py-3 pr-4 pl-0 min-w-[160px]">Feature</th>
+                <th class="text-center text-emerald-400 font-semibold py-3 px-4 min-w-[120px]">paws</th>
+                <th class="text-center text-zinc-400 font-medium py-3 px-4 min-w-[120px]">E2B</th>
+                <th class="text-center text-zinc-400 font-medium py-3 px-4 min-w-[120px]">Daytona</th>
+                <th class="text-center text-zinc-400 font-medium py-3 px-4 min-w-[120px]">Blaxel</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-zinc-800/50">
+                <td class="text-zinc-400 py-3 pr-4 pl-0">Self-hosted option</td>
+                <td class="text-center py-3 px-4"><span class="text-emerald-400 font-medium">Yes</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-500">No</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-500">Enterprise only</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-500">No</span></td>
+              </tr>
+              <tr class="border-b border-zinc-800/50">
+                <td class="text-zinc-400 py-3 pr-4 pl-0">Zero-trust secrets</td>
+                <td class="text-center py-3 px-4"><span class="text-emerald-400 font-medium">Yes</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-500">No</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-500">No</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-500">No</span></td>
+              </tr>
+              <tr class="border-b border-zinc-800/50">
+                <td class="text-zinc-400 py-3 pr-4 pl-0">Governance built-in</td>
+                <td class="text-center py-3 px-4"><span class="text-emerald-400 font-medium">Yes</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-500">No</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-500">No</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-500">No</span></td>
+              </tr>
+              <tr class="border-b border-zinc-800/50">
+                <td class="text-zinc-400 py-3 pr-4 pl-0">Open source</td>
+                <td class="text-center py-3 px-4"><span class="text-emerald-400 font-medium">Yes</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-500">Partial</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-400">Yes</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-500">No</span></td>
+              </tr>
+              <tr>
+                <td class="text-zinc-400 py-3 pr-4 pl-0">Pricing model</td>
+                <td class="text-center py-3 px-4"><span class="text-emerald-400 font-medium text-[0.8125rem]">Per-session + platform</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-500 text-[0.8125rem]">Per-second compute</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-500 text-[0.8125rem]">Per-second compute</span></td>
+                <td class="text-center py-3 px-4"><span class="text-zinc-500 text-[0.8125rem]">Per-second compute</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <Separator className="bg-zinc-800" />
+    <section class="py-24">
+      <div class="max-w-[1120px] mx-auto px-6">
+        <p class="text-xs font-semibold tracking-widest uppercase text-emerald-400 mb-4">FAQ</p>
+        <h2 class="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-zinc-50 tracking-tight mb-12">Frequently asked questions</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-[960px]">
+          <div>
+            <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">Is self-hosted really free?</h3>
+            <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Yes. All features, forever, no feature gates. The entire product runs on your infrastructure via Docker Compose. This is the Coolify model, not the GitLab model.</p>
+          </div>
+
+          <div>
+            <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">What's a session?</h3>
+            <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">One daemon trigger = one VM lifecycle. Your agent runs inside an ephemeral Firecracker microVM, does its work, and the session ends. Each restore from snapshot counts as one billable session on managed tiers.</p>
+          </div>
+
+          <div>
+            <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">Do I need to provide my own API keys?</h3>
+            <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Yes, BYOK (Bring Your Own Keys). paws injects your API keys via the per-VM TLS proxy but never stores, meters, or bills for LLM usage. You keep your Anthropic/OpenAI relationships directly.</p>
+          </div>
+
+          <div>
+            <h3 class="text-zinc-50 text-[0.9375rem] font-semibold mb-2">Can I switch from managed to self-hosted?</h3>
+            <p class="text-[0.8125rem] text-zinc-500 leading-relaxed">Yes. Daemon configs are exportable as YAML. You get a 30-day data export grace period covering session history and audit logs. Same Docker Compose setup, just on your infrastructure.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Form -->
+    <Separator className="bg-zinc-800" />
+    <section class="py-24" id="contact">
+      <div class="max-w-[1120px] mx-auto px-6 text-center">
+        <p class="text-xs font-semibold tracking-widest uppercase text-emerald-400 mb-4">Get in touch</p>
+        <h2 class="text-[clamp(1.5rem,3vw,2.25rem)] font-bold text-zinc-50 tracking-tight mb-4">Contact us</h2>
+        <p class="text-zinc-400 text-[1.0625rem] max-w-[560px] mx-auto mb-12">
+          Interested in Pro or Enterprise? Have questions about self-hosted deployment? Drop us a line.
+        </p>
+
+        <ContactForm client:load />
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <Separator className="bg-zinc-800" />
+    <footer class="py-8">
+      <div class="max-w-[1120px] mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-[0.8125rem] text-zinc-600">
+        <span class="flex items-center gap-1.5 font-medium">
+          <img src="/favicon.svg" alt="" width="16" height="16" />
+          paws
+        </span>
+        <ul class="flex gap-6 list-none">
+          <li><a href="https://github.com/arek-e/paws" class="text-zinc-500 hover:text-zinc-300 no-underline" target="_blank" rel="noopener">GitHub</a></li>
+          <li><a href="/getting-started/install/" class="text-zinc-500 hover:text-zinc-300 no-underline">Docs</a></li>
+          <li><a href="/pricing" class="text-zinc-500 hover:text-zinc-300 no-underline">Pricing</a></li>
+        </ul>
+      </div>
+    </footer>
+  </body>
+</html>
