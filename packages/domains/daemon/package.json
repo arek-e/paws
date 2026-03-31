@@ -1,0 +1,28 @@
+{
+  "name": "@paws/domain-daemon",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Daemon domain — Daemon, Trigger, AgentConfig, Governance, DaemonStore, routes",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir dist --target bun",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "^1.2.3",
+    "@paws/domain-common": "workspace:*",
+    "@paws/domain-network": "workspace:*",
+    "@paws/domain-session": "workspace:*",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.2"
+  }
+}
