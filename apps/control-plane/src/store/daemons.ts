@@ -6,9 +6,9 @@ import type {
   DaemonStatus,
   Governance,
   Trigger,
-  Workload,
-} from '@paws/types';
-import type { Resources, NetworkConfig } from '@paws/types';
+} from '@paws/domain-daemon';
+import type { NetworkConfig } from '@paws/domain-network';
+import type { Resources, Workload } from '@paws/domain-session';
 
 import type { PawsDatabase } from '../db/index.js';
 import { daemons as daemonsTable } from '../db/schema.js';

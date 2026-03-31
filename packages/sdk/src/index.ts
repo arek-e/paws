@@ -2,23 +2,28 @@ export { createClient } from './client.js';
 export type { ClientConfig, PawsClient, PawsError, PollOptions } from './client.js';
 export { PawsApiError, PawsNetworkError } from './errors.js';
 
-// Re-export types that SDK consumers will need
 export type {
   CancelSessionResponse,
-  CreateDaemonInput,
-  CreateDaemonResponse,
   CreateSessionInput,
   CreateSessionResponse,
-  DaemonDetail,
-  DaemonListResponse,
-  FleetOverview,
   Session,
   SessionListResponse,
   SessionStatus,
+} from '@paws/domain-session';
+
+export type {
+  CreateDaemonInput,
+  CreateDaemonResponse,
+  DaemonDetail,
+  DaemonListResponse,
+  UpdateDaemonRequest,
+  WebhookTriggerResponse,
+} from '@paws/domain-daemon';
+
+export type { FleetOverview, WorkerListResponse } from '@paws/domain-fleet';
+
+export type {
   SnapshotBuildRequest,
   SnapshotBuildResponse,
   SnapshotListResponse,
-  UpdateDaemonRequest,
-  WebhookTriggerResponse,
-  WorkerListResponse,
-} from '@paws/types';
+} from '@paws/domain-snapshot';

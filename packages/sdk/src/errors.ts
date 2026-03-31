@@ -1,4 +1,4 @@
-import type { ErrorCode, ErrorResponse } from '@paws/types';
+import type { ErrorCode, ErrorResponse } from '@paws/domain-common';
 
 /** Typed error returned by the paws API */
 export class PawsApiError extends Error {

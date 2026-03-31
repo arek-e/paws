@@ -8,9 +8,9 @@ import { statSync } from 'node:fs';
 import { Hono } from 'hono';
 
 import type { PasswordAuth } from '../auth/password.js';
-import type { AuditStore } from '../store/audit.js';
+import type { AuditStore } from '@paws/domain-audit';
 import type { DaemonStore } from '../store/daemons.js';
-import type { SessionStore } from '../store/sessions.js';
+import type { SessionStore } from '@paws/domain-session';
 import type { WorkerDiscovery } from '../discovery/index.js';
 
 export interface SettingsRouteDeps {

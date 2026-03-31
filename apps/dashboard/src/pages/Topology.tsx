@@ -13,6 +13,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
+import { Button } from '@/components/ui/button';
 import { getDaemons, getFleet, getSessions, getWorkers } from '../api/client.js';
 import { usePolling } from '../hooks/usePolling.js';
 import { useTopologyLayout } from '../components/topology/useTopologyLayout.js';
@@ -21,7 +22,8 @@ import { WorkerNode } from '../components/topology/WorkerNode.js';
 import { SessionNode } from '../components/topology/SessionNode.js';
 import { DaemonNode } from '../components/topology/DaemonNode.js';
 import { ExposedPortNode } from '../components/topology/ExposedPortNode.js';
-import type { FleetOverview, Worker, Session } from '@paws/types';
+import type { Session } from '@paws/domain-session';
+import type { FleetOverview, Worker } from '@paws/domain-fleet';
 import { useEffect } from 'react';
 
 const nodeTypes: NodeTypes = {
@@ -110,12 +112,14 @@ function TopologyCanvas() {
   return (
     <div className="h-full w-full relative">
       {/* Fit View button */}
-      <button
+      <Button
+        variant="outline"
+        size="sm"
         onClick={handleFitView}
-        className="absolute top-3 right-3 z-10 px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-md border border-zinc-700 transition-colors"
+        className="absolute top-3 right-3 z-10"
       >
         Fit View
-      </button>
+      </Button>
 
       <ReactFlow
         nodes={nodes}

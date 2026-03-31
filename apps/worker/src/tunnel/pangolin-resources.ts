@@ -1,5 +1,5 @@
 import { createLogger } from '@paws/logger';
-import type { PortExposure } from '@paws/types';
+import type { PortExposure } from '@paws/domain-network';
 
 const log = createLogger('pangolin');
 

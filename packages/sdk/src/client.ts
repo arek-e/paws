@@ -1,22 +1,24 @@
 import type {
   CancelSessionResponse,
-  CostSummary,
-  CreateDaemonInput,
-  CreateDaemonResponse,
   CreateSessionInput,
   CreateSessionResponse,
-  DaemonDetail,
-  DaemonListResponse,
-  FleetOverview,
   Session,
   SessionListResponse,
+} from '@paws/domain-session';
+import type {
+  CreateDaemonInput,
+  CreateDaemonResponse,
+  DaemonDetail,
+  DaemonListResponse,
+  UpdateDaemonRequest,
+  WebhookTriggerResponse,
+} from '@paws/domain-daemon';
+import type { CostSummary, FleetOverview, WorkerListResponse } from '@paws/domain-fleet';
+import type {
   SnapshotBuildRequest,
   SnapshotBuildResponse,
   SnapshotListResponse,
-  UpdateDaemonRequest,
-  WebhookTriggerResponse,
-  WorkerListResponse,
-} from '@paws/types';
+} from '@paws/domain-snapshot';
 import { ResultAsync } from 'neverthrow';
 
 import { PawsApiError, PawsNetworkError } from './errors.js';
@@ -117,7 +119,7 @@ export function createClient(config: ClientConfig): PawsClient {
         if (!res.ok) {
           throw new PawsApiError(
             res.status,
-            json as unknown as import('@paws/types').ErrorResponse,
+            json as unknown as import('@paws/domain-common').ErrorResponse,
           );
         }
 

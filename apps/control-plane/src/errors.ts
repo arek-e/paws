@@ -1,4 +1,4 @@
-import type { ErrorCode } from '@paws/types';
+import type { ErrorCode } from '@paws/domain-common';
 
 /** Typed error for gateway operations */
 export class ControlPlaneError extends Error {

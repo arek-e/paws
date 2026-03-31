@@ -1,0 +1,26 @@
+{
+  "name": "@paws/domain-audit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Audit domain — AuditEvent, AuditStore, audit routes",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir dist --target bun",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "^1.2.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "vitest": "^4.1.2"
+  }
+}

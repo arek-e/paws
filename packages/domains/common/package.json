@@ -1,0 +1,24 @@
+{
+  "name": "@paws/domain-common",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared primitive schemas — IdSchema, ErrorCode, ErrorResponse",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir dist --target bun",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.2"
+  }
+}

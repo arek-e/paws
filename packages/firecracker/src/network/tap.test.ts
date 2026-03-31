@@ -1,4 +1,4 @@
-import type { NetworkAllocation } from '@paws/types';
+import type { NetworkAllocation } from '@paws/domain-network';
 
 import { describe, expect, it } from 'vitest';
 

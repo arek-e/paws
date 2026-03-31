@@ -16,12 +16,11 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.28.0",
     "@paws/sdk": "workspace:*",
-    "@paws/types": "workspace:*",
     "zod": "^3.25.0"
   },
   "devDependencies": {

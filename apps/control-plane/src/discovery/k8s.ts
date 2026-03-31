@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import type { Worker } from '@paws/types';
+import type { Worker } from '@paws/domain-fleet';
 
 import { createStaticDiscovery } from './static.js';
 import type { WorkerDiscovery } from './index.js';

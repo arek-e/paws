@@ -1,4 +1,4 @@
-import type { Worker } from '@paws/types';
+import type { Worker } from '@paws/domain-fleet';
 
 /**
  * WorkerDiscovery provides a live view of available worker nodes.

@@ -1,8 +1,7 @@
 import type { Hono } from 'hono';
 import type { UpgradeWebSocket, WSContext } from 'hono/ws';
 
-import type { SessionEvents } from '../events.js';
-import type { SessionStore } from '../store/sessions.js';
+import type { SessionEvents, SessionStore } from '@paws/domain-session';
 
 const TERMINAL_STATUSES = new Set(['completed', 'failed', 'timeout', 'cancelled']);
 

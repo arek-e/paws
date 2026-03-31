@@ -1,4 +1,4 @@
-import type { CreateDaemonRequest } from '@paws/types';
+import type { CreateDaemonRequest } from '@paws/domain-daemon';
 
 export type TemplateCategory = 'code-review' | 'devops' | 'security' | 'general';
 

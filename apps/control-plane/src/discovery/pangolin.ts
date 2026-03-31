@@ -1,5 +1,5 @@
 import { createLogger } from '@paws/logger';
-import type { Worker } from '@paws/types';
+import type { Worker } from '@paws/domain-fleet';
 
 const log = createLogger('pangolin');
 

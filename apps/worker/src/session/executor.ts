@@ -1,4 +1,5 @@
-import type { CreateSessionRequest, NetworkAllocation, NetworkConfig } from '@paws/types';
+import type { CreateSessionRequest } from '@paws/domain-session';
+import type { NetworkAllocation, NetworkConfig } from '@paws/domain-network';
 import {
   createIpPool,
   createTap,
@@ -415,7 +416,7 @@ export function createExecutor(config: ExecutorConfig) {
 
 export type Executor = ReturnType<typeof createExecutor>;
 
-/** Convert NetworkConfig (from @paws/types) to proxy-native domains map */
+/** Convert NetworkConfig (from @paws/domain-network) to proxy-native domains map */
 function networkConfigToDomains(
   network: NetworkConfig,
   gateway?: LlmGateway,

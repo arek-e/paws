@@ -1,9 +1,10 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../packages/typescript-config/library.json",
   "compilerOptions": {
-    "rootDir": "src",
     "outDir": "dist",
+    "rootDir": "src",
     "types": []
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [{ "path": "../domains/common" }, { "path": "../sdk" }]
 }

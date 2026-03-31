@@ -14,10 +14,10 @@
     "build": "bun build ./src/index.ts --outdir dist --target bun",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --build"
   },
   "dependencies": {
-    "@paws/types": "workspace:*",
+    "@paws/domain-network": "workspace:*",
     "neverthrow": "^8.2.0"
   },
   "devDependencies": {
