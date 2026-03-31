@@ -609,3 +609,64 @@ export async function getSystemInfo(): Promise<SystemInfo> {
   if (!res.ok) throw new Error(`Failed to fetch system info: ${res.status}`);
   return res.json();
 }
+
+// --- Cloud Connections (AWS integration) ---
+
+export interface CloudConnection {
+  id: string;
+  provider: 'aws-ec2';
+  name: string;
+  region: string;
+  status: 'connected' | 'error';
+  error?: string;
+  lastSyncAt?: string;
+  createdAt: string;
+}
+
+export async function getCloudConnections(): Promise<CloudConnection[]> {
+  const res = await fetch('/v1/cloud-connections', { headers: apiKeyHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch cloud connections: ${res.status}`);
+  const body = (await res.json()) as { connections: CloudConnection[] };
+  return body.connections;
+}
+
+export async function createCloudConnection(body: {
+  provider: 'aws-ec2';
+  name: string;
+  region: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+}): Promise<CloudConnection & { existingInstances: number }> {
+  const res = await fetch('/v1/cloud-connections', {
+    method: 'POST',
+    headers: apiKeyHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(
+      (data as { error?: { message?: string } }).error?.message ??
+        `Failed to create connection: ${res.status}`,
+    );
+  }
+  return res.json();
+}
+
+export async function deleteCloudConnection(id: string): Promise<void> {
+  const res = await fetch(`/v1/cloud-connections/${id}`, { method: 'DELETE', headers: apiKeyHeaders() });
+  if (!res.ok) throw new Error(`Failed to delete connection: ${res.status}`);
+}
+
+export async function syncCloudConnection(id: string): Promise<{
+  instances: { id: string; name: string; status: string; ip: string | null }[];
+  syncedAt: string;
+}> {
+  const res = await fetch(`/v1/cloud-connections/${id}/sync`, { method: 'POST', headers: apiKeyHeaders() });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(
+      (data as { error?: { message?: string } }).error?.message ?? `Sync failed: ${res.status}`,
+    );
+  }
+  return res.json();
+}

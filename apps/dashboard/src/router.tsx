@@ -11,6 +11,7 @@ import { Layout } from './components/Layout.js';
 import { AuditLog } from './pages/AuditLog.js';
 import { Daemons } from './pages/Daemons.js';
 import { Fleet } from './pages/Fleet.js';
+import { Integrations } from './pages/Integrations.js';
 import { McpServers } from './pages/McpServers.js';
 import { Servers } from './pages/Servers.js';
 import { SessionDetail } from './pages/SessionDetail.js';
@@ -119,6 +120,11 @@ const sessionDetailRoute = createRoute({
   component: SessionDetail,
 });
 
+const integrationsRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/integrations',
+  component: Integrations,
+});
 const mcpRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/mcp',
@@ -144,6 +150,7 @@ const routeTree = rootRoute.addChildren([
     serversRoute,
     sessionsRoute,
     sessionDetailRoute,
+    integrationsRoute,
     mcpRoute,
     auditRoute,
   ]),

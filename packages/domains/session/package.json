@@ -1,0 +1,28 @@
+{
+  "name": "@paws/domain-session",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Session domain — Session, SessionStore, events, routes, WebSocket messages",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir dist --target bun",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "^1.2.3",
+    "@paws/domain-browser": "workspace:*",
+    "@paws/domain-common": "workspace:*",
+    "@paws/domain-network": "workspace:*",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.2"
+  }
+}
