@@ -23,7 +23,6 @@
     "@paws/domain-fleet": "workspace:*",
     "@paws/domain-session": "workspace:*",
     "@paws/sdk": "workspace:*",
-    "@paws/types": "workspace:*",
     "ink": "^6.0.0",
     "react": "^19.1.0"
   },

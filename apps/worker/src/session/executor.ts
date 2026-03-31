@@ -416,7 +416,7 @@ export function createExecutor(config: ExecutorConfig) {
 
 export type Executor = ReturnType<typeof createExecutor>;
 
-/** Convert NetworkConfig (from @paws/types) to proxy-native domains map */
+/** Convert NetworkConfig (from @paws/domain-network) to proxy-native domains map */
 function networkConfigToDomains(
   network: NetworkConfig,
   gateway?: LlmGateway,

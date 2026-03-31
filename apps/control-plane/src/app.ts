@@ -985,7 +985,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       ...body.overrides,
       role,
       snapshot,
-    } as import('@paws/types').CreateDaemonRequest;
+    } as import('@paws/domain-daemon').CreateDaemonRequest;
 
     const daemon = daemonStore.create(merged);
     return c.json(
@@ -1056,7 +1056,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     // Generate workload from agent config or use the explicit workload
     let workload;
     if (daemon.agent) {
-      const { generateAgentScript } = await import('@paws/types');
+      const { generateAgentScript } = await import('@paws/domain-daemon');
       workload = {
         type: 'script' as const,
         script: generateAgentScript(daemon.agent),

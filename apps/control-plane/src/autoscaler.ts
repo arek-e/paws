@@ -77,7 +77,7 @@ export function createAutoscaler(config: AutoscalerConfig): Autoscaler {
   let lowUtilSince = 0; // timestamp when utilization first dropped below threshold
 
   // Cached workers from last poll (computeUtilization is sync, discovery is async)
-  let lastKnownWorkers: import('@paws/types').Worker[] = [];
+  let lastKnownWorkers: import('@paws/domain-fleet').Worker[] = [];
 
   async function refreshWorkers(): Promise<void> {
     lastKnownWorkers = await discovery.getWorkers();

@@ -119,7 +119,7 @@ export function createClient(config: ClientConfig): PawsClient {
         if (!res.ok) {
           throw new PawsApiError(
             res.status,
-            json as unknown as import('@paws/types').ErrorResponse,
+            json as unknown as import('@paws/domain-common').ErrorResponse,
           );
         }
 

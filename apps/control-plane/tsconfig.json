@@ -1,8 +1,18 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../packages/typescript-config/app-bun.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src"
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/scheduler" },
+    { "path": "../../packages/integrations" },
+    { "path": "../../packages/credentials" },
+    { "path": "../../packages/logger" },
+    { "path": "../../packages/providers" },
+    { "path": "../../packages/provisioner" },
+    { "path": "../../providers/aws-ec2" },
+    { "path": "../../providers/hetzner-cloud" }
+  ]
 }
