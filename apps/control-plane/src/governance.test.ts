@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { createGovernanceChecker } from './governance.js';
+import { createGovernanceChecker } from '@paws/domain-daemon';
 
 describe('createGovernanceChecker', () => {
   test('allows actions when no rate limit configured', () => {

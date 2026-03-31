@@ -30,3 +30,13 @@ export type {
 
 export { getTemplate, listTemplateIds } from './templates.js';
 export type { SnapshotTemplate } from './templates.js';
+
+export { buildSnapshotRoute, listSnapshotsRoute } from './routes-snapshots.js';
+export {
+  createSnapshotConfigRoute,
+  deleteSnapshotConfigRoute,
+  getSnapshotConfigRoute,
+  listSnapshotConfigsRoute,
+  updateSnapshotConfigRoute,
+} from './routes-configs.js';
+export { listTemplatesRoute, getTemplateRoute, deployTemplateRoute } from './routes-templates.js';

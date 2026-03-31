@@ -2,7 +2,7 @@ import { Counter, Gauge, Histogram, Registry } from 'prom-client';
 
 import type { WorkerRegistry } from './discovery/registry.js';
 import type { DaemonStore } from './store/daemons.js';
-import type { SessionStore } from './store/sessions.js';
+import type { SessionStore } from '@paws/domain-session';
 
 export interface MetricsDeps {
   sessionStore: SessionStore;

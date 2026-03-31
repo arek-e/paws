@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
-import { createSessionEvents } from './events.js';
-import type { StoredSession } from './store/sessions.js';
+import { createSessionEvents } from '@paws/domain-session';
+import type { StoredSession } from '@paws/domain-session';
 
 function makeSession(overrides: Partial<StoredSession> = {}): StoredSession {
   return {

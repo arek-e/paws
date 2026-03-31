@@ -18,7 +18,7 @@
     { "path": "packages/proxy" },
     { "path": "packages/snapshot-store" },
     { "path": "packages/firecracker" },
-    { "path": "packages/scheduler" },
+
     { "path": "packages/sdk" },
     { "path": "packages/mcp-server" },
     { "path": "packages/cli" },
