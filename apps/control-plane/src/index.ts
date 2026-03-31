@@ -1,12 +1,12 @@
 export { createControlPlaneApp } from './app.js';
 export type { ControlPlaneDeps } from './app.js';
 export { ControlPlaneError, controlPlaneError } from './errors.js';
-export { createGovernanceChecker } from './governance.js';
-export type { GovernanceChecker } from './governance.js';
+export { createGovernanceChecker } from '@paws/domain-daemon';
+export type { GovernanceChecker } from '@paws/domain-daemon';
 export { authMiddleware } from './middleware/auth.js';
-export { createDaemonStore } from './store/daemons.js';
-export type { DaemonStore, StoredDaemon } from './store/daemons.js';
-export { createSessionStore } from './store/sessions.js';
-export type { SessionStore, StoredSession } from './store/sessions.js';
+export { createDaemonStore } from '@paws/domain-daemon';
+export type { DaemonStore, StoredDaemon } from '@paws/domain-daemon';
+export { createSessionStore } from '@paws/domain-session';
+export type { SessionStore, StoredSession } from '@paws/domain-session';
 export { createWorkerClient } from './worker-client.js';
 export type { WorkerClient, WorkerHealth, WorkerSessionResult } from './worker-client.js';

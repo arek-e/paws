@@ -15,58 +15,70 @@ import {
   loadCredentials,
 } from '@paws/integrations';
 import type { GitHubDaemon } from '@paws/integrations';
-import { selectWorker } from '@paws/scheduler';
-
-import type { WorkerRegistry } from './discovery/registry.js';
-import { createBuildStore, createSqliteBuildStore } from './store/builds.js';
-import { createGovernanceChecker } from './governance.js';
-import { createControlPlaneMetrics } from './metrics.js';
-import { authMiddleware, type AuthConfig } from './middleware/auth.js';
-import { createAuthRoutes } from './routes/auth.js';
-import { browserActionRoute, browserScreenshotRoute } from './routes/browser.js';
-import { registerWorkerWebSocket } from './routes/worker-ws.js';
+import {
+  listAuditRoute,
+  auditStatsRoute,
+  createAuditStore,
+  type AuditStore,
+} from '@paws/domain-audit';
+import { browserActionRoute, browserScreenshotRoute } from '@paws/domain-browser';
 import {
   createDaemonRoute,
   deleteDaemonRoute,
   getDaemonRoute,
   listDaemonsRoute,
   updateDaemonRoute,
-} from './routes/daemons.js';
-import { costSummaryRoute, fleetOverviewRoute, listWorkersRoute } from './routes/fleet.js';
-import { healthRoute } from './routes/health.js';
-import { listTemplatesRoute, getTemplateRoute, deployTemplateRoute } from './routes/templates.js';
+  receiveWebhookRoute,
+  createGovernanceChecker,
+  createDaemonStore,
+  type DaemonStore,
+} from '@paws/domain-daemon';
+import {
+  selectWorker,
+  costSummaryRoute,
+  fleetOverviewRoute,
+  listWorkersRoute,
+} from '@paws/domain-fleet';
+import { createMcpServerStore } from '@paws/domain-mcp';
 import {
   cancelSessionRoute,
   createSessionRoute,
   getSessionRoute,
   listSessionsRoute,
-} from './routes/sessions.js';
+  createSessionStore,
+  createSessionEvents,
+  type SessionStore,
+  type StoredSession,
+} from '@paws/domain-session';
 import {
+  buildSnapshotRoute,
+  listSnapshotsRoute,
   createSnapshotConfigRoute,
   deleteSnapshotConfigRoute,
   getSnapshotConfigRoute,
   listSnapshotConfigsRoute,
   updateSnapshotConfigRoute,
-} from './routes/snapshot-configs.js';
-import { buildSnapshotRoute, listSnapshotsRoute } from './routes/snapshots.js';
+  listTemplatesRoute,
+  getTemplateRoute,
+  deployTemplateRoute,
+} from '@paws/domain-snapshot';
+
+import type { WorkerRegistry } from './discovery/registry.js';
+import { createBuildStore, createSqliteBuildStore } from './store/builds.js';
+import { createControlPlaneMetrics } from './metrics.js';
+import { authMiddleware, type AuthConfig } from './middleware/auth.js';
+import { createAuthRoutes } from './routes/auth.js';
+import { registerWorkerWebSocket } from './routes/worker-ws.js';
+import { healthRoute } from './routes/health.js';
 import { createMcpRoutes } from './routes/mcp.js';
 import { createServerRoutes } from './routes/servers.js';
-import { receiveWebhookRoute } from './routes/webhooks.js';
-import { listAuditRoute, auditStatsRoute } from './routes/audit.js';
-import { createAuditStore, type AuditStore } from './store/audit.js';
-import { createMcpServerStore } from './store/mcp.js';
-import { createDaemonStore, createSqliteDaemonStore, type DaemonStore } from './store/daemons.js';
+import { createSqliteDaemonStore } from './store/daemons.js';
 import { createTemplateStore } from './store/templates.js';
 import {
   createSnapshotConfigStore,
   createSqliteSnapshotConfigStore,
 } from './store/snapshot-configs.js';
-import {
-  createSessionStore,
-  createSqliteSessionStore,
-  type SessionStore,
-  type StoredSession,
-} from './store/sessions.js';
+import { createSqliteSessionStore } from './store/sessions.js';
 import { createProvisioningRoutes } from './routes/provisioning.js';
 import { createSetupRoutes } from './routes/setup.js';
 import { createServerStore, createSqliteServerStore, type ServerStore } from './store/servers.js';
@@ -74,7 +86,7 @@ import { createWorkerClient } from './worker-client.js';
 import type { CredentialStore } from '@paws/credentials';
 import type { PawsDatabase } from './db/index.js';
 import type { WorkerDiscovery } from './discovery/index.js';
-import type { GovernanceChecker } from './governance.js';
+import type { GovernanceChecker } from '@paws/domain-daemon';
 import type { WorkerClient } from './worker-client.js';
 
 export interface ControlPlaneDeps {
@@ -170,7 +182,6 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   const daemonStore =
     deps.daemonStore ?? (deps.db ? createSqliteDaemonStore(deps.db) : createDaemonStore());
   const governance = deps.governance ?? createGovernanceChecker();
-  const { createSessionEvents } = await import('./events.js');
   const sessionEvents = createSessionEvents();
 
   // Audit log — injectable for tests, file-backed in production.

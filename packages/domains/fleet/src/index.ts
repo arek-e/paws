@@ -16,3 +16,5 @@ export {
 export type { CostSummary, DaemonCost, FleetOverview } from './fleet.js';
 
 export { selectWorker, workerAvailableCapacity } from './scheduler.js';
+
+export { costSummaryRoute, fleetOverviewRoute, listWorkersRoute } from './routes.js';

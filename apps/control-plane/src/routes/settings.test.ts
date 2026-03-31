@@ -2,8 +2,8 @@ import { describe, expect, test, vi } from 'vitest';
 
 import { createSettingsRoutes, type SettingsRouteDeps } from './settings.js';
 import type { PasswordAuth } from '../auth/password.js';
-import { createAuditStore } from '../store/audit.js';
-import { createSessionStore } from '../store/sessions.js';
+import { createAuditStore } from '@paws/domain-audit';
+import { createSessionStore } from '@paws/domain-session';
 import { createDaemonStore } from '../store/daemons.js';
 
 // ---------------------------------------------------------------------------

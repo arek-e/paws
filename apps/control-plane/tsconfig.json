@@ -6,7 +6,7 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../../packages/scheduler" },
+    { "path": "../../packages/domains/fleet" },
     { "path": "../../packages/integrations" },
     { "path": "../../packages/credentials" },
     { "path": "../../packages/logger" },

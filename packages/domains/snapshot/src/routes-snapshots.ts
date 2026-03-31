@@ -4,7 +4,7 @@ import {
   SnapshotBuildRequestSchema,
   SnapshotBuildResponseSchema,
   SnapshotListResponseSchema,
-} from '@paws/domain-snapshot';
+} from './types.js';
 
 export const buildSnapshotRoute = createRoute({
   method: 'post',
