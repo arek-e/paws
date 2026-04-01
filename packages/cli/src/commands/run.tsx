@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { render, Box, Text } from 'ink';
 import { Spinner as InkSpinner } from '@inkjs/ui';
-import type { PawsClient, Session } from '@paws/sdk';
+import type { PawsClient } from '@paws/sdk';
 import type { ParsedArgs } from '../config.js';
 import { formatOutput, printError } from '../output.js';
 
