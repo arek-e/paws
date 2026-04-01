@@ -14,7 +14,7 @@ export function StatusTable({ rows }: { rows: StatusRow[] }) {
       {rows.map((row, i) => (
         <Box key={i} gap={1}>
           <Text dimColor>{row.label.padEnd(maxLabel)}</Text>
-          <Text color={row.color}>{row.value}</Text>
+          <Text {...(row.color != null && { color: row.color })}>{row.value}</Text>
         </Box>
       ))}
     </Box>

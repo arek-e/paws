@@ -88,9 +88,6 @@ interface StatusViewProps {
 
 function StatusView({ fleet, workers, activeSessions }: StatusViewProps) {
   const workerList = workers.workers;
-  const hasAlert =
-    workerList.some((w: Worker) => w.status !== 'healthy') ||
-    (fleet.totalCapacity > 0 && fleet.totalCapacity - fleet.usedCapacity === 0);
 
   const sessionCount = activeSessions?.length ?? fleet.activeSessions ?? 0;
   const workerCount = workerList.length;
@@ -105,7 +102,6 @@ function StatusView({ fleet, workers, activeSessions }: StatusViewProps) {
     summary += ` (${unhealthyCount} ${uhWord} unreachable)`;
   }
 
-  const bannerMessage = hasAlert ? `paws v${VERSION}  ${summary}` : `paws v${VERSION}  ${summary}`;
   const workerNames = buildWorkerNames(workerList);
 
   const workerRows = workerList.map((w: Worker, i: number) => {

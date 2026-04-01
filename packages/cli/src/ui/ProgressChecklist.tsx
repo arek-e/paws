@@ -18,7 +18,7 @@ function statusIcon(status: Step['status']): string {
   }
 }
 
-function statusColor(status: Step['status']): string | undefined {
+function statusColor(status: Step['status']): string {
   switch (status) {
     case 'done':
       return 'green';
@@ -37,7 +37,7 @@ export function ProgressChecklist({ steps }: { steps: Step[] }) {
       {steps.map((step, i) => (
         <Box key={i} gap={1}>
           <Text color={statusColor(step.status)}>{statusIcon(step.status)}</Text>
-          <Text color={step.status === 'pending' ? 'gray' : undefined}>{step.label}</Text>
+          <Text {...(step.status === 'pending' && { color: 'gray' as const })}>{step.label}</Text>
         </Box>
       ))}
     </Box>
