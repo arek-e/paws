@@ -7,8 +7,6 @@ import { createExecutor } from './session/executor.js';
 import { createSemaphore } from './semaphore.js';
 import { createSyncLoop } from './sync/sync-loop.js';
 import type { SyncLoop } from './sync/sync-loop.js';
-import { createPangolinResourceManager } from './tunnel/pangolin-resources.js';
-import type { PangolinResourceManager } from './tunnel/pangolin-resources.js';
 
 // Read version from env (Docker) or VERSION file (bare metal)
 const PAWS_VERSION =
@@ -41,31 +39,10 @@ const semaphore = createSemaphore(MAX_CONCURRENT, MAX_QUEUED);
 const SNAPSHOT_BASE_DIR = process.env['SNAPSHOT_BASE_DIR'] ?? '/var/lib/paws/snapshots';
 
 // Port exposure configuration (optional)
-const PANGOLIN_API_URL_WORKER = process.env['PANGOLIN_API_URL'] ?? '';
-const PANGOLIN_API_KEY_WORKER = process.env['PANGOLIN_API_KEY'] ?? '';
-const PANGOLIN_EMAIL_WORKER = process.env['PANGOLIN_EMAIL'] ?? '';
-const PANGOLIN_PASSWORD_WORKER = process.env['PANGOLIN_PASSWORD'] ?? '';
-const PANGOLIN_ORG_ID_WORKER = process.env['PANGOLIN_ORG_ID'] ?? '';
-const PANGOLIN_SITE_ID = process.env['PANGOLIN_SITE_ID'] ?? '';
-const PANGOLIN_DOMAIN_ID = process.env['PANGOLIN_DOMAIN_ID'] ?? '';
-const PANGOLIN_BASE_DOMAIN = process.env['PANGOLIN_BASE_DOMAIN'] ?? '';
 const WORKER_EXTERNAL_URL = process.env['WORKER_EXTERNAL_URL'] ?? '';
 
-let pangolinResources: PangolinResourceManager | undefined;
+// Port exposure provider is injected by the runtime adapter (see PortExposureProvider interface)
 const portPool = createPortPool();
-
-if (PANGOLIN_API_URL_WORKER && PANGOLIN_ORG_ID_WORKER && PANGOLIN_SITE_ID && PANGOLIN_BASE_DOMAIN) {
-  pangolinResources = createPangolinResourceManager({
-    apiUrl: PANGOLIN_API_URL_WORKER,
-    apiKey: PANGOLIN_API_KEY_WORKER || undefined,
-    email: PANGOLIN_EMAIL_WORKER || undefined,
-    password: PANGOLIN_PASSWORD_WORKER || undefined,
-    orgId: PANGOLIN_ORG_ID_WORKER,
-    siteId: PANGOLIN_SITE_ID,
-    domainId: PANGOLIN_DOMAIN_ID,
-    baseDomain: PANGOLIN_BASE_DOMAIN,
-  });
-}
 
 // LLM gateway plugin (optional — routes LLM API calls through an external proxy)
 const LLM_GATEWAY_NAME = process.env['LLM_GATEWAY'] ?? '';
@@ -108,7 +85,6 @@ const executor = createExecutor({
   semaphore,
   workerName: WORKER_NAME,
   portPool,
-  pangolinResources,
   workerExternalUrl: WORKER_EXTERNAL_URL || undefined,
   llmGateway,
 });
@@ -181,11 +157,7 @@ if (GATEWAY_URL && API_KEY) {
   callHome.start();
 }
 
-const portExposureStatus = pangolinResources
-  ? `Pangolin (${PANGOLIN_BASE_DOMAIN})`
-  : WORKER_EXTERNAL_URL
-    ? `direct (${WORKER_EXTERNAL_URL})`
-    : 'disabled';
+const portExposureStatus = WORKER_EXTERNAL_URL ? `direct (${WORKER_EXTERNAL_URL})` : 'disabled';
 
 console.log(`
  /\\_/\\

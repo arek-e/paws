@@ -61,7 +61,8 @@ function EventRow({
           {event.resourceType && event.resourceId ? (
             event.resourceType === 'session' ? (
               <Link
-                to={`/sessions/${event.resourceId}`}
+                to="/sessions/$id"
+                params={{ id: event.resourceId }}
                 className="text-emerald-400/70 hover:text-emerald-400 underline underline-offset-2"
                 onClick={(e) => e.stopPropagation()}
               >

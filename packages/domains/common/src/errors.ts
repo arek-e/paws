@@ -5,6 +5,7 @@ export const ErrorCode = z.enum([
   'UNAUTHORIZED',
   'FORBIDDEN',
   'NOT_FOUND',
+  'NOT_IMPLEMENTED',
   'CONFLICT',
   'SESSION_NOT_FOUND',
   'DAEMON_NOT_FOUND',

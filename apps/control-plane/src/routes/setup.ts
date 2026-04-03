@@ -358,9 +358,9 @@ export function createSetupRoutes(deps: SetupDeps) {
         slog.info('Starting SSH bootstrap', { ip: server.ip });
         await provisioner.start({
           server,
-          password: sshPassword,
-          privateKey: sshPrivateKey,
-          passphrase: sshPassphrase,
+          ...(sshPassword ? { password: sshPassword } : {}),
+          ...(sshPrivateKey ? { privateKey: sshPrivateKey } : {}),
+          ...(sshPassphrase ? { passphrase: sshPassphrase } : {}),
           gatewayUrl: process.env['GATEWAY_URL'] ?? 'http://localhost:4000',
           apiKey: process.env['API_KEY'] ?? '',
         });

@@ -50,7 +50,7 @@ Submit a workload for execution in an isolated VM.
 | `timeoutMs`           | number   | No       | 600000  | Max execution time in ms                            |
 | `network.allowOut`    | string[] | No       | []      | Allowed outbound domains (supports `*.example.com`) |
 | `network.credentials` | object   | No       | {}      | Per-domain credential headers                       |
-| `network.expose`      | array    | No       | []      | Ports to expose via Pangolin                        |
+| `network.expose`      | array    | No       | []      | Ports to expose via port exposure                   |
 | `callbackUrl`         | string   | No       | --      | URL to POST result on completion                    |
 | `metadata`            | object   | No       | --      | Opaque metadata, returned in result                 |
 

@@ -21,7 +21,7 @@ export interface StoredSession {
   vcpuSeconds?: number | undefined;
   /** Browser/computer-use configuration */
   browser?: BrowserConfig | undefined;
-  /** Ports exposed from the VM via Pangolin tunnel */
+  /** Ports exposed from the VM */
   exposedPorts?: Array<{ port: number; url: string; label?: string | undefined }> | undefined;
 }
 

@@ -86,17 +86,17 @@ The API keys in that request never enter the VM. They stay on the host, injected
 
 ## Features
 
-|                        | Feature                    | Description                                                             |
-| ---------------------- | -------------------------- | ----------------------------------------------------------------------- |
-| :lock:                 | **Zero-trust credentials** | Per-VM TLS MITM proxy injects API keys at the network layer             |
-| :zap:                  | **Sub-second boot**        | Firecracker memory snapshots restore VMs in <800ms                      |
-| :bar_chart:            | **Dashboard**              | Fleet management, session history, daemon config, audit log             |
-| :robot:                | **Daemon workflows**       | Persistent agent roles triggered by webhooks, cron, or GitHub events    |
-| :shield:               | **Governance**             | Rate limits, approval gates, full audit logging per daemon              |
-| :electric_plug:        | **MCP Gateway**            | Connect agents to MCP tool servers running on the host                  |
-| :globe_with_meridians: | **Port exposure**          | Agents expose web apps via Pangolin tunnels with SSO/PIN access control |
-| :computer:             | **CLI**                    | `paws run`, `paws top`, `paws logs` -- one-command agent execution      |
-| :package:              | **SDKs**                   | TypeScript and Python clients, generated from OpenAPI spec              |
+|                        | Feature                    | Description                                                          |
+| ---------------------- | -------------------------- | -------------------------------------------------------------------- |
+| :lock:                 | **Zero-trust credentials** | Per-VM TLS MITM proxy injects API keys at the network layer          |
+| :zap:                  | **Sub-second boot**        | Firecracker memory snapshots restore VMs in <800ms                   |
+| :bar_chart:            | **Dashboard**              | Fleet management, session history, daemon config, audit log          |
+| :robot:                | **Daemon workflows**       | Persistent agent roles triggered by webhooks, cron, or GitHub events |
+| :shield:               | **Governance**             | Rate limits, approval gates, full audit logging per daemon           |
+| :electric_plug:        | **MCP Gateway**            | Connect agents to MCP tool servers running on the host               |
+| :globe_with_meridians: | **Port exposure**          | Agents expose web apps via port exposure with SSO/PIN access control |
+| :computer:             | **CLI**                    | `paws run`, `paws top`, `paws logs` -- one-command agent execution   |
+| :package:              | **SDKs**                   | TypeScript and Python clients, generated from OpenAPI spec           |
 
 ## Architecture
 
@@ -127,7 +127,7 @@ The API keys in that request never enter the VM. They stay on the host, injected
 - **Workers** run on bare metal with `/dev/kvm`, each VM gets a dedicated TLS proxy
 - **One proxy per VM** -- never shared, spawned with the VM, killed with the VM
 - VMs boot from Firecracker memory snapshots in <800ms
-- Workers auto-register via WireGuard tunnels (Pangolin/Newt)
+- Workers connect via K8s Services (in-cluster) or WebSocket call-home (remote)
 
 ## Comparison
 

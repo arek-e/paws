@@ -178,54 +178,53 @@ Per VM:
 
 ## Worker Connectivity
 
-Workers connect to the control plane via Pangolin WireGuard tunnels. Each worker runs
-Newt (Pangolin's tunnel agent) which establishes an encrypted tunnel back to Gerbil on
-the control plane VPS.
+Workers connect to the control plane via K8s Services (in-cluster) or WebSocket call-home
+(remote bare-metal workers).
 
 ```
-Control Plane VPS
-├── Pangolin (tunnel control plane + dashboard)
-├── Gerbil (WireGuard tunnel server, :51820/udp)
-├── Traefik (reverse proxy, :80/:443)
-├── Control Plane (API + dashboard, :4000)
-├── Dex (OIDC, :5556)
-└── VictoriaMetrics + Grafana (metrics)
+K8s Cluster
+├── Control Plane (Deployment, :4000)
+│   ├── API + dashboard
+│   ├── Dex (OIDC, :5556)
+│   └── VictoriaMetrics + Grafana (metrics)
+│
+└── Worker (DaemonSet, :3000)
+    ├── Worker process
+    └── Firecracker VMs
 
-        ↕ WireGuard tunnel
+Connected via: ClusterIP Services (standard K8s networking)
+```
 
-Worker (bare metal, anywhere)
-├── Newt (tunnel agent → connects to Gerbil)
-├── Worker process (:3000)
-└── Firecracker VMs
+For remote bare-metal workers that can't join the K8s cluster:
+
+```
+K8s cluster:                     Remote server:
+  Control Plane ◄─── WebSocket ───── Worker (systemd)
+                call-home connection
+                (worker initiates)
 ```
 
 ### Discovery
 
-The control plane discovers workers by polling Pangolin's API for connected sites:
+The control plane discovers workers through three layers (first match wins):
 
-```
-Pangolin API: GET /api/v1/org/{orgId}/sites
-  → filter to online: true sites
-  → extract tunnel IP from subnet field
-  → health-check worker at http://{tunnelIP}:3000/health
-  → add to fleet registry
-```
-
-Four discovery layers (first match wins):
-
-1. **Pangolin** — tunnel-connected workers (primary)
-2. **Call-home registry** — WebSocket-connected workers (legacy)
-3. **K8s pod discovery** — in-cluster Kubernetes deployments
-4. **Static URL** — manual WORKER_URL env var (dev/single-node)
+1. **K8s pod watcher** — in-cluster Kubernetes deployments (primary)
+2. **WebSocket call-home** — remote workers register via WebSocket
+3. **Static URL** — manual WORKER_URL env var (dev/single-node)
 
 ### Worker Onboarding
+
+**In-cluster (K8s):** Workers are deployed as a DaemonSet. They are discovered automatically
+by the control plane's K8s pod watcher.
+
+**Remote bare-metal:**
 
 ```bash
 # On the worker machine:
 curl -fsSL https://raw.githubusercontent.com/arek-e/paws/main/scripts/setup-worker.sh | bash
-# Prompts for: Site ID, Site Secret, Pangolin Endpoint
-# Installs: Newt + paws worker + Firecracker
-# Starts: paws-newt.service + paws-worker.service
+# Prompts for: Control plane URL, API key
+# Installs: paws worker + Firecracker
+# Starts: paws-worker.service (connects via WebSocket call-home)
 ```
 
 ## VM Lifecycle (per session)

@@ -114,39 +114,7 @@ export function createAutoscaler(config: AutoscalerConfig): Autoscaler {
     return Date.now() - lastScaleTime >= cooldownMs;
   }
 
-  function generateCloudInit(newtSiteId?: string, newtSiteSecret?: string): string {
-    const newtSetup =
-      newtSiteId && newtSiteSecret
-        ? `
-# Install and start Newt (Pangolin tunnel agent)
-curl -fsSL https://static.pangolin.net/get-newt.sh | bash
-cat > /etc/systemd/system/newt.service << 'SYSTEMD'
-[Unit]
-Description=Newt Tunnel Agent
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-ExecStart=/usr/local/bin/newt --id ${newtSiteId} --secret ${newtSiteSecret} --endpoint ${gatewayUrl}
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-SYSTEMD
-systemctl daemon-reload
-systemctl enable --now newt
-`
-        : `
-# Start worker with call-home (legacy, no Pangolin)
-GATEWAY_URL=${gatewayUrl} \\
-API_KEY=${apiKey} \\
-WORKER_NAME=worker-$(hostname) \\
-WORKER_URL=http://$(curl -s http://169.254.169.254/hetzner/v1/metadata/public-ipv4):3000 \\
-PORT=3000 \\
-nohup bun run apps/worker/src/server.ts > /var/log/paws-worker.log 2>&1 &
-`;
-
+  function generateCloudInit(): string {
     return `#!/bin/bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
@@ -163,9 +131,13 @@ bun install
 # Install Firecracker
 scripts/install-firecracker.sh
 
-# Start worker
-PORT=3000 nohup bun run apps/worker/src/server.ts > /var/log/paws-worker.log 2>&1 &
-${newtSetup}
+# Start worker with call-home
+GATEWAY_URL=${gatewayUrl} \\
+API_KEY=${apiKey} \\
+WORKER_NAME=worker-$(hostname) \\
+WORKER_URL=http://$(curl -s http://169.254.169.254/hetzner/v1/metadata/public-ipv4):3000 \\
+PORT=3000 \\
+nohup bun run apps/worker/src/server.ts > /var/log/paws-worker.log 2>&1 &
 `;
   }
 

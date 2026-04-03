@@ -4,6 +4,8 @@ import type { CallbackDeps } from './callback.js';
 
 const mockAuth = {
   getInstallationToken: vi.fn().mockResolvedValue('ghs_test_token'),
+  listInstallations: vi.fn().mockResolvedValue([]),
+  listInstallationRepos: vi.fn().mockResolvedValue([]),
 };
 
 const deps: CallbackDeps = { auth: mockAuth };

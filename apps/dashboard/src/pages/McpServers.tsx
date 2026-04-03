@@ -141,7 +141,7 @@ function AddMcpServerForm({ onAdded }: { onAdded: () => void }) {
         name,
         transport,
         ...(transport === 'stdio'
-          ? { command, args: args ? args.split(/\s+/) : undefined }
+          ? { command, ...(args ? { args: args.split(/\s+/) } : {}) }
           : { url }),
       });
       toast.success('MCP server added');

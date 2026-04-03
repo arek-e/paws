@@ -18,7 +18,6 @@ import type { ProxyInstance, SessionCa } from '@paws/proxy';
 import { WorkerError, WorkerErrorCode } from '../errors.js';
 import { sshExec, sshReadFile, sshWriteFile, waitForSsh } from '../ssh/client.js';
 import type { Semaphore } from '../semaphore.js';
-import type { ExposedTunnel, PangolinResourceManager } from '../tunnel/pangolin-resources.js';
 
 /** Configuration for the session executor */
 export interface ExecutorConfig {
@@ -40,9 +39,7 @@ export interface ExecutorConfig {
   workerName: string;
   /** Port pool for inbound port exposure (optional — needed for port exposure) */
   portPool?: PortPool | undefined;
-  /** Pangolin resource manager for tunnel URLs (optional — needed for port exposure) */
-  pangolinResources?: PangolinResourceManager | undefined;
-  /** Fallback worker URL when Pangolin is not configured (e.g., "http://65.108.10.170") */
+  /** Worker external URL for port exposure (e.g., "http://65.108.10.170") */
   workerExternalUrl?: string | undefined;
   /** LLM gateway — routes provider API calls through an external proxy (LiteLLM, OpenRouter, etc.) */
   llmGateway?: LlmGateway | undefined;
@@ -88,8 +85,6 @@ export interface ActiveSession {
   vmHandle?: VmHandle;
   proxyHandle?: ProxyInstance;
   ca?: SessionCa;
-  /** Pangolin tunnels for exposed ports */
-  exposedTunnels?: ExposedTunnel[] | undefined;
   /** Allocated host ports for inbound DNAT */
   inboundPorts?: Array<{ hostPort: number; guestPort: number }> | undefined;
 }
@@ -273,24 +268,8 @@ export function createExecutor(config: ExecutorConfig) {
             }
           }
 
-          // Create Pangolin tunnels (if configured) or use direct URLs
-          if (config.pangolinResources) {
-            const tunnels = await config.pangolinResources.expose(
-              sessionId,
-              exposePorts,
-              hostPorts,
-            );
-            session.exposedTunnels = tunnels;
-            exposedPortUrls = tunnels.map((t) => ({
-              port: t.port,
-              url: t.publicUrl,
-              label: t.label,
-              access: t.access,
-              pin: t.pin,
-              shareLink: t.shareLink,
-            }));
-          } else if (config.workerExternalUrl) {
-            // Fallback: direct host port URLs
+          // Create direct host port URLs (port exposure provider can be injected at runtime)
+          if (config.workerExternalUrl) {
             exposedPortUrls = exposePorts.map((ep, i) => ({
               port: ep.port,
               url: `${config.workerExternalUrl}:${hostPorts[i]}`,
@@ -364,11 +343,6 @@ export function createExecutor(config: ExecutorConfig) {
       } finally {
         // Cleanup — always runs
         session.status = 'stopping';
-
-        // Clean up Pangolin resources
-        if (session.exposedTunnels?.length && config.pangolinResources) {
-          await config.pangolinResources.cleanup(session.exposedTunnels);
-        }
 
         // Clean up inbound iptables rules and release host ports
         if (session.inboundPorts?.length && allocation) {

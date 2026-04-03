@@ -84,8 +84,8 @@ Read before making changes: @docs/architecture.md, @docs/security.md
 - Zero secrets enter the VM — credentials injected at network layer by per-VM proxy
 - Daemons are ephemeral — each trigger spins up a fresh VM, state persists via control plane DB +
   mounted volumes
-- Workers connect via Pangolin WireGuard tunnels (Newt agent). Control plane discovers workers by
-  polling Pangolin's API. Fallback: WebSocket call-home, K8s discovery, static URL.
+- Workers connect via K8s Services (in-cluster) or WebSocket call-home (remote). Control plane
+  discovers workers via K8s pod watcher (primary) or static URL (dev).
 
 ## Non-Negotiable Decisions
 

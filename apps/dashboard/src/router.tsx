@@ -125,8 +125,6 @@ const Snapshots = lazy(() =>
 const Templates = lazy(() =>
   import('./pages/Templates.js').then((m) => ({ default: m.Templates })),
 );
-const Tunnels = lazy(() => import('./pages/Tunnels.js').then((m) => ({ default: m.Tunnels })));
-
 // Root route wraps everything in AuthGate
 const rootRoute = createRootRoute({
   component: () => (
@@ -201,12 +199,6 @@ const snapshotsRoute = createRoute({
   component: lazyPage(Snapshots, <CardGridSkeleton />),
 });
 
-const tunnelsRoute = createRoute({
-  getParentRoute: () => layoutRoute,
-  path: '/tunnels',
-  component: lazyPage(Tunnels, <CardGridSkeleton />),
-});
-
 const serversRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/servers',
@@ -252,7 +244,6 @@ const routeTree = rootRoute.addChildren([
     daemonsRoute,
     templatesRoute,
     snapshotsRoute,
-    tunnelsRoute,
     serversRoute,
     sessionsRoute,
     sessionDetailRoute,

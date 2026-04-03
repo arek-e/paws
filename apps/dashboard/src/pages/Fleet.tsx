@@ -4,37 +4,10 @@ import { MiniChart } from '../components/MiniChart.js';
 import { StatCard } from '../components/StatCard.js';
 import { WorkerCard } from '../components/WorkerCard.js';
 import { Alert, AlertDescription } from '../components/ui/alert.js';
-import { Badge } from '../components/ui/badge.js';
 import { Card, CardContent } from '../components/ui/card.js';
 import { Skeleton } from '../components/ui/skeleton.js';
 import { useMetrics } from '../hooks/useMetrics.js';
 import { usePolling } from '../hooks/usePolling.js';
-
-function TunnelStatus({
-  pangolin,
-}: {
-  pangolin?: { connected: boolean; tunnelWorkers: number; lastPollAt: string | null };
-}) {
-  if (!pangolin) return null;
-
-  return (
-    <Badge
-      variant="outline"
-      className={`gap-2 px-3 py-1.5 rounded-full ${
-        pangolin.connected
-          ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20'
-          : 'bg-red-400/10 text-red-400 border-red-400/20'
-      }`}
-    >
-      <span
-        className={`w-2 h-2 rounded-full ${pangolin.connected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`}
-      />
-      {pangolin.connected
-        ? `Tunnel active \u00b7 ${pangolin.tunnelWorkers} worker${pangolin.tunnelWorkers !== 1 ? 's' : ''} connected`
-        : 'Tunnel disconnected'}
-    </Badge>
-  );
-}
 
 export function Fleet() {
   const fleet = usePolling(getFleet, 5000);
@@ -46,18 +19,11 @@ export function Fleet() {
   const workersChart = useMetrics('paws_workers_healthy', 60, 30);
   const requestsChart = useMetrics('sum(rate(paws_http_requests_total[1m]))', 60, 30);
 
-  const fleetData = fleet.data as
-    | (typeof fleet.data & {
-        pangolin?: { connected: boolean; tunnelWorkers: number; lastPollAt: string | null };
-      })
-    | undefined;
-
   return (
     <div className="space-y-6">
       <UpdateBanner />
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Fleet Overview</h1>
-        <TunnelStatus pangolin={fleetData?.pangolin} />
       </div>
 
       {fleet.loading ? (

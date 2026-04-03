@@ -11,17 +11,17 @@ paws has two core services:
 
 **Control plane** (`apps/control-plane/`) -- the brain. Receives API requests, stores daemon configs, tracks sessions, holds all credentials, and routes work to workers. Runs on any VPS.
 
-**Worker** (`apps/worker/`) -- the muscle. Manages Firecracker VMs on bare metal. Each worker runs on a Linux host with `/dev/kvm`. Workers connect to the control plane via Pangolin WireGuard tunnels.
+**Worker** (`apps/worker/`) -- the muscle. Manages Firecracker VMs on bare metal. Each worker runs on a Linux host with `/dev/kvm`. Workers connect to the control plane via K8s Services (in-cluster) or WebSocket call-home (remote).
 
 ```
-Control Plane (VPS)              Worker (bare metal)
+Control Plane (K8s Deployment)   Worker (bare metal, DaemonSet)
 ├── API + dashboard              ├── Worker process
 ├── Daemon registry              ├── Firecracker VMs
 ├── Session tracker              │   ├── VM 1 + Proxy 1
 ├── Scheduler                    │   ├── VM 2 + Proxy 2
-├── Pangolin (tunnels)           │   └── VM N + Proxy N
-└── Dex (OIDC SSO)               └── Newt (tunnel agent)
-         ↕ WireGuard tunnel ↕
+└── Dex (OIDC SSO)               │   └── VM N + Proxy N
+                                  └── WebSocket call-home (remote)
+    Connected via: K8s Service / WebSocket
 ```
 
 ## Two execution models
@@ -75,12 +75,11 @@ Boot time: under 1 second (28ms with userfaultfd lazy loading).
 
 ## Worker discovery
 
-The control plane discovers workers through four layers (first match wins):
+The control plane discovers workers through three layers (first match wins):
 
-1. **Pangolin** -- tunnel-connected workers via WireGuard (primary)
-2. **Call-home** -- workers register via WebSocket
-3. **K8s** -- in-cluster pod discovery
-4. **Static URL** -- manual `WORKER_URL` env var for development
+1. **K8s pod watcher** -- in-cluster pod discovery (primary)
+2. **WebSocket call-home** -- remote workers register via WebSocket
+3. **Static URL** -- manual `WORKER_URL` env var for development
 
 ## Scheduling
 

@@ -12,7 +12,7 @@ export const PortAccessSchema = z.enum(['sso', 'pin', 'email']).default('sso');
 
 export type PortAccess = z.infer<typeof PortAccessSchema>;
 
-/** Port to expose publicly from the VM via Pangolin tunnel */
+/** Port to expose publicly from the VM */
 export const PortExposureSchema = z.object({
   /** Port inside the VM to expose */
   port: z.number().int().min(1).max(65535),
@@ -20,7 +20,7 @@ export const PortExposureSchema = z.object({
   protocol: z.enum(['http', 'https']).default('http'),
   /** Human-readable label (e.g., "Next.js dev server") */
   label: z.string().optional(),
-  /** Access control mode (default: sso — Pangolin login required) */
+  /** Access control mode (provider-specific) */
   access: PortAccessSchema.optional(),
   /** Email whitelist — only used when access is 'email' (e.g., ["*@company.com", "user@example.com"]) */
   allowedEmails: z.array(z.string()).optional(),
@@ -34,7 +34,7 @@ export const NetworkConfigSchema = z.object({
   allowOut: z.array(z.string()).default([]),
   /** Per-domain credential injection */
   credentials: z.record(z.string(), DomainCredentialSchema).default({}),
-  /** Ports to expose publicly via Pangolin tunnel */
+  /** Ports to expose publicly */
   expose: z.array(PortExposureSchema).default([]),
   /** MCP servers this session/daemon can access (by name) */
   mcp: z.object({ servers: z.array(z.string()) }).optional(),

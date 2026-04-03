@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.4] - 2026-04-03 — Pangolin Removal
+
+### Removed
+
+- **Pangolin WireGuard tunneling** — removed Pangolin, Gerbil, and Traefik from docker-compose, env config, and all setup scripts
+- **Pangolin discovery** — control plane no longer polls Pangolin API for worker discovery. K8s pod watcher (primary) and WebSocket call-home (remote) are the discovery mechanisms.
+- **Pangolin port exposure** — tunnel-based port exposure removed. PortExposureProvider interface remains for future control plane reverse proxy.
+- **Tunnels dashboard page** — removed from sidebar, router, and command palette
+- **Pangolin admin proxy** — removed /v1/pangolin/\* routes, admin client, and SSO auto-registration
+
 ## [0.5.2.0] - 2026-03-29
 
 ### Added
