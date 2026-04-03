@@ -120,6 +120,13 @@ See @docs/testing.md for full strategy.
 - Zod for all external data (API requests, config, env via `@t3-oss/env-core`)
 - Commit prefix with scope: `firecracker: add snapshot restore`, `control-plane: add sessions`
 - Each commit independently valid (bisect-friendly)
+- **Bun workspace catalog for dependency versions.** Shared deps are defined once in root
+  `package.json` under `workspaces.catalog`. Packages use `"zod": "catalog:"` instead of pinning
+  versions. To add or bump a shared dep: edit the catalog in root `package.json`, then run
+  `bun install`. Never pin versions directly in workspace packages for deps in the catalog.
+- **No `as any` or `as unknown` typecasts.** Use type guards, narrowing, conditional spreads, or
+  narrower type definitions. In tests, define explicit helper types (e.g., `type FetchFn`) rather
+  than casting mocks.
 
 ## Gotchas
 
