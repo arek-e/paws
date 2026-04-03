@@ -26,7 +26,6 @@
     { "path": "packages/firecracker" },
 
     { "path": "packages/sdk" },
-    { "path": "packages/cli" },
     { "path": "providers/hetzner-cloud" },
     { "path": "providers/hetzner-dedicated" },
     { "path": "providers/aws-ec2" },
