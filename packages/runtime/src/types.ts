@@ -119,6 +119,21 @@ export interface RuntimeAdapter {
     options?: ExecuteOptions,
   ): ResultAsync<SessionResult, RuntimeError>;
 
+  /**
+   * Get connection info for a running session (guest IP, SSH key path).
+   * Used by the worker to proxy browser actions, port exposure, etc.
+   * Returns undefined if the session is not running or the runtime doesn't support it.
+   */
+  getSessionConnection?(sessionId: string): SessionConnection | undefined;
+
   /** Release all resources held by this runtime */
   dispose(): Promise<void>;
+}
+
+/** Connection info for interacting with a running session's environment */
+export interface SessionConnection {
+  /** Guest IP address (e.g., 172.16.0.2 for Firecracker TAP) */
+  guestIp: string;
+  /** Path to SSH private key for VM access */
+  sshKeyPath: string;
 }
