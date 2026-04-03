@@ -55,6 +55,7 @@ async function fetchWorkerStatus(baseUrl: string): Promise<Worker | null> {
       // reconstruct the client by calling createWorkerClient(selected.name).
       name: baseUrl,
       status,
+      type: 'firecracker' as const,
       capacity: {
         maxConcurrent: body.capacity.maxConcurrent,
         running: body.capacity.running,

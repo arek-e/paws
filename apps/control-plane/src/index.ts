@@ -1,8 +1,8 @@
 export { createControlPlaneApp } from './app.js';
 export type { ControlPlaneDeps } from './app.js';
 export { ControlPlaneError, controlPlaneError } from './errors.js';
-export { createGovernanceChecker } from '@paws/domain-daemon';
-export type { GovernanceChecker } from '@paws/domain-daemon';
+export { createGovernanceChecker } from '@paws/domain-policy';
+export type { GovernanceChecker } from '@paws/domain-policy';
 export { authMiddleware } from './middleware/auth.js';
 export { createDaemonStore } from '@paws/domain-daemon';
 export type { DaemonStore, StoredDaemon } from '@paws/domain-daemon';

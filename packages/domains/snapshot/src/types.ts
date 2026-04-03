@@ -20,7 +20,8 @@ export type SnapshotBuildStatus = z.infer<typeof SnapshotBuildStatus>;
 /** Snapshot size information */
 export const SnapshotSizeSchema = z.object({
   disk: z.string(),
-  memory: z.string(),
+  /** Memory snapshot size (only for VM-based runtimes like Firecracker) */
+  memory: z.string().optional(),
   total: z.string(),
 });
 

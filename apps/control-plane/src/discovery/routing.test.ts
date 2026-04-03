@@ -27,6 +27,7 @@ function createMockDiscovery(workers: Worker[]): WorkerDiscovery {
 const HEALTHY_WORKER: Worker = {
   name: 'http://worker-1:3000',
   status: 'healthy',
+  type: 'firecracker' as const,
   capacity: { maxConcurrent: 5, running: 0, queued: 0, available: 5 },
   snapshot: { id: 'default', version: 1, ageMs: 0 },
   uptime: 1000,
@@ -84,6 +85,7 @@ describe('session dispatch with WorkerDiscovery', () => {
       {
         name: 'http://worker-a:3000',
         status: 'healthy',
+        type: 'firecracker' as const,
         capacity: { maxConcurrent: 5, running: 4, queued: 0, available: 1 },
         snapshot: { id: 'default', version: 1, ageMs: 0 },
         uptime: 1000,
@@ -91,6 +93,7 @@ describe('session dispatch with WorkerDiscovery', () => {
       {
         name: 'http://worker-b:3000',
         status: 'healthy',
+        type: 'firecracker' as const,
         capacity: { maxConcurrent: 5, running: 1, queued: 0, available: 4 },
         snapshot: { id: 'default', version: 1, ageMs: 0 },
         uptime: 2000,
@@ -129,6 +132,7 @@ describe('session dispatch with WorkerDiscovery', () => {
       {
         name: 'http://unhealthy-worker:3000',
         status: 'unhealthy',
+        type: 'firecracker' as const,
         capacity: { maxConcurrent: 5, running: 0, queued: 0, available: 5 },
         snapshot: { id: 'default', version: 1, ageMs: 0 },
         uptime: 1000,
@@ -159,6 +163,7 @@ describe('fleet routes with WorkerDiscovery', () => {
       {
         name: 'http://w1:3000',
         status: 'healthy',
+        type: 'firecracker' as const,
         capacity: { maxConcurrent: 5, running: 2, queued: 1, available: 2 },
         snapshot: { id: 'default', version: 1, ageMs: 0 },
         uptime: 100,
@@ -166,6 +171,7 @@ describe('fleet routes with WorkerDiscovery', () => {
       {
         name: 'http://w2:3000',
         status: 'healthy',
+        type: 'firecracker' as const,
         capacity: { maxConcurrent: 3, running: 0, queued: 0, available: 3 },
         snapshot: { id: 'default', version: 1, ageMs: 0 },
         uptime: 200,
@@ -212,6 +218,7 @@ describe('fleet routes with WorkerDiscovery', () => {
       {
         name: 'http://w1:3000',
         status: 'healthy',
+        type: 'firecracker' as const,
         capacity: { maxConcurrent: 5, running: 0, queued: 0, available: 5 },
         snapshot: { id: 'default', version: 1, ageMs: 0 },
         uptime: 100,
@@ -219,6 +226,7 @@ describe('fleet routes with WorkerDiscovery', () => {
       {
         name: 'http://w2:3000',
         status: 'degraded',
+        type: 'firecracker' as const,
         capacity: { maxConcurrent: 5, running: 4, queued: 1, available: 0 },
         snapshot: { id: 'default', version: 1, ageMs: 0 },
         uptime: 200,
@@ -246,6 +254,7 @@ describe('fleet routes with WorkerDiscovery', () => {
       {
         name: 'http://w1:3000',
         status: 'healthy',
+        type: 'firecracker' as const,
         capacity: { maxConcurrent: 5, running: 0, queued: 0, available: 5 },
         snapshot: { id: 'default', version: 1, ageMs: 0 },
         uptime: 100,
@@ -253,6 +262,7 @@ describe('fleet routes with WorkerDiscovery', () => {
       {
         name: 'http://w2:3000',
         status: 'degraded',
+        type: 'firecracker' as const,
         capacity: { maxConcurrent: 5, running: 4, queued: 0, available: 1 },
         snapshot: { id: 'default', version: 1, ageMs: 0 },
         uptime: 200,

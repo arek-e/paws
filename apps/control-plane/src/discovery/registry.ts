@@ -91,6 +91,7 @@ export function createWorkerRegistry(): WorkerRegistry {
         result.push({
           name: w.url, // URL as name — used by dispatchSession to create client
           status: w.status,
+          type: 'firecracker' as const,
           capacity: w.capacity,
           snapshot: w.snapshot,
           uptime: w.uptime,

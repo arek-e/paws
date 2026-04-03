@@ -1,56 +1,17 @@
 import type { CreateSessionRequest } from '@paws/domain-session';
-import type { NetworkAllocation, NetworkConfig } from '@paws/domain-network';
+import type { NetworkConfig } from '@paws/domain-network';
 import type { McpServerConfig } from '@paws/domain-mcp';
 import type { McpGateway } from '../mcp/gateway.js';
-import {
-  createFirecrackerClient,
-  createIpPool,
-  createTap,
-  deleteTap,
-  restoreVm,
-  setupIptables,
-  setupInboundPort,
-  stopVm,
-  teardownIptables,
-  teardownInboundPort,
-} from '@paws/firecracker';
-import type { PortPool, VmHandle } from '@paws/firecracker';
-import { createProxy, generateSessionCa } from '@paws/proxy';
-import type { ProxyInstance, SessionCa } from '@paws/proxy';
+import type {
+  RuntimeAdapter,
+  RuntimeSessionRequest,
+  ResolvedCredentials,
+  SessionResult,
+  ExposedPortResult,
+  PortExposureProvider,
+} from '@paws/runtime';
 
-import { WorkerError, WorkerErrorCode } from '../errors.js';
-import { sshExec, sshReadFile, sshWriteFile, waitForSsh } from '../ssh/client.js';
 import type { Semaphore } from '../semaphore.js';
-
-/** Configuration for the session executor */
-export interface ExecutorConfig {
-  /** Path to snapshot directory (default snapshot) */
-  snapshotDir: string;
-  /** Base directory containing all snapshots (for multi-snapshot support) */
-  snapshotBaseDir?: string;
-  /** Base directory for VM working directories */
-  vmBaseDir: string;
-  /** Path to SSH private key for VM access */
-  sshKeyPath: string;
-  /** Concurrency semaphore */
-  semaphore: Semaphore;
-  /** Max IP pool slots (default: 256) */
-  maxSlots?: number;
-  /** Path to firecracker binary */
-  firecrackerBin?: string;
-  /** Worker name for session tracking */
-  workerName: string;
-  /** Port pool for inbound port exposure (optional — needed for port exposure) */
-  portPool?: PortPool | undefined;
-  /** Worker external URL for port exposure (e.g., "http://65.108.10.170") */
-  workerExternalUrl?: string | undefined;
-  /** LLM gateway — routes provider API calls through an external proxy (LiteLLM, OpenRouter, etc.) */
-  llmGateway?: LlmGateway | undefined;
-  /** MCP gateway for secure MCP tool access (agentgateway) */
-  mcpGateway?: McpGateway | undefined;
-  /** MCP server store — registry of configured MCP servers with credentials */
-  mcpServerStore?: ReadonlyMap<string, McpServerConfig> | undefined;
-}
 
 /** LLM gateway plugin — intercepts LLM API calls and routes through an external proxy */
 export interface LlmGateway {
@@ -64,305 +25,91 @@ export interface LlmGateway {
   domains: string[];
 }
 
-/** Result of a completed session */
-export interface SessionResult {
-  exitCode: number;
-  stdout: string;
-  stderr: string;
-  output: unknown;
-  durationMs: number;
-  exposedPorts?:
-    | Array<{
-        port: number;
-        url: string;
-        label?: string | undefined;
-        access?: string | undefined;
-        pin?: string | undefined;
-        shareLink?: string | undefined;
-      }>
-    | undefined;
+/** Configuration for the session executor */
+export interface ExecutorConfig {
+  /** Runtime adapter for session execution */
+  runtime: RuntimeAdapter;
+  /** Concurrency semaphore */
+  semaphore: Semaphore;
+  /** Worker name for session tracking */
+  workerName: string;
+  /** Port exposure provider (optional — needed for tunnel-based port exposure) */
+  portExposure?: PortExposureProvider;
+  /** LLM gateway — routes provider API calls through an external proxy */
+  llmGateway?: LlmGateway;
+  /** MCP gateway for secure MCP tool access (agentgateway) */
+  mcpGateway?: McpGateway;
+  /** MCP server store — registry of configured MCP servers with credentials */
+  mcpServerStore?: ReadonlyMap<string, McpServerConfig>;
 }
+
+/** Result of a completed session (re-exported from runtime for convenience) */
+export type { SessionResult } from '@paws/runtime';
 
 /** Active session state for tracking */
 export interface ActiveSession {
   sessionId: string;
   status: 'running' | 'stopping' | 'paused';
   startedAt: Date;
-  allocation?: NetworkAllocation;
-  vmHandle?: VmHandle;
-  proxyHandle?: ProxyInstance;
-  ca?: SessionCa;
-  /** Allocated host ports for inbound DNAT */
-  inboundPorts?: Array<{ hostPort: number; guestPort: number }> | undefined;
-  /** Directory where checkpoint snapshot files are stored */
-  checkpointDir?: string | undefined;
+  exposedPorts?: ExposedPortResult[];
 }
 
-/** Resolve a snapshot ID to a local directory path */
-function resolveSnapshotDir(config: ExecutorConfig, snapshotId: string): string {
-  if (config.snapshotBaseDir) {
-    // Multi-snapshot: look for the snapshot in the base directory
-    const resolved = `${config.snapshotBaseDir}/${snapshotId}`;
-    // Fall back to default if the specific snapshot doesn't exist
-    try {
-      const stat = Bun.file(`${resolved}/vmstate.snap`);
-      if (stat.size > 0) return resolved;
-    } catch {
-      // Snapshot not found, fall back
-    }
-  }
-  // Single-snapshot: always use the configured default
-  return config.snapshotDir;
-}
-
-/** Create the session executor that orchestrates the full VM lifecycle */
+/** Create the session executor — thin wrapper around a RuntimeAdapter */
 export function createExecutor(config: ExecutorConfig) {
-  const ipPool = createIpPool(config.maxSlots ?? 256);
   const sessions = new Map<string, ActiveSession>();
 
   return {
     /**
-     * Execute a session through the full VM lifecycle:
-     * 1. Acquire semaphore slot
-     * 2. Allocate network (/30 subnet)
-     * 3. Create TAP device
-     * 4. Generate session CA
-     * 5. Setup iptables rules
-     * 6. Spawn TLS proxy
-     * 7. Restore VM from snapshot
-     * 8. Wait for SSH
-     * 9. Inject CA cert into VM trust store
-     * 10. Write and execute workload script
-     * 11. Collect results
-     * 12. Cleanup (always runs): stop VM, kill proxy, teardown network
+     * Execute a session through the runtime adapter.
+     *
+     * The executor handles:
+     * - Semaphore-based concurrency control
+     * - Converting CreateSessionRequest → RuntimeSessionRequest + ResolvedCredentials
+     * - Delegating execution to the runtime adapter
+     * - Session lifecycle tracking
+     *
+     * The runtime adapter handles the actual execution (VM lifecycle, networking, etc.)
      */
     async execute(sessionId: string, request: CreateSessionRequest): Promise<SessionResult> {
-      const startedAt = new Date();
-      const network: NetworkConfig = request.network ?? {
-        allowOut: [],
-        credentials: {},
-        expose: [],
-      };
-      const session: ActiveSession = { sessionId, status: 'running', startedAt };
+      const session: ActiveSession = { sessionId, status: 'running', startedAt: new Date() };
       sessions.set(sessionId, session);
 
-      let allocation: NetworkAllocation | undefined;
-      let vmHandle: VmHandle | undefined;
-      let proxyHandle: ProxyInstance | undefined;
-      let ca: SessionCa | undefined;
-
       try {
-        // 1. Acquire semaphore slot
+        // Acquire semaphore slot
         await config.semaphore.acquire();
 
-        // 2. Allocate network
-        const allocResult = ipPool.allocate();
-        if (allocResult.isErr()) {
-          throw new WorkerError(
-            WorkerErrorCode.CAPACITY_EXHAUSTED,
-            allocResult.error.message,
-            allocResult.error,
-          );
-        }
-        allocation = allocResult.value;
-        session.allocation = allocation;
+        // Convert domain request to runtime-agnostic format
+        const runtimeRequest = toRuntimeRequest(request);
+        const credentials = resolveCredentials(request.network, config.llmGateway);
 
-        const vmDir = `${config.vmBaseDir}/${sessionId}`;
-
-        // 3. Create TAP device
-        const tapResult = await createTap(allocation);
-        if (tapResult.isErr()) {
-          throw new WorkerError(
-            WorkerErrorCode.EXECUTION_FAILED,
-            `TAP creation failed: ${tapResult.error.message}`,
-            tapResult.error,
-          );
-        }
-
-        // 4. Generate session CA
-        const caResult = await generateSessionCa({ dir: `${vmDir}/ca` });
-        if (caResult.isErr()) throw caResult.error;
-        ca = caResult.value;
-        session.ca = ca;
-
-        // 5. Setup iptables rules
-        const iptResult = await setupIptables(allocation);
-        if (iptResult.isErr()) {
-          throw new WorkerError(
-            WorkerErrorCode.EXECUTION_FAILED,
-            `iptables setup failed: ${iptResult.error.message}`,
-            iptResult.error,
-          );
-        }
-
-        // 6. Spawn TLS proxy
-        proxyHandle = createProxy({
-          listen: { host: allocation.hostIp, port: 8080 },
-          domains: networkConfigToDomains(network, config.llmGateway),
-          ca: { cert: ca.cert, key: ca.key },
-        });
-        await proxyHandle.start();
-        session.proxyHandle = proxyHandle;
-
-        // 7. Restore VM from snapshot (resolve snapshot ID → directory)
-        const snapshotDir = resolveSnapshotDir(config, request.snapshot);
-        const restoreOpts = {
-          snapshotDir,
-          vmDir,
-          ...(config.firecrackerBin ? { firecrackerBin: config.firecrackerBin } : {}),
-        };
-        const restoreResult = await restoreVm(restoreOpts);
-        if (restoreResult.isErr()) {
-          throw new WorkerError(
-            WorkerErrorCode.EXECUTION_FAILED,
-            `VM restore failed: ${restoreResult.error.message}`,
-            restoreResult.error,
-          );
-        }
-        vmHandle = restoreResult.value;
-        session.vmHandle = vmHandle;
-
-        // 8. Wait for SSH
-        const sshOpts = {
-          host: allocation.guestIp,
-          keyPath: config.sshKeyPath,
-        };
-
-        const sshResult = await waitForSsh(sshOpts);
-        if (sshResult.isErr()) throw sshResult.error;
-
-        // 9. Inject CA cert into VM trust store
-        const injectCaResult = await sshWriteFile(
-          sshOpts,
-          '/usr/local/share/ca-certificates/paws-session.crt',
-          ca.cert,
-        );
-        if (injectCaResult.isErr()) throw injectCaResult.error;
-
-        const updateCaResult = await sshExec(sshOpts, 'update-ca-certificates 2>/dev/null || true');
-        if (updateCaResult.isErr()) throw updateCaResult.error;
-
-        // 9.5. Set up port exposure (if configured)
-        const exposePorts = network.expose ?? [];
-        let exposedPortUrls: SessionResult['exposedPorts'];
-
-        if (exposePorts.length > 0 && config.portPool) {
-          const portResult = config.portPool.allocate(exposePorts.length);
-          if (portResult.isErr()) {
-            throw new WorkerError(
-              WorkerErrorCode.CAPACITY_EXHAUSTED,
-              `Port allocation failed: ${portResult.error.message}`,
-              portResult.error,
-            );
-          }
-          const hostPorts = portResult.value;
-          session.inboundPorts = exposePorts.map((ep, i) => ({
-            hostPort: hostPorts[i]!,
-            guestPort: ep.port,
-          }));
-
-          // Set up inbound iptables rules
-          for (const mapping of session.inboundPorts) {
-            const iptResult = await setupInboundPort(
-              allocation,
-              mapping.hostPort,
-              mapping.guestPort,
-            );
-            if (iptResult.isErr()) {
-              throw new WorkerError(
-                WorkerErrorCode.EXECUTION_FAILED,
-                `Inbound iptables failed: ${iptResult.error.message}`,
-                iptResult.error,
-              );
-            }
-          }
-
-          // Create direct host port URLs (port exposure provider can be injected at runtime)
-          if (config.workerExternalUrl) {
-            exposedPortUrls = exposePorts.map((ep, i) => ({
-              port: ep.port,
-              url: `${config.workerExternalUrl}:${hostPorts[i]}`,
-              label: ep.label,
-            }));
-          }
-        }
-
-        // 9.75. Register MCP servers with agentgateway (if configured)
-        const mcpServers = network.mcp?.servers ?? [];
+        // Register MCP servers with agentgateway (if configured)
+        const mcpServers = request.network?.mcp?.servers ?? [];
         if (mcpServers.length > 0 && config.mcpGateway && config.mcpServerStore) {
           await config.mcpGateway.addSession(sessionId, mcpServers, config.mcpServerStore);
           const mcpUrl = config.mcpGateway.getSessionUrl(sessionId);
           if (mcpUrl) {
-            request.workload.env.GATEWAY_MCP_URL = mcpUrl;
+            runtimeRequest.workload.env.GATEWAY_MCP_URL = mcpUrl;
           }
         }
 
-        // 10. Write and execute workload script
-        const envExports = Object.entries(request.workload.env)
-          .map(([k, v]) => `export ${k}=${shellEscape(v)}`)
-          .join('\n');
-
-        const script = [
-          '#!/bin/bash',
-          'set -euo pipefail',
-          envExports,
-          request.workload.script,
-        ].join('\n');
-
-        const writeResult = await sshWriteFile(sshOpts, '/tmp/workload.sh', script);
-        if (writeResult.isErr()) throw writeResult.error;
-
-        await sshExec(sshOpts, 'chmod +x /tmp/workload.sh');
-
-        // Execute with timeout
-        const timeoutSecs = Math.ceil(request.timeoutMs / 1000);
-        const execResult = await sshExec(
-          sshOpts,
-          `timeout ${timeoutSecs} /tmp/workload.sh 2>/tmp/stderr.log || echo "EXIT:$?" > /tmp/exit_code`,
+        // Delegate to runtime adapter
+        const result = await config.runtime.execute(
+          sessionId,
+          runtimeRequest,
+          credentials,
+          config.portExposure ? { portExposure: config.portExposure } : undefined,
         );
 
-        // 11. Collect results
-        let stdout = '';
-        let stderr = '';
-        let exitCode = 0;
-        let output: unknown = undefined;
-
-        if (execResult.isOk()) {
-          stdout = execResult.value.stdout;
+        if (result.isErr()) {
+          throw result.error;
         }
 
-        // Read stderr
-        const stderrResult = await sshReadFile(sshOpts, '/tmp/stderr.log');
-        if (stderrResult.isOk()) {
-          stderr = stderrResult.value;
+        if (result.value.exposedPorts) {
+          session.exposedPorts = result.value.exposedPorts;
         }
-
-        // Check for non-zero exit code
-        const exitCodeResult = await sshReadFile(sshOpts, '/tmp/exit_code');
-        if (exitCodeResult.isOk()) {
-          const match = exitCodeResult.value.match(/EXIT:(\d+)/);
-          if (match?.[1]) {
-            exitCode = parseInt(match[1], 10);
-          }
-        }
-
-        // Try to read structured output
-        const outputResult = await sshReadFile(sshOpts, '/output/result.json');
-        if (outputResult.isOk()) {
-          try {
-            output = JSON.parse(outputResult.value);
-          } catch {
-            // Not valid JSON — ignore
-          }
-        }
-
-        const durationMs = Date.now() - startedAt.getTime();
-
-        return { exitCode, stdout, stderr, output, durationMs, exposedPorts: exposedPortUrls };
+        return result.value;
       } finally {
-        // Cleanup — always runs
         session.status = 'stopping';
-
         // Remove MCP session from agentgateway
         if (config.mcpGateway) {
           try {
@@ -371,117 +118,9 @@ export function createExecutor(config: ExecutorConfig) {
             // Best-effort cleanup
           }
         }
-
-        // Clean up inbound iptables rules and release host ports
-        if (session.inboundPorts?.length && allocation) {
-          for (const mapping of session.inboundPorts) {
-            await teardownInboundPort(allocation, mapping.hostPort, mapping.guestPort);
-          }
-          if (config.portPool) {
-            config.portPool.release(session.inboundPorts.map((m) => m.hostPort));
-          }
-        }
-
-        if (vmHandle) {
-          await stopVm(vmHandle);
-        }
-
-        if (proxyHandle) {
-          await proxyHandle.stop();
-        }
-
-        if (allocation) {
-          await teardownIptables(allocation);
-          await deleteTap(allocation.tapDevice);
-          ipPool.release(allocation.subnetIndex);
-        }
-
         config.semaphore.release();
         sessions.delete(sessionId);
       }
-    },
-
-    /**
-     * Checkpoint a running session: pause the VM and create a memory snapshot.
-     * The session stays in the active map with status 'paused'. Resources
-     * (TAP, iptables, proxy) remain allocated so resume is fast.
-     */
-    async checkpoint(sessionId: string): Promise<void> {
-      const session = sessions.get(sessionId);
-      if (!session)
-        throw new WorkerError(WorkerErrorCode.SESSION_NOT_FOUND, `Session ${sessionId} not found`);
-      if (session.status !== 'running')
-        throw new WorkerError(
-          WorkerErrorCode.SESSION_NOT_FOUND,
-          `Session ${sessionId} is ${session.status}, not running`,
-        );
-      if (!session.vmHandle)
-        throw new WorkerError(WorkerErrorCode.SESSION_NOT_FOUND, `Session ${sessionId} has no VM`);
-
-      const client = createFirecrackerClient(session.vmHandle.socketPath);
-      const checkpointDir = `${config.vmBaseDir}/${sessionId}/checkpoint`;
-      await Bun.write(`${checkpointDir}/.keep`, '');
-
-      // 1. Pause the VM
-      const pauseResult = await client.pauseVm();
-      if (pauseResult.isErr()) throw new Error(`Failed to pause VM: ${pauseResult.error.message}`);
-
-      // 2. Create snapshot
-      const snapResult = await client.createSnapshot({
-        snapshotType: 'Full',
-        snapshotPath: `${checkpointDir}/vmstate.snap`,
-        memFilePath: `${checkpointDir}/memory.snap`,
-      });
-      if (snapResult.isErr())
-        throw new Error(`Failed to create snapshot: ${snapResult.error.message}`);
-
-      // 3. Resume the VM (it stays running, checkpoint is saved for later rollback)
-      const resumeResult = await client.resumeVm();
-      if (resumeResult.isErr())
-        throw new Error(`Failed to resume VM: ${resumeResult.error.message}`);
-
-      session.checkpointDir = checkpointDir;
-    },
-
-    /**
-     * Rollback a session to its last checkpoint. Stops the current VM,
-     * restores from the checkpoint snapshot, and resumes execution.
-     */
-    async rollback(sessionId: string): Promise<void> {
-      const session = sessions.get(sessionId);
-      if (!session)
-        throw new WorkerError(WorkerErrorCode.SESSION_NOT_FOUND, `Session ${sessionId} not found`);
-      if (!session.checkpointDir)
-        throw new WorkerError(
-          WorkerErrorCode.SESSION_NOT_FOUND,
-          `Session ${sessionId} has no checkpoint`,
-        );
-      if (!session.vmHandle)
-        throw new WorkerError(WorkerErrorCode.SESSION_NOT_FOUND, `Session ${sessionId} has no VM`);
-
-      // 1. Stop the current VM
-      await stopVm(session.vmHandle);
-
-      // 2. Restore from checkpoint (reuses existing VM directory with checkpoint files)
-      const vmDir = `${config.vmBaseDir}/${sessionId}`;
-      const restoreResult = await restoreVm({
-        vmDir,
-        snapshotDir: session.checkpointDir,
-        firecrackerBin: config.firecrackerBin ?? 'firecracker',
-      });
-      if (restoreResult.isErr())
-        throw new Error(`Failed to restore from checkpoint: ${restoreResult.error.message}`);
-
-      const vmHandle = restoreResult.value;
-
-      // 3. Resume
-      const client = createFirecrackerClient(vmHandle.socketPath);
-      const resumeResult = await client.resumeVm();
-      if (resumeResult.isErr())
-        throw new Error(`Failed to resume VM after rollback: ${resumeResult.error.message}`);
-
-      session.vmHandle = vmHandle;
-      session.status = 'running';
     },
 
     /** Get all active sessions */
@@ -489,59 +128,76 @@ export function createExecutor(config: ExecutorConfig) {
       return sessions;
     },
 
-    /** IP pool stats */
-    get poolStats() {
-      return {
-        allocated: ipPool.size,
-        available: ipPool.available,
-      };
+    /** Runtime capabilities */
+    get capabilities() {
+      return config.runtime.capabilities;
     },
   };
 }
 
 export type Executor = ReturnType<typeof createExecutor>;
 
-/** Convert NetworkConfig (from @paws/domain-network) to proxy-native domains map */
-function networkConfigToDomains(
-  network: NetworkConfig,
+/** Convert CreateSessionRequest to RuntimeSessionRequest */
+function toRuntimeRequest(request: CreateSessionRequest): RuntimeSessionRequest {
+  const expose = request.network?.expose;
+  return {
+    snapshot: request.snapshot,
+    workload: {
+      type: request.workload.type,
+      script: request.workload.script,
+      env: request.workload.env,
+    },
+    ...(request.resources ? { resources: request.resources } : {}),
+    timeoutMs: request.timeoutMs,
+    ...(expose
+      ? {
+          exposePorts: expose.map((ep) => ({
+            port: ep.port,
+            ...(ep.protocol ? { protocol: ep.protocol } : {}),
+            ...(ep.label ? { label: ep.label } : {}),
+            ...(ep.access ? { access: ep.access } : {}),
+            ...(ep.allowedEmails ? { allowedEmails: ep.allowedEmails } : {}),
+          })),
+        }
+      : {}),
+  };
+}
+
+/** Resolve credentials from NetworkConfig into runtime-agnostic format */
+function resolveCredentials(
+  network: NetworkConfig | undefined,
   gateway?: LlmGateway,
-): Record<string, import('@paws/proxy').DomainEntry> {
-  const domains: Record<string, import('@paws/proxy').DomainEntry> = {};
+): ResolvedCredentials {
+  const domains: ResolvedCredentials['domains'] = {};
+  const allowlist: string[] = [];
+
+  if (!network) {
+    return { domains, allowlist };
+  }
 
   // Add credential-bearing domains
   for (const [domain, cred] of Object.entries(network.credentials)) {
     domains[domain] = { headers: cred.headers };
   }
 
-  // Add allowOut domains (no credentials) — skip if already in credentials
+  // Add allowOut domains (no credentials)
   for (const domain of network.allowOut) {
-    if (!(domain in domains)) {
-      domains[domain] = {};
-    }
+    if (domain in domains) continue;
+    allowlist.push(domain);
   }
 
-  // If an LLM gateway is configured, override matching domains to route through it.
-  // The proxy terminates TLS from the VM, then forwards to the gateway URL instead
-  // of the real provider. The gateway handles model routing, cost tracking, etc.
+  // If an LLM gateway is configured, override matching domains to route through it
   if (gateway) {
     for (const domain of gateway.domains) {
       domains[domain] = {
         headers: {
-          Authorization: `Bearer ${gateway.apiKey}`,
-          // Preserve existing credential headers (merged, gateway key takes priority)
           ...(domains[domain]?.headers ?? {}),
-          // Override Authorization with gateway key
-          ...(gateway.apiKey ? { Authorization: `Bearer ${gateway.apiKey}` } : {}),
+          Authorization: `Bearer ${gateway.apiKey}`,
         },
         target: gateway.url,
       };
     }
   }
 
-  return domains;
-}
-
-/** Escape a value for safe shell interpolation */
-function shellEscape(s: string): string {
-  return `'${s.replace(/'/g, "'\\''")}'`;
+  return { domains, allowlist };
 }

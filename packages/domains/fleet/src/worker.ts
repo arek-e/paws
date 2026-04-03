@@ -26,12 +26,22 @@ export const WorkerSnapshotInfoSchema = z.object({
 
 export type WorkerSnapshotInfo = z.infer<typeof WorkerSnapshotInfoSchema>;
 
+/** Worker runtime type */
+export const WorkerType = z
+  .enum(['firecracker', 'container', 'lightweight'])
+  .default('firecracker');
+
+export type WorkerType = z.infer<typeof WorkerType>;
+
 /** Worker node info */
 export const WorkerSchema = z.object({
   name: NonEmptyStringSchema,
   status: WorkerStatus,
+  /** Runtime type this worker supports */
+  type: WorkerType,
   capacity: WorkerCapacitySchema,
-  snapshot: WorkerSnapshotInfoSchema,
+  /** Snapshot info (optional — not all runtime types use snapshots) */
+  snapshot: WorkerSnapshotInfoSchema.optional(),
   uptime: z.number().int().nonnegative(),
 });
 

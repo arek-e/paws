@@ -29,10 +29,10 @@ import {
   listDaemonsRoute,
   updateDaemonRoute,
   receiveWebhookRoute,
-  createGovernanceChecker,
   createDaemonStore,
   type DaemonStore,
 } from '@paws/domain-daemon';
+import { createGovernanceChecker } from '@paws/domain-policy';
 import {
   selectWorker,
   costSummaryRoute,
@@ -62,6 +62,7 @@ import {
   getTemplateRoute,
   deployTemplateRoute,
 } from '@paws/domain-snapshot';
+import type { Worker } from '@paws/domain-fleet';
 
 import type { WorkerRegistry } from './discovery/registry.js';
 import { createBuildStore, createSqliteBuildStore } from './store/builds.js';
@@ -86,7 +87,7 @@ import { createWorkerClient } from './worker-client.js';
 import type { CredentialStore } from '@paws/credentials';
 import type { PawsDatabase } from './db/index.js';
 import type { WorkerDiscovery } from './discovery/index.js';
-import type { GovernanceChecker } from '@paws/domain-daemon';
+import type { GovernanceChecker } from '@paws/domain-policy';
 import type { WorkerClient } from './worker-client.js';
 
 export interface ControlPlaneDeps {
@@ -1093,7 +1094,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     // Generate workload from agent config or use the explicit workload
     let workload;
     if (daemon.agent) {
-      const { generateAgentScript } = await import('@paws/domain-daemon');
+      const { generateAgentScript } = await import('@paws/domain-agent');
       workload = {
         type: 'script' as const,
         script: generateAgentScript(daemon.agent),
@@ -1936,15 +1937,7 @@ function resolveWorkerClientForSession(
 async function resolveAllWorkers(
   discovery: WorkerDiscovery | null,
   legacyWorkerClient: WorkerClient | null,
-): Promise<
-  Array<{
-    name: string;
-    status: 'healthy' | 'degraded' | 'unhealthy';
-    capacity: { maxConcurrent: number; running: number; queued: number; available: number };
-    snapshot: { id: string; version: number; ageMs: number };
-    uptime: number;
-  }>
-> {
+): Promise<Worker[]> {
   if (discovery) {
     return discovery.getWorkers();
   }
@@ -1956,6 +1949,7 @@ async function resolveAllWorkers(
         {
           name: workerHealth.worker,
           status: workerHealth.status as 'healthy' | 'degraded' | 'unhealthy',
+          type: 'firecracker' as const,
           capacity: workerHealth.capacity,
           snapshot: { id: 'default', version: 1, ageMs: 0 },
           uptime: workerHealth.uptime,

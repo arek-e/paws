@@ -12,7 +12,7 @@ export const PortAccessSchema = z.enum(['sso', 'pin', 'email']).default('sso');
 
 export type PortAccess = z.infer<typeof PortAccessSchema>;
 
-/** Port to expose publicly from the VM */
+/** Port to expose publicly from the runtime */
 export const PortExposureSchema = z.object({
   /** Port inside the VM to expose */
   port: z.number().int().min(1).max(65535),
@@ -34,7 +34,7 @@ export const NetworkConfigSchema = z.object({
   allowOut: z.array(z.string()).default([]),
   /** Per-domain credential injection */
   credentials: z.record(z.string(), DomainCredentialSchema).default({}),
-  /** Ports to expose publicly */
+  /** Ports to expose publicly from the runtime */
   expose: z.array(PortExposureSchema).default([]),
   /** MCP servers this session/daemon can access (by name) */
   mcp: z.object({ servers: z.array(z.string()) }).optional(),
@@ -42,15 +42,13 @@ export const NetworkConfigSchema = z.object({
 
 export type NetworkConfig = z.infer<typeof NetworkConfigSchema>;
 
-/** /30 subnet allocation for a VM's TAP device */
+/** /30 subnet allocation for a runtime's network interface */
 export const NetworkAllocationSchema = z.object({
-  /** TAP device name (e.g. "tap0") */
-  tapDevice: z.string(),
   /** Subnet index (0-based, used to compute IPs) */
   subnetIndex: z.number().int().nonnegative(),
   /** Host-side IP (where proxy listens) */
   hostIp: z.ipv4(),
-  /** Guest-side IP (VM's address) */
+  /** Guest-side IP (runtime's address) */
   guestIp: z.ipv4(),
   /** CIDR notation for the /30 subnet */
   subnet: z.string(),

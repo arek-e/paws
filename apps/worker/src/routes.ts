@@ -72,7 +72,7 @@ export function createSessionApp(deps: AppDeps) {
         queued: semaphore.queued,
         available: semaphore.available,
       },
-      pool: executor.poolStats,
+      runtime: executor.capabilities.fullLinux ? 'firecracker' : 'lightweight',
       snapshot: {
         syncEnabled: !!syncLoop,
         currentVersion: syncStatus?.currentVersion ?? 0,
@@ -114,6 +114,7 @@ export function createSessionApp(deps: AppDeps) {
     const sessionId = randomUUID();
 
     // Fire-and-forget — execute in background, track results
+    const sessionStartTime = Date.now();
     executor.execute(sessionId, parsed.data).then(
       (result) => {
         const status = result.exitCode === 0 ? 'completed' : 'failed';
@@ -135,7 +136,7 @@ export function createSessionApp(deps: AppDeps) {
           stdout: '',
           stderr: err instanceof Error ? err.message : String(err),
           output: undefined,
-          durationMs: Date.now() - Date.now(),
+          durationMs: Date.now() - sessionStartTime,
           completedAt: new Date().toISOString(),
         });
       },
@@ -156,11 +157,7 @@ export function createSessionApp(deps: AppDeps) {
         status: active.status === 'paused' ? 'paused' : 'running',
         startedAt: active.startedAt.toISOString(),
         worker: workerName,
-        hasCheckpoint: !!active.checkpointDir,
-        exposedPorts: active.inboundPorts?.map((p) => ({
-          port: p.guestPort,
-          hostPort: p.hostPort,
-        })),
+        exposedPorts: active.exposedPorts,
       });
     }
 
@@ -183,27 +180,31 @@ export function createSessionApp(deps: AppDeps) {
   // --- Checkpoint / Rollback ---
 
   // Create a checkpoint (snapshot of the running VM)
-  app.post('/v1/sessions/:id/checkpoint', async (c) => {
-    const id = c.req.param('id');
-    try {
-      await executor.checkpoint(id);
-      return c.json({ sessionId: id, checkpoint: true }, 200);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return c.json({ error: { code: 'CHECKPOINT_FAILED', message } }, 400);
-    }
+  app.post('/v1/sessions/:id/checkpoint', (c) => {
+    return c.json(
+      {
+        error: {
+          code: 'NOT_IMPLEMENTED',
+          message:
+            'Checkpoint/rollback requires the legacy executor. RuntimeAdapter checkpoint support coming soon.',
+        },
+      },
+      501,
+    );
   });
 
   // Rollback to the last checkpoint
-  app.post('/v1/sessions/:id/rollback', async (c) => {
-    const id = c.req.param('id');
-    try {
-      await executor.rollback(id);
-      return c.json({ sessionId: id, rolledBack: true }, 200);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return c.json({ error: { code: 'ROLLBACK_FAILED', message } }, 400);
-    }
+  app.post('/v1/sessions/:id/rollback', (c) => {
+    return c.json(
+      {
+        error: {
+          code: 'NOT_IMPLEMENTED',
+          message:
+            'Checkpoint/rollback requires the legacy executor. RuntimeAdapter checkpoint support coming soon.',
+        },
+      },
+      501,
+    );
   });
 
   // --- Browser (computer-use) ---

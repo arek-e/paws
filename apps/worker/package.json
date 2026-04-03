@@ -26,6 +26,8 @@
     "@paws/firecracker": "workspace:*",
     "@paws/logger": "workspace:*",
     "@paws/proxy": "workspace:*",
+    "@paws/runtime": "workspace:*",
+    "@paws/runtime-firecracker": "workspace:*",
     "@paws/snapshot-store": "workspace:*",
     "hono": "catalog:",
     "neverthrow": "catalog:",

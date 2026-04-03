@@ -1,12 +1,8 @@
 import { eq } from 'drizzle-orm';
 
-import type {
-  AgentConfig,
-  CreateDaemonRequest,
-  DaemonStatus,
-  Governance,
-  Trigger,
-} from '@paws/domain-daemon';
+import type { AgentConfig } from '@paws/domain-agent';
+import type { CreateDaemonRequest, DaemonStatus, Trigger } from '@paws/domain-daemon';
+import type { Governance } from '@paws/domain-policy';
 import type { NetworkConfig } from '@paws/domain-network';
 import type { Resources, Workload } from '@paws/domain-session';
 

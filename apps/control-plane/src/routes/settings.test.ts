@@ -273,6 +273,7 @@ describe('GET /v1/settings/info', () => {
           {
             name: 'w1',
             status: 'healthy' as const,
+            type: 'firecracker' as const,
             capacity: { maxConcurrent: 5, running: 0, queued: 0, available: 5 },
             snapshot: { id: 'test', version: 1, ageMs: 0 },
             uptime: 100,
