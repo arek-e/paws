@@ -9,7 +9,7 @@ function makeRequest(overrides?: Partial<CreateDaemonRequest>): CreateDaemonRequ
     role: 'test-daemon',
     description: 'A test daemon',
     snapshot: 'agent-latest',
-    trigger: { type: 'webhook', events: ['push'] },
+    trigger: { type: 'webhook', events: ['push'], signatureScheme: 'hmac-sha256' as const },
     workload: { type: 'script', script: 'echo hello', env: {} },
     ...overrides,
   };

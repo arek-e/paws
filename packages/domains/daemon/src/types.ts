@@ -16,10 +16,15 @@ export const DaemonStatus = z.enum(['active', 'paused', 'stopped']);
 
 export type DaemonStatus = z.infer<typeof DaemonStatus>;
 
-/** Webhook trigger */
+/** Webhook trigger — generic, any HTTP POST source */
 export const WebhookTriggerSchema = z.object({
   type: z.literal('webhook'),
-  events: z.array(NonEmptyStringSchema).min(1),
+  events: z.array(NonEmptyStringSchema).default([]),
+  /** Which HTTP header carries the signature (e.g., X-Linear-Signature) */
+  signatureHeader: z.string().optional(),
+  /** Signature verification algorithm */
+  signatureScheme: z.enum(['hmac-sha256', 'slack-v0', 'none']).default('hmac-sha256'),
+  /** Webhook secret (supports $ENV_VAR credential resolution) */
   secret: z.string().optional(),
 });
 

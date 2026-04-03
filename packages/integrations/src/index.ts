@@ -13,3 +13,5 @@ export {
   loadCredentials,
 } from './github-manifest.js';
 export type { GitHubAppCredentials, GitHubAppManifest } from './github-manifest.js';
+export { verifyWebhook } from './webhook-verify.js';
+export type { SignatureScheme } from './webhook-verify.js';

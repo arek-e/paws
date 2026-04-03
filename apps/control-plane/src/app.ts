@@ -5,6 +5,7 @@ import { createLogger } from '@paws/logger';
 import type { Hono } from 'hono';
 import {
   verifyWebhookSignature,
+  verifyWebhook,
   parseWebhookEvent,
   matchDaemon,
   createGitHubAuth,
@@ -1430,6 +1431,137 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       return c.json({ accepted: true, sessionId }, 202);
     });
   }
+
+  // --- Generic Webhooks ---
+  // Receives any HTTP POST, verifies signature, triggers matching daemon session.
+  // The agent gets the raw payload as TRIGGER_PAYLOAD and parses it.
+
+  app.post('/v1/webhooks/:role', async (c) => {
+    const role = c.req.param('role');
+    const daemon = daemonStore.get(role);
+
+    if (!daemon) {
+      return c.json(
+        { error: { code: 'DAEMON_NOT_FOUND', message: `No daemon with role '${role}'` } },
+        404,
+      );
+    }
+
+    if (daemon.trigger.type !== 'webhook') {
+      return c.json(
+        {
+          error: {
+            code: 'INVALID_TRIGGER',
+            message: `Daemon '${role}' has trigger type '${daemon.trigger.type}', not 'webhook'`,
+          },
+        },
+        400,
+      );
+    }
+
+    const rawBody = await c.req.text();
+    const trigger = daemon.trigger;
+
+    // Resolve secret (supports $ENV_VAR via credential resolver)
+    let resolvedSecret = trigger.secret ?? '';
+    if (resolvedSecret.startsWith('$') && credentialResolver) {
+      try {
+        resolvedSecret = await credentialResolver.resolveValue(resolvedSecret);
+      } catch {
+        return c.json(
+          { error: { code: 'VALIDATION_ERROR', message: 'Webhook secret could not be resolved' } },
+          500,
+        );
+      }
+    }
+
+    // Verify signature
+    const scheme = trigger.signatureScheme ?? 'hmac-sha256';
+    const signatureHeader = trigger.signatureHeader ?? 'x-webhook-signature';
+    const signature = c.req.header(signatureHeader);
+
+    if (scheme !== 'none') {
+      const headers: Record<string, string | undefined> = {
+        'x-slack-request-timestamp': c.req.header('x-slack-request-timestamp'),
+      };
+      const valid = verifyWebhook(scheme, rawBody, signature, resolvedSecret, headers);
+      if (!valid) {
+        return c.json(
+          { error: { code: 'UNAUTHORIZED', message: 'Invalid webhook signature' } },
+          401,
+        );
+      }
+    }
+
+    // Governance check
+    if (!governance.checkRateLimit(role, daemon.governance)) {
+      return c.json({ error: { code: 'RATE_LIMITED', message: 'Rate limit exceeded' } }, 429);
+    }
+
+    // Create session
+    const sessionId = randomUUID();
+    if (!daemon.workload) {
+      return c.json(
+        { error: { code: 'DAEMON_NOT_FOUND', message: 'No workload configured' } },
+        500,
+      );
+    }
+
+    const sessionRequest = {
+      snapshot: daemon.snapshot,
+      workload: {
+        type: 'script' as const,
+        script: daemon.workload.script,
+        env: {
+          ...daemon.workload.env,
+          TRIGGER_PAYLOAD: rawBody,
+          TRIGGER_TYPE: 'webhook',
+          TRIGGER_SOURCE: c.req.header('user-agent') ?? 'unknown',
+        },
+      },
+      resources: daemon.resources,
+      timeoutMs: 600_000,
+      network: daemon.network,
+      stateVolumePath: `/var/lib/paws/state/${role}`,
+      metadata: {
+        triggerType: 'webhook',
+        daemonRole: role,
+        source: c.req.header('user-agent') ?? 'unknown',
+      },
+    };
+
+    sessionStore.create(sessionId, sessionRequest, role);
+    governance.recordAction(role);
+    daemonStore.recordInvocation(role);
+
+    // Resolve credentials + dispatch
+    if (sessionRequest.network?.credentials) {
+      try {
+        sessionRequest.network.credentials = await credentialResolver.autoInject(
+          sessionRequest.network.allowOut ?? [],
+          sessionRequest.network.credentials ?? {},
+        );
+        sessionRequest.network.credentials = await credentialResolver.resolveCredentials(
+          sessionRequest.network.credentials,
+        );
+      } catch {
+        // Non-fatal — dispatch anyway, session will fail if credentials are needed
+      }
+    }
+
+    dispatchSession(discovery, legacyWorkerClient, sessionStore, sessionId, sessionRequest);
+
+    auditStore.append({
+      category: 'daemon',
+      action: 'webhook.triggered',
+      severity: 'info',
+      resourceType: 'daemon',
+      resourceId: role,
+      details: { sessionId, source: c.req.header('user-agent') ?? 'unknown' },
+    });
+
+    return c.json({ accepted: true, sessionId }, 202);
+  });
 
   // --- Audit ---
 
