@@ -46,7 +46,7 @@ export function Snapshots() {
       const requiredDomains = template ? getTemplate(template).requiredDomains : [];
       await createSnapshotConfig({
         id: newId.trim(),
-        template,
+        ...(template ? { template } : {}),
         setup: setupScript,
         requiredDomains,
       });

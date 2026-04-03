@@ -39,7 +39,7 @@ function getClient(): PawsClient {
     _client = createClient({
       baseUrl: '',
       apiKey,
-      fetch: _useSession ? fetchWithCredentials : undefined,
+      ...(_useSession ? { fetch: fetchWithCredentials } : {}),
     });
   }
   return _client;
