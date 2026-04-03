@@ -131,7 +131,11 @@ export function createOAuthProvider(db: PawsDatabase, passwordAuth: PasswordAuth
         return { valid: false };
       }
 
-      return { valid: true, clientName: client.clientName ?? undefined };
+      const clientName = client.clientName;
+      return {
+        valid: true,
+        ...(clientName ? { clientName } : {}),
+      };
     },
 
     createAuthCode(opts) {

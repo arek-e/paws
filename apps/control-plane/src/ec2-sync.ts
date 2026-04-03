@@ -190,7 +190,7 @@ export function createEc2Sync(deps: Ec2SyncDeps) {
 
         connectionStore.update(conn.id, {
           status: 'connected',
-          error: undefined,
+          error: null,
           lastSyncAt: new Date().toISOString(),
         });
       } catch (err) {

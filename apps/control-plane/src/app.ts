@@ -1088,7 +1088,12 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     } else {
       createLogger('daemon').error('No workload or agent configured', { role });
       return c.json(
-        { error: { code: 'DAEMON_MISCONFIGURED', message: 'No workload or agent configured' } },
+        {
+          error: {
+            code: 'INTERNAL_ERROR' as const,
+            message: 'No workload or agent configured',
+          },
+        },
         500,
       );
     }
@@ -1309,6 +1314,12 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       const sessionId = randomUUID();
       // Build session request from daemon config (use fullDaemon for proper types)
       const src = fullDaemon ?? daemon;
+      if (!src.workload) {
+        return c.json(
+          { error: { code: 'DAEMON_MISCONFIGURED', message: 'No workload configured' } },
+          500,
+        );
+      }
       const sessionRequest = {
         snapshot: src.snapshot,
         workload: {

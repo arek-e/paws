@@ -141,5 +141,9 @@ export const receiveWebhookRoute = createRoute({
       description: 'Rate limited',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
+    500: {
+      description: 'Internal error',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
   },
 });

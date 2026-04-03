@@ -15,10 +15,15 @@ export interface CloudConnection {
   createdAt: string;
 }
 
+/** Patch type for update — allows `null` to clear optional fields */
+export type CloudConnectionPatch = Partial<Omit<CloudConnection, 'error'>> & {
+  error?: string | null;
+};
+
 export interface CloudConnectionStore {
   create(conn: CloudConnection): void;
   get(id: string): CloudConnection | undefined;
-  update(id: string, patch: Partial<CloudConnection>): CloudConnection | undefined;
+  update(id: string, patch: CloudConnectionPatch): CloudConnection | undefined;
   delete(id: string): boolean;
   list(): CloudConnection[];
   /** List connections for a specific provider */
@@ -55,7 +60,13 @@ export function createCloudConnectionStore(): CloudConnectionStore {
     update(id, patch) {
       const existing = connections.get(id);
       if (!existing) return undefined;
-      const updated = { ...existing, ...patch };
+      const { error: errorPatch, ...rest } = patch;
+      const updated = { ...existing, ...rest };
+      if (errorPatch === null) {
+        delete updated.error;
+      } else if (errorPatch !== undefined) {
+        updated.error = errorPatch;
+      }
       connections.set(id, updated);
       return updated;
     },
@@ -105,7 +116,7 @@ export function createSqliteCloudConnectionStore(db: PawsDatabase): CloudConnect
       if (patch.credentialsEncrypted !== undefined)
         values['credentialsEncrypted'] = patch.credentialsEncrypted;
       if (patch.status !== undefined) values['status'] = patch.status;
-      if (patch.error !== undefined) values['error'] = patch.error;
+      if (patch.error !== undefined) values['error'] = patch.error ?? null;
       if (patch.lastSyncAt !== undefined) values['lastSyncAt'] = patch.lastSyncAt;
 
       if (Object.keys(values).length > 0) {

@@ -164,7 +164,7 @@ export function createCloudConnectionRoutes(deps: CloudConnectionDeps) {
 
       connectionStore.update(conn.id, {
         status: 'connected',
-        error: undefined,
+        error: null,
         lastSyncAt: new Date().toISOString(),
       });
 

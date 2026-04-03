@@ -33,8 +33,9 @@ export function authMiddleware(config: AuthConfig) {
     if (passwordAuth) {
       const cookies = c.req.header('cookie') ?? '';
       const match = cookies.match(/paws_session=([^;]+)/);
-      if (match) {
-        const session = passwordAuth.validateSession(match[1]);
+      const sessionToken = match?.[1];
+      if (sessionToken) {
+        const session = passwordAuth.validateSession(sessionToken);
         if (session) {
           return next();
         }
