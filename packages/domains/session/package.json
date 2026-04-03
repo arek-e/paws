@@ -16,13 +16,13 @@
     "typecheck": "tsc --build"
   },
   "dependencies": {
-    "@hono/zod-openapi": "^1.2.3",
+    "@hono/zod-openapi": "catalog:",
     "@paws/domain-browser": "workspace:*",
     "@paws/domain-common": "workspace:*",
     "@paws/domain-network": "workspace:*",
-    "zod": "^4.3.6"
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "vitest": "^4.1.2"
+    "vitest": "catalog:"
   }
 }

@@ -16,7 +16,6 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
-    "vitest": "^4.1.2"
+    "vitest": "catalog:"
   }
 }

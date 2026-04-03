@@ -2,8 +2,7 @@
   "extends": "../../packages/typescript-config/library.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
-    "types": ["bun-types"]
+    "rootDir": "src"
   },
   "include": ["src"],
   "references": [{ "path": "../domains/network" }]

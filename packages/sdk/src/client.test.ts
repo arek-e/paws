@@ -7,7 +7,9 @@ import { PawsApiError, PawsNetworkError } from './errors.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function mockFetch(status: number, body: unknown): typeof globalThis.fetch {
+type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+
+function mockFetch(status: number, body: unknown): FetchFn {
   return vi.fn().mockResolvedValue({
     ok: status >= 200 && status < 300,
     status,
@@ -15,7 +17,7 @@ function mockFetch(status: number, body: unknown): typeof globalThis.fetch {
   });
 }
 
-function client(fetch: typeof globalThis.fetch) {
+function client(fetch: FetchFn) {
   return createClient({
     baseUrl: 'http://localhost:4000',
     apiKey: 'test-key',
@@ -378,7 +380,8 @@ describe('error handling', () => {
 
     await c.fleet.overview();
 
-    const callHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0]![1].headers;
+    const mock = vi.mocked(fetch);
+    const callHeaders = mock.mock.calls[0]![1]!.headers as Record<string, string>;
     expect(callHeaders['Content-Type']).toBeUndefined();
   });
 });

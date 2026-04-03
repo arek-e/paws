@@ -120,9 +120,24 @@ See @docs/testing.md for full strategy.
 - Zod for all external data (API requests, config, env via `@t3-oss/env-core`)
 - Commit prefix with scope: `firecracker: add snapshot restore`, `control-plane: add sessions`
 - Each commit independently valid (bisect-friendly)
+- **Bun workspace catalog for dependency versions.** Shared deps are defined once in root
+  `package.json` under `workspaces.catalog`. Packages use `"zod": "catalog:"` instead of pinning
+  versions. To add or bump a shared dep: edit the catalog in root `package.json`, then run
+  `bun install`. Never pin versions directly in workspace packages for deps in the catalog.
+- **No `as any` or `as unknown` typecasts.** Use type guards, narrowing, conditional spreads, or
+  narrower type definitions. In tests, define explicit helper types (e.g., `type FetchFn`) rather
+  than casting mocks.
 
 ## Gotchas
 
+- **`@types/bun` at root, not per-package.** All TypeScript types come from the root `@types/bun`
+  devDependency. Every package's `tsconfig.json` extends `packages/typescript-config/library.json`
+  (or `app-bun.json` / `app-react.json`), which extends `base.json`. Never add `bun-types`,
+  `@types/bun`, or `@types/node` to individual packages. Never set `"types": [...]` in per-package
+  tsconfigs, as it overrides auto-detection and breaks type resolution.
+- **Bun's `fetch` has extra methods.** `typeof globalThis.fetch` under Bun includes `preconnect`,
+  which vitest mocks don't have. In tests, use `fn as unknown as typeof globalThis.fetch` to cast
+  mock functions to the fetch type. Don't use `as any`.
 - **Dockerfiles use `COPY . .` with `.dockerignore`.** New packages are picked up automatically.
   If you add files that shouldn't be in the Docker image (large assets, secrets, dev tools),
   add them to `.dockerignore`.
