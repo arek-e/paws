@@ -8,6 +8,7 @@ import { CreateSessionRequestSchema } from '@paws/domain-session';
 
 import { buildSnapshot, type SnapshotBuilderConfig } from './build/snapshot-builder.js';
 import { createWorkerMetrics } from './metrics.js';
+import { registerProxyRoutes } from './routes/proxy.js';
 import type { Executor } from './session/executor.js';
 import type { Semaphore } from './semaphore.js';
 import type { SyncLoop } from './sync/sync-loop.js';
@@ -341,6 +342,9 @@ export function createSessionApp(deps: AppDeps) {
       202,
     );
   });
+
+  // --- Inbound proxy (VM port exposure) ---
+  registerProxyRoutes(app, executor);
 
   return app;
 }
