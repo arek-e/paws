@@ -153,9 +153,10 @@ export function createSessionApp(deps: AppDeps) {
     if (active) {
       return c.json({
         sessionId: id,
-        status: 'running',
+        status: active.status === 'paused' ? 'paused' : 'running',
         startedAt: active.startedAt.toISOString(),
         worker: workerName,
+        hasCheckpoint: !!active.checkpointDir,
         exposedPorts: active.inboundPorts?.map((p) => ({
           port: p.guestPort,
           hostPort: p.hostPort,
@@ -177,6 +178,32 @@ export function createSessionApp(deps: AppDeps) {
       { error: { code: 'SESSION_NOT_FOUND', message: `Session ${id} not found` } },
       404,
     );
+  });
+
+  // --- Checkpoint / Rollback ---
+
+  // Create a checkpoint (snapshot of the running VM)
+  app.post('/v1/sessions/:id/checkpoint', async (c) => {
+    const id = c.req.param('id');
+    try {
+      await executor.checkpoint(id);
+      return c.json({ sessionId: id, checkpoint: true }, 200);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return c.json({ error: { code: 'CHECKPOINT_FAILED', message } }, 400);
+    }
+  });
+
+  // Rollback to the last checkpoint
+  app.post('/v1/sessions/:id/rollback', async (c) => {
+    const id = c.req.param('id');
+    try {
+      await executor.rollback(id);
+      return c.json({ sessionId: id, rolledBack: true }, 200);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return c.json({ error: { code: 'ROLLBACK_FAILED', message } }, 400);
+    }
   });
 
   // --- Browser (computer-use) ---
