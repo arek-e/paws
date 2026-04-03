@@ -36,7 +36,7 @@ jobs:
         run: bunx syncpack lint
         timeout-minutes: 1
       - name: Test
-        run: TURBO_NO_DAEMON=1 bunx turbo run test --filter='!site' --filter='!@paws/dashboard' --filter='!@paws/cli' ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        run: TURBO_NO_DAEMON=1 bunx turbo run test --filter='!site' --filter='!@paws/dashboard' --filter='!@paws/cli'
         timeout-minutes: 5
       - name: Knip
         run: bun run knip
