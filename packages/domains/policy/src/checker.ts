@@ -6,7 +6,9 @@ interface RateWindow {
 }
 
 export interface GovernanceChecker {
+  /** Check if an action is allowed under the governance policy */
   checkRateLimit(role: string, governance: Governance): boolean;
+  /** Record an action for rate limiting */
   recordAction(role: string): void;
 }
 

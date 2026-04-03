@@ -29,10 +29,10 @@ import {
   listDaemonsRoute,
   updateDaemonRoute,
   receiveWebhookRoute,
-  createGovernanceChecker,
   createDaemonStore,
   type DaemonStore,
 } from '@paws/domain-daemon';
+import { createGovernanceChecker } from '@paws/domain-policy';
 import {
   selectWorker,
   costSummaryRoute,
@@ -86,7 +86,7 @@ import { createWorkerClient } from './worker-client.js';
 import type { CredentialStore } from '@paws/credentials';
 import type { PawsDatabase } from './db/index.js';
 import type { WorkerDiscovery } from './discovery/index.js';
-import type { GovernanceChecker } from '@paws/domain-daemon';
+import type { GovernanceChecker } from '@paws/domain-policy';
 import type { WorkerClient } from './worker-client.js';
 
 export interface ControlPlaneDeps {
@@ -1067,7 +1067,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     // Generate workload from agent config or use the explicit workload
     let workload;
     if (daemon.agent) {
-      const { generateAgentScript } = await import('@paws/domain-daemon');
+      const { generateAgentScript } = await import('@paws/domain-agent');
       workload = {
         type: 'script' as const,
         script: generateAgentScript(daemon.agent),

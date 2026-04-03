@@ -30,6 +30,7 @@
         "@hono/oidc-auth": "^1.8.1",
         "@hono/zod-openapi": "1.2.3",
         "@paws/credentials": "workspace:*",
+        "@paws/domain-agent": "workspace:*",
         "@paws/domain-audit": "workspace:*",
         "@paws/domain-browser": "workspace:*",
         "@paws/domain-common": "workspace:*",
@@ -37,6 +38,7 @@
         "@paws/domain-fleet": "workspace:*",
         "@paws/domain-mcp": "workspace:*",
         "@paws/domain-network": "workspace:*",
+        "@paws/domain-policy": "workspace:*",
         "@paws/domain-session": "workspace:*",
         "@paws/domain-snapshot": "workspace:*",
         "@paws/integrations": "workspace:*",
@@ -129,6 +131,8 @@
         "@paws/firecracker": "workspace:*",
         "@paws/logger": "workspace:*",
         "@paws/proxy": "workspace:*",
+        "@paws/runtime": "workspace:*",
+        "@paws/runtime-firecracker": "workspace:*",
         "@paws/snapshot-store": "workspace:*",
         "hono": "^4.7.0",
         "neverthrow": "^8.2.0",
@@ -167,6 +171,26 @@
         "vitest": "^4.1.2",
       },
     },
+    "packages/domains/access": {
+      "name": "@paws/domain-access",
+      "version": "0.1.0",
+      "dependencies": {
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "vitest": "^4.1.2",
+      },
+    },
+    "packages/domains/agent": {
+      "name": "@paws/domain-agent",
+      "version": "0.1.0",
+      "dependencies": {
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "vitest": "^4.1.2",
+      },
+    },
     "packages/domains/audit": {
       "name": "@paws/domain-audit",
       "version": "0.1.0",
@@ -201,13 +225,25 @@
         "vitest": "^4.1.2",
       },
     },
+    "packages/domains/credential": {
+      "name": "@paws/domain-credential",
+      "version": "0.1.0",
+      "dependencies": {
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "vitest": "^4.1.2",
+      },
+    },
     "packages/domains/daemon": {
       "name": "@paws/domain-daemon",
       "version": "0.1.0",
       "dependencies": {
         "@hono/zod-openapi": "^1.2.3",
+        "@paws/domain-agent": "workspace:*",
         "@paws/domain-common": "workspace:*",
         "@paws/domain-network": "workspace:*",
+        "@paws/domain-policy": "workspace:*",
         "@paws/domain-session": "workspace:*",
         "zod": "^4.3.6",
       },
@@ -239,6 +275,16 @@
     },
     "packages/domains/network": {
       "name": "@paws/domain-network",
+      "version": "0.1.0",
+      "dependencies": {
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "vitest": "^4.1.2",
+      },
+    },
+    "packages/domains/policy": {
+      "name": "@paws/domain-policy",
       "version": "0.1.0",
       "dependencies": {
         "zod": "^4.3.6",
@@ -357,6 +403,31 @@
         "vitest": "^4.1.2",
       },
     },
+    "packages/runtime": {
+      "name": "@paws/runtime",
+      "version": "0.1.0",
+      "dependencies": {
+        "neverthrow": "^8.2.0",
+      },
+      "devDependencies": {
+        "vitest": "^4.1.2",
+      },
+    },
+    "packages/runtime-firecracker": {
+      "name": "@paws/runtime-firecracker",
+      "version": "0.1.0",
+      "dependencies": {
+        "@paws/firecracker": "workspace:*",
+        "@paws/logger": "workspace:*",
+        "@paws/proxy": "workspace:*",
+        "@paws/runtime": "workspace:*",
+        "neverthrow": "^8.2.0",
+      },
+      "devDependencies": {
+        "bun-types": "^1.3.11",
+        "vitest": "^4.1.2",
+      },
+    },
     "packages/sdk": {
       "name": "@paws/sdk",
       "version": "0.1.0",
@@ -384,10 +455,6 @@
         "bun-types": "^1.3.11",
         "vitest": "^4.1.2",
       },
-    },
-    "packages/typescript-config": {
-      "name": "@paws/typescript-config",
-      "version": "0.0.0",
     },
     "providers/aws-ec2": {
       "name": "@paws/provider-aws-ec2",
@@ -1060,11 +1127,17 @@
 
     "@paws/dashboard": ["@paws/dashboard@workspace:apps/dashboard"],
 
+    "@paws/domain-access": ["@paws/domain-access@workspace:packages/domains/access"],
+
+    "@paws/domain-agent": ["@paws/domain-agent@workspace:packages/domains/agent"],
+
     "@paws/domain-audit": ["@paws/domain-audit@workspace:packages/domains/audit"],
 
     "@paws/domain-browser": ["@paws/domain-browser@workspace:packages/domains/browser"],
 
     "@paws/domain-common": ["@paws/domain-common@workspace:packages/domains/common"],
+
+    "@paws/domain-credential": ["@paws/domain-credential@workspace:packages/domains/credential"],
 
     "@paws/domain-daemon": ["@paws/domain-daemon@workspace:packages/domains/daemon"],
 
@@ -1073,6 +1146,8 @@
     "@paws/domain-mcp": ["@paws/domain-mcp@workspace:packages/domains/mcp"],
 
     "@paws/domain-network": ["@paws/domain-network@workspace:packages/domains/network"],
+
+    "@paws/domain-policy": ["@paws/domain-policy@workspace:packages/domains/policy"],
 
     "@paws/domain-session": ["@paws/domain-session@workspace:packages/domains/session"],
 
@@ -1098,11 +1173,13 @@
 
     "@paws/proxy": ["@paws/proxy@workspace:packages/proxy"],
 
+    "@paws/runtime": ["@paws/runtime@workspace:packages/runtime"],
+
+    "@paws/runtime-firecracker": ["@paws/runtime-firecracker@workspace:packages/runtime-firecracker"],
+
     "@paws/sdk": ["@paws/sdk@workspace:packages/sdk"],
 
     "@paws/snapshot-store": ["@paws/snapshot-store@workspace:packages/snapshot-store"],
-
-    "@paws/typescript-config": ["@paws/typescript-config@workspace:packages/typescript-config"],
 
     "@paws/worker": ["@paws/worker@workspace:apps/worker"],
 

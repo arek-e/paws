@@ -66,13 +66,19 @@ export function createProxy(config: ProxyConfig): ProxyInstance {
         body: req.body,
         redirect: 'manual',
       }),
-    ).then((upstream) => {
-      return new Response(upstream.body, {
-        status: upstream.status,
-        statusText: upstream.statusText,
-        headers: upstream.headers,
-      });
-    });
+    ).then(
+      (upstream) => {
+        return new Response(upstream.body, {
+          status: upstream.status,
+          statusText: upstream.statusText,
+          headers: upstream.headers,
+        });
+      },
+      (_err) => {
+        // Catch fetch errors to prevent credential headers from leaking in stack traces
+        return new Response(`Upstream connection failed for ${hostname}`, { status: 502 });
+      },
+    );
   }
 
   const instance: ProxyInstance = {

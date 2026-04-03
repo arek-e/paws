@@ -1,8 +1,8 @@
 {
-  "name": "@paws/domain-daemon",
+  "name": "@paws/domain-access",
   "version": "0.1.0",
   "private": true,
-  "description": "Daemon domain — Daemon, Trigger, DaemonStore, routes",
+  "description": "Port exposure and access control — generic port exposure without tunnel coupling",
   "type": "module",
   "exports": {
     ".": {
@@ -16,12 +16,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hono/zod-openapi": "^1.2.3",
-    "@paws/domain-agent": "workspace:*",
-    "@paws/domain-common": "workspace:*",
-    "@paws/domain-network": "workspace:*",
-    "@paws/domain-policy": "workspace:*",
-    "@paws/domain-session": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {

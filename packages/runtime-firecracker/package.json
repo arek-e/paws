@@ -1,8 +1,8 @@
 {
-  "name": "@paws/domain-daemon",
+  "name": "@paws/runtime-firecracker",
   "version": "0.1.0",
   "private": true,
-  "description": "Daemon domain — Daemon, Trigger, DaemonStore, routes",
+  "description": "Firecracker runtime adapter — KVM-isolated VM execution with TLS MITM credential injection",
   "type": "module",
   "exports": {
     ".": {
@@ -16,15 +16,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hono/zod-openapi": "^1.2.3",
-    "@paws/domain-agent": "workspace:*",
-    "@paws/domain-common": "workspace:*",
-    "@paws/domain-network": "workspace:*",
-    "@paws/domain-policy": "workspace:*",
-    "@paws/domain-session": "workspace:*",
-    "zod": "^4.3.6"
+    "@paws/firecracker": "workspace:*",
+    "@paws/logger": "workspace:*",
+    "@paws/proxy": "workspace:*",
+    "@paws/runtime": "workspace:*",
+    "neverthrow": "^8.2.0"
   },
   "devDependencies": {
+    "bun-types": "^1.3.11",
     "vitest": "^4.1.2"
   }
 }
