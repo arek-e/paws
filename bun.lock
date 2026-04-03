@@ -125,6 +125,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@paws/domain-browser": "workspace:*",
+        "@paws/domain-mcp": "workspace:*",
         "@paws/domain-network": "workspace:*",
         "@paws/domain-session": "workspace:*",
         "@paws/domain-snapshot": "workspace:*",

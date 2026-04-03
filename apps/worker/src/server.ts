@@ -88,7 +88,7 @@ const firecrackerRuntime = createFirecrackerRuntime({
   sshKeyPath: SSH_KEY_PATH,
   maxConcurrent: MAX_CONCURRENT,
   portPool,
-  workerExternalUrl: WORKER_EXTERNAL_URL || undefined,
+  ...(WORKER_EXTERNAL_URL ? { workerExternalUrl: WORKER_EXTERNAL_URL } : {}),
 });
 
 // Register in the runtime registry (future: support multiple runtimes)
@@ -100,7 +100,7 @@ const executor = createExecutor({
   runtime: runtimeRegistry.resolve(),
   semaphore,
   workerName: WORKER_NAME,
-  llmGateway,
+  ...(llmGateway ? { llmGateway } : {}),
 });
 
 let syncLoop: SyncLoop | undefined;

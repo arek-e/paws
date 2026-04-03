@@ -29,6 +29,7 @@ function makeWorkers(
     workers: list.map((w) => ({
       name: w.name ?? 'http://127.0.0.1:3000',
       status: (w.status as 'healthy' | 'degraded' | 'unhealthy') ?? 'healthy',
+      type: 'firecracker' as const,
       capacity: {
         maxConcurrent: w.max ?? 5,
         running: w.running ?? 0,

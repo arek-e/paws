@@ -1,5 +1,7 @@
 import type { CreateSessionRequest } from '@paws/domain-session';
 import type { NetworkConfig } from '@paws/domain-network';
+import type { McpServerConfig } from '@paws/domain-mcp';
+import type { McpGateway } from '../mcp/gateway.js';
 import type {
   RuntimeAdapter,
   RuntimeSessionRequest,
@@ -35,6 +37,10 @@ export interface ExecutorConfig {
   portExposure?: PortExposureProvider;
   /** LLM gateway — routes provider API calls through an external proxy */
   llmGateway?: LlmGateway;
+  /** MCP gateway for secure MCP tool access (agentgateway) */
+  mcpGateway?: McpGateway;
+  /** MCP server store — registry of configured MCP servers with credentials */
+  mcpServerStore?: ReadonlyMap<string, McpServerConfig>;
 }
 
 /** Result of a completed session (re-exported from runtime for convenience) */
@@ -43,7 +49,7 @@ export type { SessionResult } from '@paws/runtime';
 /** Active session state for tracking */
 export interface ActiveSession {
   sessionId: string;
-  status: 'running' | 'stopping';
+  status: 'running' | 'stopping' | 'paused';
   startedAt: Date;
   exposedPorts?: ExposedPortResult[];
 }
@@ -76,19 +82,42 @@ export function createExecutor(config: ExecutorConfig) {
         const runtimeRequest = toRuntimeRequest(request);
         const credentials = resolveCredentials(request.network, config.llmGateway);
 
+        // Register MCP servers with agentgateway (if configured)
+        const mcpServers = request.network?.mcp?.servers ?? [];
+        if (mcpServers.length > 0 && config.mcpGateway && config.mcpServerStore) {
+          await config.mcpGateway.addSession(sessionId, mcpServers, config.mcpServerStore);
+          const mcpUrl = config.mcpGateway.getSessionUrl(sessionId);
+          if (mcpUrl) {
+            runtimeRequest.workload.env.GATEWAY_MCP_URL = mcpUrl;
+          }
+        }
+
         // Delegate to runtime adapter
-        const result = await config.runtime.execute(sessionId, runtimeRequest, credentials, {
-          portExposure: config.portExposure,
-        });
+        const result = await config.runtime.execute(
+          sessionId,
+          runtimeRequest,
+          credentials,
+          config.portExposure ? { portExposure: config.portExposure } : undefined,
+        );
 
         if (result.isErr()) {
           throw result.error;
         }
 
-        session.exposedPorts = result.value.exposedPorts;
+        if (result.value.exposedPorts) {
+          session.exposedPorts = result.value.exposedPorts;
+        }
         return result.value;
       } finally {
         session.status = 'stopping';
+        // Remove MCP session from agentgateway
+        if (config.mcpGateway) {
+          try {
+            await config.mcpGateway.removeSession(sessionId);
+          } catch {
+            // Best-effort cleanup
+          }
+        }
         config.semaphore.release();
         sessions.delete(sessionId);
       }
@@ -110,6 +139,7 @@ export type Executor = ReturnType<typeof createExecutor>;
 
 /** Convert CreateSessionRequest to RuntimeSessionRequest */
 function toRuntimeRequest(request: CreateSessionRequest): RuntimeSessionRequest {
+  const expose = request.network?.expose;
   return {
     snapshot: request.snapshot,
     workload: {
@@ -117,15 +147,19 @@ function toRuntimeRequest(request: CreateSessionRequest): RuntimeSessionRequest 
       script: request.workload.script,
       env: request.workload.env,
     },
-    resources: request.resources,
+    ...(request.resources ? { resources: request.resources } : {}),
     timeoutMs: request.timeoutMs,
-    exposePorts: request.network?.expose?.map((ep) => ({
-      port: ep.port,
-      protocol: ep.protocol,
-      label: ep.label,
-      access: ep.access,
-      allowedEmails: ep.allowedEmails,
-    })),
+    ...(expose
+      ? {
+          exposePorts: expose.map((ep) => ({
+            port: ep.port,
+            ...(ep.protocol ? { protocol: ep.protocol } : {}),
+            ...(ep.label ? { label: ep.label } : {}),
+            ...(ep.access ? { access: ep.access } : {}),
+            ...(ep.allowedEmails ? { allowedEmails: ep.allowedEmails } : {}),
+          })),
+        }
+      : {}),
   };
 }
 

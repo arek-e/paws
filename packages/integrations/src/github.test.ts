@@ -106,4 +106,91 @@ describe('parseWebhookEvent', () => {
     const issueEvent = parseWebhookEvent(issuePayload);
     expect(issueEvent?.prNumber).toBeUndefined();
   });
+
+  test('parses pull_request opened event', () => {
+    const payload = {
+      action: 'opened',
+      pull_request: {
+        number: 99,
+        title: 'Add dark mode',
+        url: 'https://api.github.com/repos/org/repo/pulls/99',
+        html_url: 'https://github.com/org/repo/pull/99',
+        issue_url: 'https://api.github.com/repos/org/repo/issues/99',
+        head: { ref: 'feat/dark-mode' },
+        base: { ref: 'main' },
+      },
+      repository: { full_name: 'org/repo', url: 'https://api.github.com/repos/org/repo' },
+      sender: { login: 'bob' },
+      installation: { id: 67890 },
+    };
+
+    const event = parseWebhookEvent(payload, 'pull_request');
+    expect(event).toEqual({
+      type: 'pull_request',
+      action: 'opened',
+      repo: 'org/repo',
+      sender: 'bob',
+      installationId: 67890,
+      prNumber: 99,
+      prTitle: 'Add dark mode',
+      prUrl: 'https://api.github.com/repos/org/repo/pulls/99',
+      prHtmlUrl: 'https://github.com/org/repo/pull/99',
+      headBranch: 'feat/dark-mode',
+      baseBranch: 'main',
+      issueUrl: 'https://api.github.com/repos/org/repo/issues/99',
+    });
+  });
+
+  test('parses pull_request synchronize event', () => {
+    const payload = {
+      action: 'synchronize',
+      pull_request: {
+        number: 99,
+        title: 'Add dark mode',
+        url: 'https://api.github.com/repos/org/repo/pulls/99',
+        html_url: 'https://github.com/org/repo/pull/99',
+        issue_url: 'https://api.github.com/repos/org/repo/issues/99',
+        head: { ref: 'feat/dark-mode' },
+        base: { ref: 'main' },
+      },
+      repository: { full_name: 'org/repo', url: 'https://api.github.com/repos/org/repo' },
+      sender: { login: 'bob' },
+      installation: { id: 67890 },
+    };
+
+    const event = parseWebhookEvent(payload, 'pull_request');
+    expect(event?.type).toBe('pull_request');
+    expect(event?.type === 'pull_request' && event.action).toBe('synchronize');
+  });
+
+  test('ignores pull_request closed event', () => {
+    const payload = {
+      action: 'closed',
+      pull_request: {
+        number: 99,
+        title: 'Done',
+        url: '',
+        html_url: '',
+        issue_url: '',
+        head: { ref: '' },
+        base: { ref: '' },
+      },
+      repository: { full_name: 'org/repo', url: '' },
+      sender: { login: 'bob' },
+      installation: { id: 1 },
+    };
+
+    expect(parseWebhookEvent(payload, 'pull_request')).toBeNull();
+  });
+
+  test('uses webhookEvent header to disambiguate', () => {
+    const payload = makeWebhookPayload();
+    // Without header, detected as issue_comment
+    const mention = parseWebhookEvent(payload);
+    expect(mention?.type).toBe('mention');
+
+    // With explicit header
+    const explicit = parseWebhookEvent(payload, 'issue_comment');
+    expect(explicit?.type).toBe('mention');
+  });
 });

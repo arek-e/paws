@@ -154,7 +154,7 @@ export function createSessionApp(deps: AppDeps) {
     if (active) {
       return c.json({
         sessionId: id,
-        status: 'running',
+        status: active.status === 'paused' ? 'paused' : 'running',
         startedAt: active.startedAt.toISOString(),
         worker: workerName,
         exposedPorts: active.exposedPorts,
@@ -174,6 +174,36 @@ export function createSessionApp(deps: AppDeps) {
     return c.json(
       { error: { code: 'SESSION_NOT_FOUND', message: `Session ${id} not found` } },
       404,
+    );
+  });
+
+  // --- Checkpoint / Rollback ---
+
+  // Create a checkpoint (snapshot of the running VM)
+  app.post('/v1/sessions/:id/checkpoint', (c) => {
+    return c.json(
+      {
+        error: {
+          code: 'NOT_IMPLEMENTED',
+          message:
+            'Checkpoint/rollback requires the legacy executor. RuntimeAdapter checkpoint support coming soon.',
+        },
+      },
+      501,
+    );
+  });
+
+  // Rollback to the last checkpoint
+  app.post('/v1/sessions/:id/rollback', (c) => {
+    return c.json(
+      {
+        error: {
+          code: 'NOT_IMPLEMENTED',
+          message:
+            'Checkpoint/rollback requires the legacy executor. RuntimeAdapter checkpoint support coming soon.',
+        },
+      },
+      501,
     );
   });
 

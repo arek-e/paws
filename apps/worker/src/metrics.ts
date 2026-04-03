@@ -52,20 +52,11 @@ export function createWorkerMetrics(deps: WorkerMetricsDeps) {
   });
 
   new Gauge({
-    name: 'paws_worker_ip_pool_allocated',
-    help: 'Allocated IP addresses from the pool',
+    name: 'paws_worker_capacity_max_sessions',
+    help: 'Maximum concurrent sessions supported by the runtime',
     registers: [promRegistry],
     collect() {
-      this.set(deps.executor.poolStats.allocated);
-    },
-  });
-
-  new Gauge({
-    name: 'paws_worker_ip_pool_available',
-    help: 'Available IP addresses in the pool',
-    registers: [promRegistry],
-    collect() {
-      this.set(deps.executor.poolStats.available);
+      this.set(deps.executor.capabilities.maxConcurrentSessions);
     },
   });
 
