@@ -1,5 +1,7 @@
 import type { CreateSessionRequest } from '@paws/domain-session';
 import type { NetworkAllocation, NetworkConfig } from '@paws/domain-network';
+import type { McpServerConfig } from '@paws/domain-mcp';
+import type { McpGateway } from '../mcp/gateway.js';
 import {
   createIpPool,
   createTap,
@@ -43,6 +45,10 @@ export interface ExecutorConfig {
   workerExternalUrl?: string | undefined;
   /** LLM gateway — routes provider API calls through an external proxy (LiteLLM, OpenRouter, etc.) */
   llmGateway?: LlmGateway | undefined;
+  /** MCP gateway for secure MCP tool access (agentgateway) */
+  mcpGateway?: McpGateway | undefined;
+  /** MCP server store — registry of configured MCP servers with credentials */
+  mcpServerStore?: ReadonlyMap<string, McpServerConfig> | undefined;
 }
 
 /** LLM gateway plugin — intercepts LLM API calls and routes through an external proxy */
@@ -278,6 +284,16 @@ export function createExecutor(config: ExecutorConfig) {
           }
         }
 
+        // 9.75. Register MCP servers with agentgateway (if configured)
+        const mcpServers = network.mcp?.servers ?? [];
+        if (mcpServers.length > 0 && config.mcpGateway && config.mcpServerStore) {
+          await config.mcpGateway.addSession(sessionId, mcpServers, config.mcpServerStore);
+          const mcpUrl = config.mcpGateway.getSessionUrl(sessionId);
+          if (mcpUrl) {
+            request.workload.env.GATEWAY_MCP_URL = mcpUrl;
+          }
+        }
+
         // 10. Write and execute workload script
         const envExports = Object.entries(request.workload.env)
           .map(([k, v]) => `export ${k}=${shellEscape(v)}`)
@@ -343,6 +359,15 @@ export function createExecutor(config: ExecutorConfig) {
       } finally {
         // Cleanup — always runs
         session.status = 'stopping';
+
+        // Remove MCP session from agentgateway
+        if (config.mcpGateway) {
+          try {
+            await config.mcpGateway.removeSession(sessionId);
+          } catch {
+            // Best-effort cleanup
+          }
+        }
 
         // Clean up inbound iptables rules and release host ports
         if (session.inboundPorts?.length && allocation) {

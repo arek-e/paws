@@ -5,8 +5,8 @@
     "": {
       "name": "paws",
       "dependencies": {
-        "better-sqlite3": "^12.8.0",
-        "drizzle-orm": "^0.45.2",
+        "better-sqlite3": "catalog:",
+        "drizzle-orm": "catalog:",
       },
       "devDependencies": {
         "@changesets/changelog-github": "^0.6.0",
@@ -21,7 +21,7 @@
         "oxlint": "^1.57.0",
         "syncpack": "^14.2.1",
         "turbo": "^2.5.0",
-        "typescript": "^6.0.2",
+        "typescript": "catalog:",
       },
     },
     "apps/control-plane": {
@@ -123,6 +123,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@paws/domain-browser": "workspace:*",
+        "@paws/domain-mcp": "workspace:*",
         "@paws/domain-network": "workspace:*",
         "@paws/domain-session": "workspace:*",
         "@paws/domain-snapshot": "workspace:*",
