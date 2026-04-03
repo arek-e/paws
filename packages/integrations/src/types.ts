@@ -1,5 +1,5 @@
-/** Event from GitHub webhook parsed for paws consumption */
-export interface GitHubEvent {
+/** Event from a @paws mention in a comment */
+export interface GitHubMentionEvent {
   type: 'mention';
   command: string;
   repo: string;
@@ -9,6 +9,25 @@ export interface GitHubEvent {
   commentUrl: string;
   issueUrl: string;
 }
+
+/** Event from a pull_request webhook (opened, synchronize, reopened) */
+export interface GitHubPullRequestEvent {
+  type: 'pull_request';
+  action: string;
+  repo: string;
+  sender: string;
+  installationId: number;
+  prNumber: number;
+  prTitle: string;
+  prUrl: string;
+  prHtmlUrl: string;
+  headBranch: string;
+  baseBranch: string;
+  issueUrl: string;
+}
+
+/** Any parsed GitHub event */
+export type GitHubEvent = GitHubMentionEvent | GitHubPullRequestEvent;
 
 /** Config for the GitHub integration */
 export interface GitHubAppConfig {
