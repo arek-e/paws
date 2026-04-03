@@ -1903,6 +1903,17 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     app.route('/', mcpOAuthRoutes);
   }
 
+  // --- Worker enrollment (one-time token → permanent API key) ---
+
+  const enrollmentStore = createEnrollmentStore();
+  const workerCredentialStore = createWorkerCredentialStore();
+  const enrollmentRoutes = createEnrollmentRoutes({
+    enrollmentStore,
+    workerCredentialStore,
+    gatewayUrl: `https://${process.env['DOMAIN'] ?? 'localhost:4000'}`,
+  });
+  app.route('/', enrollmentRoutes);
+
   // --- VM port exposure (reverse proxy to worker) ---
 
   const exposeRoutes = createExposeRoutes({
