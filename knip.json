@@ -1,5 +1,5 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
       "entry": [],
@@ -10,10 +10,33 @@
       "project": ["src/**/*.ts"],
       "ignore": ["**/*.test.ts", "**/*.integration.test.ts"]
     },
-    "apps/*": {
+    "packages/domains/*": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"],
+      "ignore": ["**/*.test.ts", "**/*.integration.test.ts"]
+    },
+    "providers/*": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"],
+      "ignore": ["**/*.test.ts", "**/*.integration.test.ts"]
+    },
+    "apps/control-plane": {
       "entry": ["src/index.ts", "src/server.ts"],
       "project": ["src/**/*.ts"],
       "ignore": ["**/*.test.ts", "**/*.integration.test.ts"]
+    },
+    "apps/worker": {
+      "entry": ["src/index.ts", "src/server.ts"],
+      "project": ["src/**/*.ts"],
+      "ignore": ["**/*.test.ts", "**/*.integration.test.ts"]
+    },
+    "apps/dashboard": {
+      "entry": ["src/main.tsx"],
+      "project": ["src/**/*.{ts,tsx}"]
+    },
+    "apps/site": {
+      "entry": ["src/pages/**/*.astro", "astro.config.mjs"],
+      "project": ["src/**/*.{ts,tsx,astro}"]
     }
   }
 }
