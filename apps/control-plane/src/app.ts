@@ -1287,9 +1287,9 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       }
 
       const payload = JSON.parse(rawBody) as Record<string, unknown>;
-      const event = parseWebhookEvent(payload);
+      const webhookEvent = c.req.header('x-github-event');
+      const event = parseWebhookEvent(payload, webhookEvent);
       if (!event) {
-        // Not a @paws mention, ignore silently
         return c.json({ ignored: true }, 200);
       }
 
@@ -1300,41 +1300,66 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       const match = matchDaemon(event, githubDaemons);
 
       if (!match) {
-        // Post a helpful comment
-        await postComment(
-          { auth: githubAuth },
-          event.installationId,
-          event.issueUrl,
-          `No daemon configured for \`@paws ${event.command}\` in this repo.`,
-        ).catch(() => {}); // best-effort
+        if (event.type === 'mention') {
+          await postComment(
+            { auth: githubAuth },
+            event.installationId,
+            event.issueUrl,
+            `No daemon configured for \`@paws ${event.command}\` in this repo.`,
+          ).catch(() => {});
+        }
         return c.json({ error: { code: 'NO_MATCH', message: 'No daemon matches' } }, 200);
       }
 
       const { daemon } = match;
 
-      // Check governance (daemon from store has proper governance type)
+      // Check governance
       const fullDaemon = daemonStore.get(daemon.role);
       if (fullDaemon && !governance.checkRateLimit(daemon.role, fullDaemon.governance)) {
+        if (event.type === 'mention') {
+          await postComment(
+            { auth: githubAuth },
+            event.installationId,
+            event.issueUrl,
+            `Rate limit exceeded. Try again later.`,
+          ).catch(() => {});
+        }
+        return c.json({ error: { code: 'RATE_LIMITED', message: 'Rate limited' } }, 429);
+      }
+
+      // Acknowledge (only for mentions — PR events are silent until results)
+      if (event.type === 'mention') {
         await postComment(
           { auth: githubAuth },
           event.installationId,
           event.issueUrl,
-          `Rate limit exceeded for \`@paws ${event.command}\`. Try again later.`,
+          `Running \`${event.command}\`... I'll post results when done.`,
         ).catch(() => {});
-        return c.json({ error: { code: 'RATE_LIMITED', message: 'Rate limited' } }, 429);
       }
 
-      // Acknowledge quickly
-      await postComment(
-        { auth: githubAuth },
-        event.installationId,
-        event.issueUrl,
-        `Running \`${event.command}\`... I'll post results when done.`,
-      ).catch(() => {});
+      // Build env vars — common + event-type-specific
+      const envVars: Record<string, string> = {
+        ...((fullDaemon ?? daemon).workload?.env ?? {}),
+        TRIGGER_PAYLOAD: JSON.stringify(event),
+        TRIGGER_TYPE: event.type,
+        GITHUB_REPO: event.repo,
+        GITHUB_SENDER: event.sender,
+      };
 
-      // Create session with GitHub metadata
+      if (event.type === 'mention') {
+        envVars['GITHUB_COMMAND'] = event.command;
+        if (event.prNumber) envVars['GITHUB_PR_NUMBER'] = String(event.prNumber);
+      } else if (event.type === 'pull_request') {
+        envVars['GITHUB_PR_NUMBER'] = String(event.prNumber);
+        envVars['GITHUB_PR_TITLE'] = event.prTitle;
+        envVars['GITHUB_PR_URL'] = event.prHtmlUrl;
+        envVars['GITHUB_PR_ACTION'] = event.action;
+        envVars['GITHUB_HEAD_BRANCH'] = event.headBranch;
+        envVars['GITHUB_BASE_BRANCH'] = event.baseBranch;
+      }
+
+      // Create session
       const sessionId = randomUUID();
-      // Build session request from daemon config (use fullDaemon for proper types)
       const src = fullDaemon ?? daemon;
       if (!src.workload) {
         return c.json(
@@ -1342,27 +1367,23 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
           500,
         );
       }
+
+      const prNumber = event.type === 'pull_request' ? event.prNumber : event.prNumber;
       const sessionRequest = {
         snapshot: src.snapshot,
         workload: {
           type: 'script' as const,
           script: src.workload.script,
-          env: {
-            ...src.workload.env,
-            TRIGGER_PAYLOAD: JSON.stringify(event),
-            GITHUB_REPO: event.repo,
-            GITHUB_COMMAND: event.command,
-            ...(event.prNumber ? { GITHUB_PR_NUMBER: String(event.prNumber) } : {}),
-          },
+          env: envVars,
         },
         resources: src.resources,
         timeoutMs: 600_000,
         network: fullDaemon?.network,
         metadata: {
           triggerType: 'github',
+          eventType: event.type,
           repo: event.repo,
-          command: event.command,
-          prNumber: event.prNumber ? String(event.prNumber) : '',
+          prNumber: prNumber ? String(prNumber) : '',
           issueUrl: event.issueUrl,
           installationId: String(event.installationId),
           sender: event.sender,
