@@ -123,6 +123,14 @@ See @docs/testing.md for full strategy.
 
 ## Gotchas
 
+- **`@types/bun` at root, not per-package.** All TypeScript types come from the root `@types/bun`
+  devDependency. Every package's `tsconfig.json` extends `packages/typescript-config/library.json`
+  (or `app-bun.json` / `app-react.json`), which extends `base.json`. Never add `bun-types`,
+  `@types/bun`, or `@types/node` to individual packages. Never set `"types": [...]` in per-package
+  tsconfigs, as it overrides auto-detection and breaks type resolution.
+- **Bun's `fetch` has extra methods.** `typeof globalThis.fetch` under Bun includes `preconnect`,
+  which vitest mocks don't have. In tests, use `fn as unknown as typeof globalThis.fetch` to cast
+  mock functions to the fetch type. Don't use `as any`.
 - **Dockerfiles use `COPY . .` with `.dockerignore`.** New packages are picked up automatically.
   If you add files that shouldn't be in the Docker image (large assets, secrets, dev tools),
   add them to `.dockerignore`.

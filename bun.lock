@@ -12,6 +12,7 @@
         "@changesets/changelog-github": "^0.6.0",
         "@changesets/cli": "^2.30.0",
         "@types/better-sqlite3": "^7.6.13",
+        "@types/bun": "^1.3.11",
         "drizzle-kit": "^0.31.10",
         "husky": "^9.1.7",
         "knip": "^6.0.6",
@@ -51,7 +52,6 @@
         "prom-client": "^15.1.3",
       },
       "devDependencies": {
-        "bun-types": "^1.3.11",
         "neverthrow": "^8.2.0",
         "vitest": "^4.1.2",
       },
@@ -135,7 +135,6 @@
         "prom-client": "^15.1.3",
       },
       "devDependencies": {
-        "bun-types": "^1.3.11",
         "vitest": "^4.1.2",
       },
     },
@@ -154,7 +153,6 @@
         "react": "^19.1.0",
       },
       "devDependencies": {
-        "bun-types": "^1.3.11",
         "neverthrow": "^8.2.0",
         "vitest": "^4.1.2",
       },
@@ -282,7 +280,6 @@
         "neverthrow": "^8.2.0",
       },
       "devDependencies": {
-        "bun-types": "^1.3.11",
         "vitest": "^4.1.2",
       },
     },
@@ -302,22 +299,6 @@
     "packages/logger": {
       "name": "@paws/logger",
       "version": "0.1.0",
-      "devDependencies": {
-        "@types/node": "^25.5.0",
-        "vitest": "^4.1.2",
-      },
-    },
-    "packages/mcp-server": {
-      "name": "@paws/mcp-server",
-      "version": "0.1.0",
-      "bin": {
-        "paws-mcp": "./src/index.ts",
-      },
-      "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.28.0",
-        "@paws/sdk": "workspace:*",
-        "zod": "^3.25.0",
-      },
       "devDependencies": {
         "vitest": "^4.1.2",
       },
@@ -353,7 +334,6 @@
         "neverthrow": "^8.2.0",
       },
       "devDependencies": {
-        "bun-types": "^1.3.11",
         "vitest": "^4.1.2",
       },
     },
@@ -368,7 +348,6 @@
         "neverthrow": "^8.2.0",
       },
       "devDependencies": {
-        "bun-types": "^1.3.11",
         "vitest": "^4.1.2",
       },
     },
@@ -1084,8 +1063,6 @@
 
     "@paws/logger": ["@paws/logger@workspace:packages/logger"],
 
-    "@paws/mcp-server": ["@paws/mcp-server@workspace:packages/mcp-server"],
-
     "@paws/provider-aws-ec2": ["@paws/provider-aws-ec2@workspace:providers/aws-ec2"],
 
     "@paws/provider-hetzner-cloud": ["@paws/provider-hetzner-cloud@workspace:providers/hetzner-cloud"],
@@ -1471,6 +1448,8 @@
     "@types/babel__traverse": ["@types/babel__traverse@7.28.0", "", { "dependencies": { "@babel/types": "^7.28.2" } }, "sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q=="],
 
     "@types/better-sqlite3": ["@types/better-sqlite3@7.6.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-NMv9ASNARoKksWtsq/SHakpYAYnhBrQgGD8zkLYk/jaK8jUGn08CfEdTRgYhMypUQAfzSP8W6gNLe0q19/t4VA=="],
+
+    "@types/bun": ["@types/bun@1.3.11", "", { "dependencies": { "bun-types": "1.3.11" } }, "sha512-5vPne5QvtpjGpsGYXiFyycfpDF2ECyPcTSsFBMa0fraoxiQyMJ3SmuQIGhzPg2WJuWxVBoxWJ2kClYTcw/4fAg=="],
 
     "@types/chai": ["@types/chai@5.2.3", "", { "dependencies": { "@types/deep-eql": "*", "assertion-error": "^2.0.1" } }, "sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA=="],
 
@@ -3046,10 +3025,6 @@
 
     "@paws/integrations/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
-    "@paws/logger/@types/node": ["@types/node@25.5.0", "", { "dependencies": { "undici-types": "~7.18.0" } }, "sha512-jp2P3tQMSxWugkCUKLRPVUpGaL5MVFwF8RDuSRztfwgN1wmqJeMSbKlnEtQqU8UrhTmzEmZdu2I6v2dpp7XIxw=="],
-
-    "@paws/mcp-server/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
-
     "@paws/provisioner/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "@radix-ui/react-accordion/@radix-ui/react-primitive": ["@radix-ui/react-primitive@2.1.3", "", { "dependencies": { "@radix-ui/react-slot": "1.2.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-m9gTwRkhy2lvCPe6QJp4d3G1TYEUHn/FzJUtq9MjH46an1wJU+GdoGC5VLof8RX8Ft/DlpshApkhswDLZzHIcQ=="],
@@ -3325,8 +3300,6 @@
     "@inquirer/core/wrap-ansi/ansi-styles": ["ansi-styles@4.3.0", "", { "dependencies": { "color-convert": "^2.0.1" } }, "sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg=="],
 
     "@inquirer/core/wrap-ansi/string-width": ["string-width@4.2.3", "", { "dependencies": { "emoji-regex": "^8.0.0", "is-fullwidth-code-point": "^3.0.0", "strip-ansi": "^6.0.1" } }, "sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g=="],
-
-    "@paws/logger/@types/node/undici-types": ["undici-types@7.18.2", "", {}, "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w=="],
 
     "@types/better-sqlite3/@types/node/undici-types": ["undici-types@7.18.2", "", {}, "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w=="],
 

@@ -20,7 +20,6 @@
     { "path": "packages/firecracker" },
 
     { "path": "packages/sdk" },
-    { "path": "packages/mcp-server" },
     { "path": "packages/cli" },
     { "path": "providers/hetzner-cloud" },
     { "path": "providers/hetzner-dedicated" },
