@@ -595,9 +595,13 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     // Merge snapshot requiredDomains into network allowOut before dispatch
     const enriched = mergeSnapshotDomains(body);
 
-    // Resolve $REFERENCES in credential headers (env vars → credential store → error)
-    if (enriched.network?.credentials) {
+    // Auto-inject credentials from store for allowlisted domains, then resolve $REFERENCES
+    if (enriched.network) {
       try {
+        enriched.network.credentials = await credentialResolver.autoInject(
+          enriched.network.allowOut ?? [],
+          enriched.network.credentials ?? {},
+        );
         enriched.network.credentials = await credentialResolver.resolveCredentials(
           enriched.network.credentials,
         );
