@@ -27,6 +27,7 @@
     "react": "catalog:"
   },
   "devDependencies": {
+    "@types/react": "^19.0.0",
     "neverthrow": "catalog:",
     "vitest": "catalog:"
   }
