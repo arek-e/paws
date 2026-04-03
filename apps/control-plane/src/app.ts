@@ -132,10 +132,6 @@ export interface ControlPlaneDeps {
   auditStore?: AuditStore | undefined;
   /** Bun WebSocket upgrader — needed for worker WS and session streaming. */
   upgradeWebSocket?: import('hono/ws').UpgradeWebSocket | undefined;
-  /** Pangolin tunnel status for fleet overview. */
-  pangolinStatus?:
-    | (() => { connected: boolean; tunnelWorkers: number; lastPollAt: string | null })
-    | undefined;
 }
 
 const startTime = Date.now();
@@ -530,8 +526,6 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   app.use('/v1/snapshot-configs', authMiddleware(authConfig));
   app.use('/v1/setup/*', authMiddleware(authConfig));
   app.use('/v1/setup', authMiddleware(authConfig));
-  app.use('/v1/pangolin/*', authMiddleware(authConfig));
-  app.use('/v1/pangolin', authMiddleware(authConfig));
   app.use('/v1/servers', authMiddleware(authConfig));
   app.use('/v1/servers/*', authMiddleware(authConfig));
   app.use('/v1/provisioning', authMiddleware(authConfig));
@@ -1402,7 +1396,6 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
         queuedSessions,
         activeDaemons: daemonStore.countActive(),
         activeSessions: sessionStore.countActiveSessions(),
-        ...(deps.pangolinStatus && { pangolin: deps.pangolinStatus() }),
       },
       200,
     );
@@ -1540,25 +1533,6 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     }
     return c.body(null, 204);
   });
-
-  // --- Pangolin admin proxy ---
-
-  if (deps.discovery) {
-    const pangolinApiUrl = process.env['PANGOLIN_API_URL'] ?? '';
-    const pangolinOrgId = process.env['PANGOLIN_ORG_ID'] ?? '';
-    if (pangolinApiUrl && pangolinOrgId) {
-      const { createPangolinAdmin } = await import('./pangolin-admin.js');
-      const { createPangolinRoutes } = await import('./routes/pangolin.js');
-      const pangolinAdmin = createPangolinAdmin({
-        apiUrl: pangolinApiUrl,
-        apiKey: process.env['PANGOLIN_API_KEY'] ?? undefined,
-        email: process.env['PANGOLIN_EMAIL'] ?? undefined,
-        password: process.env['PANGOLIN_PASSWORD'] ?? undefined,
-        orgId: pangolinOrgId,
-      });
-      app.route('/v1/pangolin', createPangolinRoutes(pangolinAdmin));
-    }
-  }
 
   // --- Provisioner (shared by setup wizard + provisioning routes) ---
 

@@ -80,7 +80,7 @@ export function createNetwork(): NetworkOutputs {
       sourceIps: ['0.0.0.0/0', '::/0'],
       description: 'ICMP ping',
     },
-    // paws gateway API (exposed by Traefik / NodePort in production).
+    // paws gateway API (exposed by Caddy / NodePort in production).
     {
       direction: 'in',
       protocol: 'tcp',

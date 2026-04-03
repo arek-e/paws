@@ -4,11 +4,9 @@
 #
 # Architecture:
 #   Caddy (:80/:443) → Gateway (:4000) — dashboard + API
-#   Pangolin + Gerbil (:51820/udp) — worker WireGuard tunnels only
-#   Traefik (Pangolin network) — tunnel subdomain routing for exposed ports
 #
-# The dashboard and API are served directly by the gateway behind Caddy.
-# Pangolin is only used for worker tunnel connectivity and port exposure.
+# Workers connect via K8s Services (in-cluster) or WebSocket call-home (remote).
+# No tunneling dependencies required.
 
 services:
   # ── Caddy (Reverse Proxy + Auto-HTTPS — enabled when domain is set) ──────
@@ -59,13 +57,6 @@ services:
       OIDC_REDIRECT_URI: '${OIDC_REDIRECT_URI:-}'
       OIDC_AUTH_EXTERNAL_URL: '${OIDC_AUTH_EXTERNAL_URL:-}'
       AUTH_SECRET: '${AUTH_SECRET:-change-me-to-a-random-32-char-string}'
-      PANGOLIN_OIDC_SECRET: '${PANGOLIN_OIDC_SECRET:-}'
-      # Pangolin discovery (for workers)
-      PANGOLIN_API_URL: '${PANGOLIN_API_URL:-}'
-      PANGOLIN_API_KEY: '${PANGOLIN_API_KEY:-}'
-      PANGOLIN_ORG_ID: '${PANGOLIN_ORG_ID:-}'
-      PANGOLIN_EMAIL: '${PANGOLIN_EMAIL:-}'
-      PANGOLIN_PASSWORD: '${PANGOLIN_PASSWORD:-}'
       # Metrics
       VICTORIAMETRICS_URL: 'http://victoriametrics:8428'
     healthcheck:
@@ -74,60 +65,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-
-  # ── Pangolin (Tunnel Management — enabled when workers are added) ─────────
-  pangolin:
-    image: fosrl/pangolin:latest
-    container_name: paws-pangolin
-    restart: unless-stopped
-    networks:
-      - paws
-    volumes:
-      - ./config/pangolin:/app/config
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3001/api/v1/']
-      interval: 10s
-      timeout: 10s
-      retries: 15
-      start_period: 15s
-
-  # ── Gerbil (WireGuard Tunnel Server) ─────────────────────────────────────
-  gerbil:
-    image: fosrl/gerbil:latest
-    container_name: paws-gerbil
-    restart: unless-stopped
-    depends_on:
-      pangolin:
-        condition: service_healthy
-    networks:
-      - paws
-    command:
-      - --reachableAt=http://gerbil:3004
-      - --generateAndSaveKeyTo=/var/config/key
-      - --remoteConfig=http://pangolin:3001/api/v1/
-    volumes:
-      - ./config/pangolin:/var/config
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE
-    ports:
-      - '51820:51820/udp'
-      - '21820:21820/udp'
-
-  # ── Traefik (Tunnel Subdomain Routing — for exposed VM ports only) ───────
-  # Runs on Gerbil's network stack. Caddy forwards tunnel subdomains here.
-  traefik:
-    image: traefik:v3.6
-    container_name: paws-traefik
-    restart: unless-stopped
-    depends_on:
-      pangolin:
-        condition: service_healthy
-    network_mode: service:gerbil
-    command:
-      - --configFile=/etc/traefik/traefik_config.yml
-    volumes:
-      - ./config/traefik:/etc/traefik:ro
 
   # ── Dex (OIDC Identity Provider) ─────────────────────────────────────────
   dex:
@@ -220,7 +157,6 @@ volumes:
   caddy-config:
   dex-data:
   gateway-data:
-  letsencrypt-data:
   vm-data:
   loki-data:
   grafana-data:

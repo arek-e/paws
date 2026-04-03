@@ -19,20 +19,6 @@ The control plane runs on any VPS. It serves the API, dashboard, and coordinates
 | `DASHBOARD_DIR` | --                   | Path to built dashboard assets (enables web UI)                       |
 | `DATA_DIR`      | `/var/lib/paws/data` | Persistent data directory (daemon store)                              |
 
-### Pangolin (worker discovery)
-
-Set these to discover workers via Pangolin WireGuard tunnels:
-
-| Variable            | Default | Description                                      |
-| ------------------- | ------- | ------------------------------------------------ |
-| `PANGOLIN_API_URL`  | --      | Pangolin API base URL                            |
-| `PANGOLIN_ORG_ID`   | --      | Pangolin organization ID                         |
-| `PANGOLIN_API_KEY`  | --      | Pangolin API key (alternative to email/password) |
-| `PANGOLIN_EMAIL`    | --      | Pangolin admin email (alternative to API key)    |
-| `PANGOLIN_PASSWORD` | --      | Pangolin admin password                          |
-
-You need either `PANGOLIN_API_KEY` or both `PANGOLIN_EMAIL` + `PANGOLIN_PASSWORD`.
-
 ### OIDC authentication
 
 Set all four to enable SSO login on the dashboard and API:
@@ -45,14 +31,6 @@ Set all four to enable SSO login on the dashboard and API:
 | `AUTH_SECRET`            | --                                      | Secret for signing session cookies                         |
 | `OIDC_REDIRECT_URI`      | `http://localhost:{PORT}/auth/callback` | OAuth callback URL                                         |
 | `OIDC_AUTH_EXTERNAL_URL` | --                                      | External-facing URL for auth redirects (if behind a proxy) |
-
-### Pangolin OIDC bridge
-
-Auto-registers Dex as an identity provider in Pangolin (for port exposure SSO):
-
-| Variable               | Default | Description                                            |
-| ---------------------- | ------- | ------------------------------------------------------ |
-| `PANGOLIN_OIDC_SECRET` | --      | Client secret for Pangolin's OIDC integration with Dex |
 
 ### Autoscaler
 
@@ -97,20 +75,6 @@ The worker runs on bare metal with `/dev/kvm`. It manages Firecracker VMs.
 | `API_KEY`     | --                        | API key to authenticate with control plane            |
 | `WORKER_URL`  | `http://localhost:{PORT}` | URL the control plane should use to reach this worker |
 
-### Port exposure (Pangolin)
-
-| Variable               | Default | Description                                                   |
-| ---------------------- | ------- | ------------------------------------------------------------- |
-| `PANGOLIN_API_URL`     | --      | Pangolin API base URL                                         |
-| `PANGOLIN_ORG_ID`      | --      | Pangolin organization ID                                      |
-| `PANGOLIN_SITE_ID`     | --      | Pangolin site ID for this worker                              |
-| `PANGOLIN_DOMAIN_ID`   | --      | Pangolin domain ID for subdomain routing                      |
-| `PANGOLIN_BASE_DOMAIN` | --      | Base domain for exposed ports (e.g., `fleet.example.com`)     |
-| `PANGOLIN_API_KEY`     | --      | Pangolin API key                                              |
-| `PANGOLIN_EMAIL`       | --      | Pangolin admin email (alternative to API key)                 |
-| `PANGOLIN_PASSWORD`    | --      | Pangolin admin password                                       |
-| `WORKER_EXTERNAL_URL`  | --      | Direct worker URL for port forwarding (non-Pangolin fallback) |
-
 ### Snapshot sync (R2)
 
 | Variable                    | Default  | Description                               |
@@ -132,11 +96,6 @@ PORT=4000
 API_KEY=paws-your-secret-key
 DASHBOARD_DIR=/opt/paws/dashboard/dist
 DATA_DIR=/var/lib/paws/data
-
-# Worker discovery via Pangolin
-PANGOLIN_API_URL=https://pangolin.example.com
-PANGOLIN_ORG_ID=org-123
-PANGOLIN_API_KEY=pk-your-key
 
 # OIDC (Dex)
 OIDC_ISSUER=https://fleet.example.com/dex

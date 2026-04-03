@@ -156,13 +156,9 @@ export function createSessionApp(deps: AppDeps) {
         status: 'running',
         startedAt: active.startedAt.toISOString(),
         worker: workerName,
-        exposedPorts: active.exposedTunnels?.map((t) => ({
-          port: t.port,
-          url: t.publicUrl,
-          label: t.label,
-          access: t.access,
-          pin: t.pin,
-          shareLink: t.shareLink,
+        exposedPorts: active.inboundPorts?.map((p) => ({
+          port: p.guestPort,
+          hostPort: p.hostPort,
         })),
       });
     }

@@ -1,5 +1,6 @@
 node_modules/
 dist/
+*.tsbuildinfo
 .env
 .env.local
 *.log
@@ -32,7 +33,7 @@ infra/dex/config.dev.yaml
 infra/cloudflare/tunnel-config.yml
 
 # Generated configs (created by scripts/setup-control-plane.sh)
-config/pangolin/config.yml
 config/dex/config.yaml
-config/traefik/traefik_config.yml
-config/traefik/dynamic_config.yml
+
+# Turborepo
+.turbo

@@ -1,19 +1,17 @@
 ---
 title: Port Exposure
-description: Expose ports from VMs to the internet via Pangolin tunnels with per-port access control.
+description: Expose ports from VMs to authorized users via the control plane reverse proxy with per-port access control.
 ---
 
-Agents often run web servers -- dev servers, preview apps, dashboards. paws can expose ports from inside the VM to the internet through Pangolin tunnels, with access control on each port.
+Agents often run web servers -- dev servers, preview apps, dashboards. paws can expose ports from inside the VM to authorized users through the control plane reverse proxy, with access control on each port.
 
 ## How it works
 
 1. Your daemon config declares which ports to expose
-2. When the session starts, the worker creates iptables DNAT rules to forward traffic from the host to the VM
-3. The worker registers each port as a Pangolin resource with a unique subdomain
-4. Pangolin routes external traffic through its WireGuard tunnel to the worker, which forwards it to the VM
-5. When the session ends, the resources are cleaned up
-
-The result: each exposed port gets a public URL like `https://session-abc-3000.fleet.example.com`.
+2. When the session starts, the worker sets up routing from the host to the VM via the TAP device
+3. The control plane acts as a reverse proxy, authenticating requests and forwarding them to the correct worker and VM
+4. Each exposed port gets a session-scoped URL like `https://s-abc123.fleet.example.com`
+5. When the session ends, the URLs stop working and resources are cleaned up
 
 ## Daemon config with port exposure
 
@@ -58,7 +56,7 @@ Each exposed port has an access control mode that determines who can reach it.
 
 | Mode            | How it works                                                                                                                         |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `sso` (default) | Requires Pangolin login. Uses the OIDC provider configured on your control plane (Dex).                                              |
+| `sso` (default) | Requires OIDC login via the provider configured on your control plane (Dex).                                                         |
 | `pin`           | Auto-generates a numeric PIN. Anyone with the PIN can access the port. The PIN is returned in the session's `exposedPorts` response. |
 | `email`         | Restricts access to specific email addresses or domains. Supports wildcards like `*@company.com`.                                    |
 
@@ -75,7 +73,7 @@ Each exposed port has an access control mode that determines who can reach it.
 
 ## Reading exposed port URLs
 
-After a session starts, poll the session endpoint. The `exposedPorts` field contains the public URLs:
+After a session starts, poll the session endpoint. The `exposedPorts` field contains the URLs:
 
 ```bash
 curl -s "$PAWS_URL/v1/sessions/$SESSION_ID" \
@@ -86,43 +84,59 @@ curl -s "$PAWS_URL/v1/sessions/$SESSION_ID" \
 [
   {
     "port": 3000,
-    "url": "https://sess-abc-3000.fleet.example.com",
+    "url": "https://s-abc123.fleet.example.com",
     "label": "Next.js dev server",
-    "access": "sso",
-    "shareLink": "https://fleet.example.com/share/abc123"
+    "access": "sso"
   },
   {
     "port": 5432,
-    "url": "https://sess-abc-5432.fleet.example.com",
+    "url": "https://s-abc123-5432.fleet.example.com",
     "label": "pgAdmin",
     "access": "pin",
-    "pin": "847291",
-    "shareLink": "https://fleet.example.com/share/def456"
+    "pin": "847291"
   }
 ]
 ```
 
 ## Shareable links
 
-Every exposed port gets a time-limited shareable link. You can send this to anyone -- they don't need a Pangolin account. The link respects the port's access control mode (SSO, PIN, or email).
+Every exposed port gets a time-limited shareable link. The link respects the port's access control mode (SSO, PIN, or email).
 
-## Worker configuration
+## Architecture
 
-Port exposure requires Pangolin configuration on the worker. Set these environment variables:
+Port exposure uses the control plane as a reverse proxy:
 
-```bash
-PANGOLIN_API_URL=https://pangolin.example.com
-PANGOLIN_ORG_ID=your-org-id
-PANGOLIN_SITE_ID=your-site-id
-PANGOLIN_BASE_DOMAIN=fleet.example.com
-PANGOLIN_API_KEY=your-api-key
+```
+User browser
+  |
+  | https://s-abc123.fleet.example.com/
+  |
+  v
+Control Plane
+  1. Extract session ID from subdomain
+  2. Authenticate (OIDC / PIN)
+  3. Check port is in daemon's expose list
+  4. Reverse-proxy to worker
+  |
+  v
+Worker
+  5. Route to session's VM via TAP device
+  6. Forward to VM guest IP (172.16.x.2:port)
+  |
+  v
+MicroVM (172.16.x.2)
+  Dev server on :3000
 ```
 
-Without these, the `expose` field in daemon configs is silently ignored and ports are not exposed.
+The inbound preview path is separate from the outbound MITM proxy. Inbound traffic is a simple TCP forward from the control plane through the worker to the VM. The MITM proxy only handles outbound traffic (agent API calls with credential injection).
+
+## WebSocket support
+
+Dev servers use WebSockets for HMR (hot module replacement). The reverse proxy chain supports WebSocket upgrade through the control plane and worker to the VM.
 
 ## Forwarded headers
 
-Pangolin forwards standard headers to the VM's web server:
+The control plane forwards standard headers to the VM's web server:
 
 - `X-Forwarded-For` -- client's real IP
 - `X-Forwarded-Proto` -- original protocol (https)

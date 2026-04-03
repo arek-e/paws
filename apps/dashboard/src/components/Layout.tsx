@@ -93,7 +93,6 @@ function SidebarNav({
       <SidebarLink to="/fleet" label="Fleet" onClick={onNavigate} collapsed={collapsed} />
       <SidebarLink to="/servers" label="Servers" onClick={onNavigate} collapsed={collapsed} />
       <SidebarLink to="/snapshots" label="Snapshots" onClick={onNavigate} collapsed={collapsed} />
-      <SidebarLink to="/tunnels" label="Tunnels" onClick={onNavigate} collapsed={collapsed} />
 
       <SectionLabel collapsed={collapsed}>Agents</SectionLabel>
       <SidebarLink to="/daemons" label="Daemons" onClick={onNavigate} collapsed={collapsed} />

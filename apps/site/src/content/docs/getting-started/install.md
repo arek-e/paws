@@ -15,7 +15,7 @@ This installs Docker (if missing), clones the repo, generates all secrets, and s
 
 - Linux server (VPS or bare metal)
 - Root access
-- Ports 80, 443, 51820/udp open
+- Ports 80, 443 open
 
 No Cloudflare or DNS provider account needed. Domain is optional.
 
@@ -29,15 +29,12 @@ curl -fsSL https://getpaws.dev/install.sh | bash -s -- \
 
 ## What it sets up
 
-| Service             | Purpose                              |
-| ------------------- | ------------------------------------ |
-| **Pangolin**        | Tunnel management + reverse proxy    |
-| **Gerbil**          | WireGuard tunnel server              |
-| **Traefik**         | TLS termination (auto Let's Encrypt) |
-| **Gateway**         | paws control plane API + dashboard   |
-| **Dex**             | OIDC identity provider (SSO)         |
-| **VictoriaMetrics** | Metrics storage                      |
-| **Grafana**         | Dashboards                           |
+| Service             | Purpose                            |
+| ------------------- | ---------------------------------- |
+| **Gateway**         | paws control plane API + dashboard |
+| **Dex**             | OIDC identity provider (SSO)       |
+| **VictoriaMetrics** | Metrics storage                    |
+| **Grafana**         | Dashboards                         |
 
 ## Adding a domain later
 
@@ -65,4 +62,4 @@ curl -fsSL https://getpaws.dev/install.sh | bash  # install Docker
 ./scripts/setup-worker.sh                           # connects to control plane
 ```
 
-The worker connects via Pangolin WireGuard tunnel and appears in the dashboard automatically.
+The worker connects via WebSocket call-home and appears in the dashboard automatically.

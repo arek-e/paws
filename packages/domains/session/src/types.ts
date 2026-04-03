@@ -65,7 +65,7 @@ export const CreateSessionResponseSchema = z.object({
 
 export type CreateSessionResponse = z.infer<typeof CreateSessionResponseSchema>;
 
-/** A port exposed from the VM via Pangolin tunnel */
+/** A port exposed from the VM */
 export const ExposedPortSchema = z.object({
   /** Port number inside the VM */
   port: z.number().int().min(1).max(65535),
@@ -102,7 +102,7 @@ export const SessionSchema = z.object({
   vcpuSeconds: z.number().nonnegative().optional(),
   /** Browser/computer-use configuration for this session */
   browser: BrowserConfigSchema.optional(),
-  /** Ports exposed from the VM via Pangolin tunnel */
+  /** Ports exposed from the VM */
   exposedPorts: z.array(ExposedPortSchema).optional(),
 });
 
