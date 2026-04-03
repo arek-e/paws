@@ -594,6 +594,24 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
     // Merge snapshot requiredDomains into network allowOut before dispatch
     const enriched = mergeSnapshotDomains(body);
+
+    // Resolve $REFERENCES in credential headers (env vars → credential store → error)
+    if (enriched.network?.credentials) {
+      try {
+        enriched.network.credentials = await credentialResolver.resolveCredentials(
+          enriched.network.credentials,
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Credential resolution failed';
+        sessionStore.updateStatus(sessionId, 'failed', {
+          exitCode: 1,
+          stdout: '',
+          stderr: message,
+        });
+        return c.json({ error: { code: 'VALIDATION_ERROR' as const, message } }, 400);
+      }
+    }
+
     dispatchSession(discovery, legacyWorkerClient, sessionStore, sessionId, enriched);
 
     return c.json({ sessionId, status: 'pending' as const }, 202);
@@ -1604,8 +1622,11 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
   // --- EC2 lifecycle (shared across setup + server routes) ---
 
-  const { createCredentialStore, deriveKey } = await import('@paws/credentials');
+  const { createCredentialStore, createCredentialResolver, deriveKey } =
+    await import('@paws/credentials');
   const encryptionKey = await deriveKey(deps.apiKey);
+  const credentialStore = deps.credentialStore ?? createCredentialStore(deps.apiKey);
+  const credentialResolver = createCredentialResolver(credentialStore);
 
   const { createEc2Lifecycle } = await import('./ec2-lifecycle.js');
   const ec2Lifecycle = createEc2Lifecycle({ encryptionKey });
@@ -1629,7 +1650,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   {
     const setupRoutes = createSetupRoutes({
       serverStore,
-      credentialStore: deps.credentialStore ?? createCredentialStore(deps.apiKey),
+      credentialStore,
       provisioner,
       upgradeWebSocket: deps.upgradeWebSocket,
       encryptionKey,
