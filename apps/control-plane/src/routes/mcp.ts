@@ -83,12 +83,37 @@ const deleteMcpServerRoute = createRoute({
   },
 });
 
+/** Get resolved MCP server configs for a session (called by workers at session start) */
+const sessionMcpConfigRoute = createRoute({
+  method: 'get',
+  path: '/v1/sessions/{id}/mcp/config',
+  tags: ['MCP'],
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    200: {
+      description: 'Resolved MCP server configs for this session',
+      content: {
+        'application/json': {
+          schema: z.object({ servers: z.array(McpServerConfigSchema) }),
+        },
+      },
+    },
+    404: {
+      description: 'Session not found',
+      content: { 'application/json': { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+/** Direct MCP tool call (deprecated — use agentgateway instead) */
 const sessionMcpCallRoute = createRoute({
   method: 'post',
   path: '/v1/sessions/{id}/mcp',
   tags: ['MCP'],
   request: {
-    params: z.object({ id: z.string().uuid() }),
+    params: z.object({ id: z.string() }),
     body: {
       content: {
         'application/json': { schema: McpToolCallSchema },
@@ -108,8 +133,8 @@ const sessionMcpCallRoute = createRoute({
       description: 'Session not authorized to access this MCP server',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
-    501: {
-      description: 'MCP protocol handling not yet implemented',
+    410: {
+      description: 'MCP calls go through agentgateway, not the control plane',
       content: { 'application/json': { schema: ErrorResponseSchema } },
     },
   },
@@ -172,13 +197,12 @@ export function createMcpRoutes(deps: McpRouteDeps) {
     return c.json({ name, status: 'deleted' as const }, 200);
   });
 
-  // --- POST /v1/sessions/:id/mcp ---
+  // --- GET /v1/sessions/:id/mcp/config ---
+  // Workers call this at session start to get resolved MCP server configs
 
-  app.openapi(sessionMcpCallRoute, (c) => {
+  app.openapi(sessionMcpConfigRoute, (c) => {
     const { id } = c.req.valid('param');
-    const body = c.req.valid('json');
 
-    // Verify session exists
     const session = sessionStore.get(id);
     if (!session) {
       return c.json(
@@ -187,46 +211,40 @@ export function createMcpRoutes(deps: McpRouteDeps) {
       );
     }
 
-    // Verify MCP server exists
-    const mcpServer = mcpServerStore.get(body.server);
-    if (!mcpServer) {
+    // Resolve which MCP servers this session can access
+    const allowedServerNames = session.request.network?.mcp?.servers ?? [];
+    const servers = allowedServerNames
+      .map((name) => mcpServerStore.get(name))
+      .filter((s): s is NonNullable<typeof s> => s != null);
+
+    return c.json({ servers }, 200);
+  });
+
+  // --- POST /v1/sessions/:id/mcp ---
+  // Deprecated: MCP tool calls go through agentgateway on the worker, not the control plane
+
+  app.openapi(sessionMcpCallRoute, (c) => {
+    const { id } = c.req.valid('param');
+
+    const session = sessionStore.get(id);
+    if (!session) {
       return c.json(
-        {
-          error: {
-            code: 'NOT_FOUND' as const,
-            message: `MCP server "${body.server}" not found`,
-          },
-        },
+        { error: { code: 'NOT_FOUND' as const, message: `Session ${id} not found` } },
         404,
       );
     }
 
-    // Check session is authorized to access this MCP server
-    const allowedServers = session.request.network?.mcp?.servers ?? [];
-    if (allowedServers.length > 0 && !allowedServers.includes(body.server)) {
-      return c.json(
-        {
-          error: {
-            code: 'FORBIDDEN' as const,
-            message: `Session not authorized to access MCP server "${body.server}"`,
-          },
-        },
-        403,
-      );
-    }
-
-    // Actual MCP protocol handling is deferred — return 501 for now
-    // Future: spawn stdio process, connect to SSE/streamable-http endpoint,
-    // forward the JSON-RPC method call, return the result
     return c.json(
       {
         error: {
-          code: 'NOT_IMPLEMENTED' as const,
+          code: 'NOT_FOUND' as const,
           message:
-            'MCP protocol handling is not yet implemented. Server configuration and routing are ready.',
+            'MCP tool calls are handled by agentgateway on the worker node. ' +
+            'The agent in the VM calls GATEWAY_MCP_URL directly. ' +
+            'Use GET /v1/sessions/{id}/mcp/config to fetch the MCP config for a session.',
         },
       },
-      501,
+      404,
     );
   });
 
