@@ -16,12 +16,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hono/zod-openapi": "^1.2.3",
+    "@hono/zod-openapi": "catalog:",
     "@paws/domain-common": "workspace:*",
     "@paws/domain-session": "workspace:*",
-    "zod": "^4.3.6"
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "vitest": "^4.1.2"
+    "vitest": "catalog:"
   }
 }

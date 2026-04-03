@@ -18,9 +18,9 @@
   },
   "dependencies": {
     "@paws/domain-network": "workspace:*",
-    "neverthrow": "^8.2.0"
+    "neverthrow": "catalog:"
   },
   "devDependencies": {
-    "vitest": "^4.1.2"
+    "vitest": "catalog:"
   }
 }

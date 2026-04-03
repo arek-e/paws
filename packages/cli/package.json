@@ -24,10 +24,10 @@
     "@paws/domain-session": "workspace:*",
     "@paws/sdk": "workspace:*",
     "ink": "^6.0.0",
-    "react": "^19.1.0"
+    "react": "catalog:"
   },
   "devDependencies": {
-    "neverthrow": "^8.2.0",
-    "vitest": "^4.1.2"
+    "neverthrow": "catalog:",
+    "vitest": "catalog:"
   }
 }
