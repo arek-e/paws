@@ -8,6 +8,23 @@ const PROVIDER_ENV_NAMES: Record<CredentialProvider, string[]> = {
   github: ['GITHUB_TOKEN', 'GITHUB_PAT'],
 };
 
+/** Domain-to-provider mapping for auto-injection (exact matches only) */
+const DOMAIN_PROVIDER_MAP: Record<string, CredentialProvider> = {
+  'api.anthropic.com': 'anthropic',
+  'api.openai.com': 'openai',
+  'github.com': 'github',
+};
+
+/** How each provider's credential is injected as an HTTP header */
+const PROVIDER_HEADER_CONFIG: Record<
+  CredentialProvider,
+  { headerName: string; headerTemplate: string }
+> = {
+  anthropic: { headerName: 'x-api-key', headerTemplate: '{value}' },
+  openai: { headerName: 'Authorization', headerTemplate: 'Bearer {value}' },
+  github: { headerName: 'Authorization', headerTemplate: 'Bearer {value}' },
+};
+
 export class CredentialResolutionError extends Error {
   readonly code = 'CREDENTIAL_NOT_FOUND' as const;
   constructor(ref: string) {
@@ -33,6 +50,16 @@ export interface CredentialResolver {
    */
   resolveCredentials(
     credentials: Record<string, { headers: Record<string, string> }>,
+  ): Promise<Record<string, { headers: Record<string, string> }>>;
+
+  /**
+   * Auto-inject credentials from the built-in store for allowlisted domains.
+   * Only injects for exact domain-to-provider matches. Explicit credentials
+   * in the input map are never overridden.
+   */
+  autoInject(
+    allowOut: string[],
+    explicitCredentials: Record<string, { headers: Record<string, string> }>,
   ): Promise<Record<string, { headers: Record<string, string> }>>;
 }
 
@@ -80,6 +107,29 @@ export function createCredentialResolver(store: CredentialStore): CredentialReso
       }
 
       return resolved;
+    },
+
+    async autoInject(
+      allowOut: string[],
+      explicitCredentials: Record<string, { headers: Record<string, string> }>,
+    ): Promise<Record<string, { headers: Record<string, string> }>> {
+      const result = { ...explicitCredentials };
+
+      for (const domain of allowOut) {
+        if (result[domain]) continue; // explicit config wins
+
+        const provider = DOMAIN_PROVIDER_MAP[domain];
+        if (!provider) continue; // no known provider for this domain
+
+        const value = await store.get(provider);
+        if (!value) continue; // no credential stored for this provider
+
+        const config = PROVIDER_HEADER_CONFIG[provider];
+        const headerValue = config.headerTemplate.replace('{value}', value);
+        result[domain] = { headers: { [config.headerName]: headerValue } };
+      }
+
+      return result;
     },
   };
 }

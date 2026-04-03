@@ -128,4 +128,62 @@ describe('createCredentialResolver', () => {
       expect(result).toEqual({});
     });
   });
+
+  describe('autoInject', () => {
+    test('injects stored credential for matching domain', async () => {
+      const result = await resolver.autoInject(['api.anthropic.com'], {});
+
+      expect(result['api.anthropic.com']).toBeDefined();
+      expect(result['api.anthropic.com']!.headers['x-api-key']).toBe('sk-ant-test-key-123');
+    });
+
+    test('injects Bearer template for github', async () => {
+      const result = await resolver.autoInject(['github.com'], {});
+
+      expect(result['github.com']!.headers['Authorization']).toBe('Bearer ghp_test-github-token');
+    });
+
+    test('does not override explicit credentials', async () => {
+      const result = await resolver.autoInject(['api.anthropic.com'], {
+        'api.anthropic.com': { headers: { 'x-api-key': 'explicit-key' } },
+      });
+
+      expect(result['api.anthropic.com']!.headers['x-api-key']).toBe('explicit-key');
+    });
+
+    test('skips domains with no matching provider', async () => {
+      const result = await resolver.autoInject(['api.example.com'], {});
+
+      expect(result['api.example.com']).toBeUndefined();
+    });
+
+    test('skips providers with no stored credential', async () => {
+      // openai has no credential stored in beforeEach
+      const result = await resolver.autoInject(['api.openai.com'], {});
+
+      expect(result['api.openai.com']).toBeUndefined();
+    });
+
+    test('injects multiple domains at once', async () => {
+      const result = await resolver.autoInject(
+        ['api.anthropic.com', 'github.com', 'api.example.com'],
+        {},
+      );
+
+      expect(result['api.anthropic.com']).toBeDefined();
+      expect(result['github.com']).toBeDefined();
+      expect(result['api.example.com']).toBeUndefined();
+    });
+
+    test('mixes auto-injected and explicit credentials', async () => {
+      const result = await resolver.autoInject(['api.anthropic.com', 'github.com'], {
+        'github.com': { headers: { Authorization: 'Bearer my-explicit-token' } },
+      });
+
+      // anthropic auto-injected
+      expect(result['api.anthropic.com']!.headers['x-api-key']).toBe('sk-ant-test-key-123');
+      // github kept explicit
+      expect(result['github.com']!.headers['Authorization']).toBe('Bearer my-explicit-token');
+    });
+  });
 });
