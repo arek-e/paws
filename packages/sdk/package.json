@@ -16,6 +16,7 @@
     "typecheck": "tsc --build"
   },
   "dependencies": {
+    "@paws/domain-common": "workspace:*",
     "@paws/domain-daemon": "workspace:*",
     "@paws/domain-fleet": "workspace:*",
     "@paws/domain-session": "workspace:*",
