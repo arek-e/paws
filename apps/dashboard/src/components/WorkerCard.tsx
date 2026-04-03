@@ -63,7 +63,7 @@ export function WorkerCard({ worker }: { worker: Worker }) {
           <div>
             <span className="text-muted-foreground">Snapshot</span>
             <p className="text-foreground">
-              {worker.snapshot.id} v{worker.snapshot.version}
+              {worker.snapshot?.id ?? '-'} v{worker.snapshot?.version ?? '-'}
             </p>
           </div>
         </div>
