@@ -422,7 +422,12 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       return c.json({ authenticated: false }, 401);
     }
 
-    const session = passwordAuth?.validateSession(match[1]);
+    const sessionToken = match[1];
+    if (!sessionToken) {
+      return c.json({ authenticated: false }, 401);
+    }
+
+    const session = passwordAuth?.validateSession(sessionToken);
     if (!session) {
       return c.json({ authenticated: false }, 401);
     }
@@ -434,10 +439,11 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   app.post('/auth/password-logout', (c) => {
     const cookies = c.req.header('cookie') ?? '';
     const match = cookies.match(/paws_session=([^;]+)/);
-    if (match && passwordAuth) {
+    const logoutToken = match?.[1];
+    if (logoutToken && passwordAuth) {
       // Get email before deleting session
-      const session = passwordAuth.validateSession(match[1]);
-      passwordAuth.logout(match[1]);
+      const session = passwordAuth.validateSession(logoutToken);
+      passwordAuth.logout(logoutToken);
       auditStore.append({
         category: 'auth',
         action: 'auth.logout',
@@ -514,7 +520,11 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
   // --- Auth middleware for all /v1 routes (except webhooks) ---
 
-  const authConfig: AuthConfig = { apiKey: deps.apiKey, oidcEnabled, passwordAuth };
+  const authConfig: AuthConfig = {
+    apiKey: deps.apiKey,
+    oidcEnabled,
+    ...(passwordAuth ? { passwordAuth } : {}),
+  };
   app.use('/v1/sessions', authMiddleware(authConfig));
   app.use('/v1/sessions/*', authMiddleware(authConfig));
   app.use('/v1/daemons/*', authMiddleware(authConfig));

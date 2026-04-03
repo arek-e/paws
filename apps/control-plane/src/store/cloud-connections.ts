@@ -35,8 +35,8 @@ function rowToConnection(row: Row): CloudConnection {
     region: row.region,
     credentialsEncrypted: row.credentialsEncrypted,
     status: row.status as CloudConnection['status'],
-    error: row.error ?? undefined,
-    lastSyncAt: row.lastSyncAt ?? undefined,
+    ...(row.error != null ? { error: row.error } : {}),
+    ...(row.lastSyncAt != null ? { lastSyncAt: row.lastSyncAt } : {}),
     createdAt: row.createdAt,
   };
 }
