@@ -3,6 +3,7 @@ import type { NetworkAllocation, NetworkConfig } from '@paws/domain-network';
 import type { McpServerConfig } from '@paws/domain-mcp';
 import type { McpGateway } from '../mcp/gateway.js';
 import {
+  createFirecrackerClient,
   createIpPool,
   createTap,
   deleteTap,
@@ -85,7 +86,7 @@ export interface SessionResult {
 /** Active session state for tracking */
 export interface ActiveSession {
   sessionId: string;
-  status: 'running' | 'stopping';
+  status: 'running' | 'stopping' | 'paused';
   startedAt: Date;
   allocation?: NetworkAllocation;
   vmHandle?: VmHandle;
@@ -93,6 +94,8 @@ export interface ActiveSession {
   ca?: SessionCa;
   /** Allocated host ports for inbound DNAT */
   inboundPorts?: Array<{ hostPort: number; guestPort: number }> | undefined;
+  /** Directory where checkpoint snapshot files are stored */
+  checkpointDir?: string | undefined;
 }
 
 /** Resolve a snapshot ID to a local directory path */
@@ -396,6 +399,89 @@ export function createExecutor(config: ExecutorConfig) {
         config.semaphore.release();
         sessions.delete(sessionId);
       }
+    },
+
+    /**
+     * Checkpoint a running session: pause the VM and create a memory snapshot.
+     * The session stays in the active map with status 'paused'. Resources
+     * (TAP, iptables, proxy) remain allocated so resume is fast.
+     */
+    async checkpoint(sessionId: string): Promise<void> {
+      const session = sessions.get(sessionId);
+      if (!session)
+        throw new WorkerError(WorkerErrorCode.SESSION_NOT_FOUND, `Session ${sessionId} not found`);
+      if (session.status !== 'running')
+        throw new WorkerError(
+          WorkerErrorCode.SESSION_NOT_FOUND,
+          `Session ${sessionId} is ${session.status}, not running`,
+        );
+      if (!session.vmHandle)
+        throw new WorkerError(WorkerErrorCode.SESSION_NOT_FOUND, `Session ${sessionId} has no VM`);
+
+      const client = createFirecrackerClient(session.vmHandle.socketPath);
+      const checkpointDir = `${config.vmBaseDir}/${sessionId}/checkpoint`;
+      await Bun.write(`${checkpointDir}/.keep`, '');
+
+      // 1. Pause the VM
+      const pauseResult = await client.pauseVm();
+      if (pauseResult.isErr()) throw new Error(`Failed to pause VM: ${pauseResult.error.message}`);
+
+      // 2. Create snapshot
+      const snapResult = await client.createSnapshot({
+        snapshotType: 'Full',
+        snapshotPath: `${checkpointDir}/vmstate.snap`,
+        memFilePath: `${checkpointDir}/memory.snap`,
+      });
+      if (snapResult.isErr())
+        throw new Error(`Failed to create snapshot: ${snapResult.error.message}`);
+
+      // 3. Resume the VM (it stays running, checkpoint is saved for later rollback)
+      const resumeResult = await client.resumeVm();
+      if (resumeResult.isErr())
+        throw new Error(`Failed to resume VM: ${resumeResult.error.message}`);
+
+      session.checkpointDir = checkpointDir;
+    },
+
+    /**
+     * Rollback a session to its last checkpoint. Stops the current VM,
+     * restores from the checkpoint snapshot, and resumes execution.
+     */
+    async rollback(sessionId: string): Promise<void> {
+      const session = sessions.get(sessionId);
+      if (!session)
+        throw new WorkerError(WorkerErrorCode.SESSION_NOT_FOUND, `Session ${sessionId} not found`);
+      if (!session.checkpointDir)
+        throw new WorkerError(
+          WorkerErrorCode.SESSION_NOT_FOUND,
+          `Session ${sessionId} has no checkpoint`,
+        );
+      if (!session.vmHandle)
+        throw new WorkerError(WorkerErrorCode.SESSION_NOT_FOUND, `Session ${sessionId} has no VM`);
+
+      // 1. Stop the current VM
+      await stopVm(session.vmHandle);
+
+      // 2. Restore from checkpoint (reuses existing VM directory with checkpoint files)
+      const vmDir = `${config.vmBaseDir}/${sessionId}`;
+      const restoreResult = await restoreVm({
+        vmDir,
+        snapshotDir: session.checkpointDir,
+        firecrackerBin: config.firecrackerBin ?? 'firecracker',
+      });
+      if (restoreResult.isErr())
+        throw new Error(`Failed to restore from checkpoint: ${restoreResult.error.message}`);
+
+      const vmHandle = restoreResult.value;
+
+      // 3. Resume
+      const client = createFirecrackerClient(vmHandle.socketPath);
+      const resumeResult = await client.resumeVm();
+      if (resumeResult.isErr())
+        throw new Error(`Failed to resume VM after rollback: ${resumeResult.error.message}`);
+
+      session.vmHandle = vmHandle;
+      session.status = 'running';
     },
 
     /** Get all active sessions */

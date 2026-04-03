@@ -14,6 +14,7 @@ import { NetworkConfigSchema } from '@paws/domain-network';
 export const SessionStatus = z.enum([
   'pending',
   'running',
+  'paused',
   'completed',
   'failed',
   'timeout',
