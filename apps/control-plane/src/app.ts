@@ -72,6 +72,7 @@ import { createAuthRoutes } from './routes/auth.js';
 import { registerWorkerWebSocket } from './routes/worker-ws.js';
 import { healthRoute } from './routes/health.js';
 import { createMcpRoutes } from './routes/mcp.js';
+import { createExposeRoutes } from './routes/expose.js';
 import { createServerRoutes } from './routes/servers.js';
 import { createSqliteDaemonStore } from './store/daemons.js';
 import { createTemplateStore } from './store/templates.js';
@@ -1763,6 +1764,13 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     const mcpOAuthRoutes = createMcpOAuthRoutes({ oauth: oauthProvider, issuerUrl });
     app.route('/', mcpOAuthRoutes);
   }
+
+  // --- VM port exposure (reverse proxy to worker) ---
+
+  const exposeRoutes = createExposeRoutes({
+    sessionStore,
+  });
+  app.route('/', exposeRoutes);
 
   // --- WebSocket routes (require Bun runtime) ---
 
