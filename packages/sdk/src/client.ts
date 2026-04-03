@@ -33,7 +33,7 @@ export interface ClientConfig {
   /** API key for Authorization header */
   apiKey: string;
   /** Optional fetch implementation (for testing) */
-  fetch?: typeof globalThis.fetch;
+  fetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
   /** Default timeout in ms for requests (default: 30_000) */
   timeoutMs?: number;
 }
