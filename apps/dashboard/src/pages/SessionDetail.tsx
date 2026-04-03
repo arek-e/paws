@@ -153,6 +153,19 @@ export function SessionDetail() {
             </CardContent>
           </Card>
 
+          {session.data.status === 'failed' && session.data.stderr?.includes('Credential $') && (
+            <Alert className="bg-amber-900/10 border-amber-800/30">
+              <AlertDescription className="text-sm text-amber-300">
+                <strong>Credential resolution failed:</strong>{' '}
+                <span className="font-mono text-xs">{session.data.stderr}</span>
+                <p className="mt-1 text-xs text-amber-400/70">
+                  Add the credential in the setup wizard, or set the environment variable on the
+                  control plane.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {session.data.exposedPorts && session.data.exposedPorts.length > 0 && (
             <div>
               <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-2">

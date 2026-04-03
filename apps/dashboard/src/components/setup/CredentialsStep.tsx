@@ -167,6 +167,17 @@ export function CredentialsStep({ onComplete, onBack }: CredentialsStepProps) {
         </AlertDescription>
       </Alert>
 
+      {/* Production guidance */}
+      <Alert className="mt-2 bg-zinc-800/50 border-zinc-700/30">
+        <AlertDescription className="text-xs text-zinc-400">
+          <strong>Production:</strong> Instead of pasting keys here, set them as environment
+          variables on the control plane (e.g.{' '}
+          <code className="text-zinc-300">ANTHROPIC_API_KEY</code>). Use{' '}
+          <code className="text-zinc-300">$ENV_VAR</code> syntax in daemon configs to reference
+          them. Works with K8s Secrets, ExternalSecrets, Vault, or any secret manager.
+        </AlertDescription>
+      </Alert>
+
       {!hasLlmProvider && (
         <p className="text-xs text-zinc-500 mt-3 italic">
           At least one LLM provider (Anthropic or OpenAI) required.
