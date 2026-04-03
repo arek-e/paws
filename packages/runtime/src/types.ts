@@ -86,6 +86,8 @@ export interface RuntimeSessionRequest {
     access?: string;
     allowedEmails?: string[];
   }>;
+  /** Host path to a persistent state volume. Mounted at /state inside the runtime. */
+  stateVolumePath?: string;
 }
 
 /**

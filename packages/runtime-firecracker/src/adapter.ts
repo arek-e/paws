@@ -335,6 +335,30 @@ async function executeSession(
       }
     }
 
+    // 9b. Sync state volume into VM (if configured)
+    if (request.stateVolumePath) {
+      // Ensure host directory exists
+      await Bun.write(`${request.stateVolumePath}/.keep`, '');
+      // Create /state in VM and rsync from host
+      await sshExec(sshOpts, 'mkdir -p /state');
+      const syncIn = Bun.spawn(
+        [
+          'rsync',
+          '-az',
+          '--delete',
+          '-e',
+          `ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -i ${config.sshKeyPath}`,
+          `${request.stateVolumePath}/`,
+          `root@${session.allocation.guestIp}:/state/`,
+        ],
+        { stdout: 'pipe', stderr: 'pipe' },
+      );
+      const syncInExit = await syncIn.exited;
+      if (syncInExit !== 0) {
+        log.warn('State volume sync-in failed', { sessionId, exitCode: syncInExit });
+      }
+    }
+
     // 10. Write and execute workload script
     const envExports = Object.entries(request.workload.env)
       .map(([k, v]) => `export ${k}=${shellEscape(v)}`)
@@ -390,6 +414,26 @@ async function executeSession(
         output = JSON.parse(outputResult.value);
       } catch {
         // Not valid JSON — ignore
+      }
+    }
+
+    // 11b. Sync state volume back from VM (if configured)
+    if (request.stateVolumePath && session.allocation) {
+      const syncOut = Bun.spawn(
+        [
+          'rsync',
+          '-az',
+          '--delete',
+          '-e',
+          `ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -i ${config.sshKeyPath}`,
+          `root@${session.allocation.guestIp}:/state/`,
+          `${request.stateVolumePath}/`,
+        ],
+        { stdout: 'pipe', stderr: 'pipe' },
+      );
+      const syncOutExit = await syncOut.exited;
+      if (syncOutExit !== 0) {
+        log.warn('State volume sync-out failed', { sessionId, exitCode: syncOutExit });
       }
     }
 
