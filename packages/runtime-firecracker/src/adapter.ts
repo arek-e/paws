@@ -112,6 +112,15 @@ export function createFirecrackerRuntime(config: FirecrackerRuntimeConfig): Runt
       );
     },
 
+    getSessionConnection(sessionId: string) {
+      const session = activeSessions.get(sessionId);
+      if (!session?.allocation) return undefined;
+      return {
+        guestIp: session.allocation.guestIp,
+        sshKeyPath: config.sshKeyPath,
+      };
+    },
+
     async dispose() {
       // Stop any lingering sessions
       for (const [sid, session] of activeSessions) {

@@ -210,16 +210,163 @@ export function createSessionApp(deps: AppDeps) {
 
   // --- Browser (computer-use) ---
 
+  async function browserScreenshot(guestIp: string, sshKeyPath: string) {
+    // Take screenshot via CDP using a helper script in the VM
+    const script = `
+node -e "
+const http = require('http');
+const ws = require('ws');
+(async () => {
+  const res = await new Promise((r, j) => http.get('http://localhost:9222/json', resp => { let d=''; resp.on('data', c => d+=c); resp.on('end', () => r(JSON.parse(d))); }).on('error', j));
+  const page = res[0];
+  if (!page) { process.exit(1); }
+  const sock = new ws(page.webSocketDebuggerUrl);
+  await new Promise(r => sock.on('open', r));
+  sock.send(JSON.stringify({id:1, method:'Page.captureScreenshot', params:{format:'png'}}));
+  const msg = await new Promise(r => sock.on('message', r));
+  const data = JSON.parse(msg.toString());
+  process.stdout.write(data.result.data);
+  sock.close();
+})().catch(() => process.exit(1));
+" 2>/dev/null`;
+
+    const proc = Bun.spawn(
+      [
+        'ssh',
+        '-o',
+        'StrictHostKeyChecking=no',
+        '-o',
+        'UserKnownHostsFile=/dev/null',
+        '-o',
+        'ConnectTimeout=5',
+        '-o',
+        'LogLevel=ERROR',
+        '-i',
+        sshKeyPath,
+        `root@${guestIp}`,
+        script,
+      ],
+      { stdout: 'pipe', stderr: 'pipe' },
+    );
+    const exitCode = await proc.exited;
+    if (exitCode !== 0) return null;
+    const base64 = await new Response(proc.stdout).text();
+    return base64.trim() || null;
+  }
+
+  async function browserAction(
+    guestIp: string,
+    sshKeyPath: string,
+    action: { type: string; [key: string]: unknown },
+  ) {
+    // Map BrowserAction to CDP commands executed inside the VM
+    let script: string;
+
+    switch (action.type) {
+      case 'goto':
+        script = `curl -sf -X PUT "http://localhost:9222/json/navigate?url=${encodeURIComponent(action.url as string)}" 2>/dev/null || true`;
+        break;
+      case 'click':
+        script = `node -e "
+const http = require('http');
+const ws = require('ws');
+(async () => {
+  const res = await new Promise((r,j) => http.get('http://localhost:9222/json', resp => { let d=''; resp.on('data',c=>d+=c); resp.on('end',()=>r(JSON.parse(d))); }).on('error',j));
+  const sock = new ws(res[0].webSocketDebuggerUrl);
+  await new Promise(r => sock.on('open', r));
+  const send = (m,p) => new Promise(r => { sock.send(JSON.stringify({id:Date.now(),method:m,params:p})); sock.once('message', d => r(JSON.parse(d.toString()))); });
+  await send('Input.dispatchMouseEvent', {type:'mousePressed',x:${action.x},y:${action.y},button:'left',clickCount:1});
+  await send('Input.dispatchMouseEvent', {type:'mouseReleased',x:${action.x},y:${action.y},button:'left',clickCount:1});
+  sock.close();
+})().catch(() => process.exit(1));
+" 2>/dev/null`;
+        break;
+      case 'type':
+        script = `node -e "
+const http = require('http');
+const ws = require('ws');
+(async () => {
+  const res = await new Promise((r,j) => http.get('http://localhost:9222/json', resp => { let d=''; resp.on('data',c=>d+=c); resp.on('end',()=>r(JSON.parse(d))); }).on('error',j));
+  const sock = new ws(res[0].webSocketDebuggerUrl);
+  await new Promise(r => sock.on('open', r));
+  const send = (m,p) => new Promise(r => { sock.send(JSON.stringify({id:Date.now(),method:m,params:p})); sock.once('message', d => r(JSON.parse(d.toString()))); });
+  for (const ch of ${JSON.stringify(action.text)}) { await send('Input.dispatchKeyEvent', {type:'keyDown',text:ch}); await send('Input.dispatchKeyEvent', {type:'keyUp'}); }
+  sock.close();
+})().catch(() => process.exit(1));
+" 2>/dev/null`;
+        break;
+      case 'scroll':
+        script = `node -e "
+const http = require('http');
+const ws = require('ws');
+(async () => {
+  const res = await new Promise((r,j) => http.get('http://localhost:9222/json', resp => { let d=''; resp.on('data',c=>d+=c); resp.on('end',()=>r(JSON.parse(d))); }).on('error',j));
+  const sock = new ws(res[0].webSocketDebuggerUrl);
+  await new Promise(r => sock.on('open', r));
+  const send = (m,p) => new Promise(r => { sock.send(JSON.stringify({id:Date.now(),method:m,params:p})); sock.once('message', d => r(JSON.parse(d.toString()))); });
+  await send('Input.dispatchMouseEvent', {type:'mouseWheel',x:${action.x ?? 640},y:${action.y ?? 360},deltaX:0,deltaY:${action.deltaY ?? -100}});
+  sock.close();
+})().catch(() => process.exit(1));
+" 2>/dev/null`;
+        break;
+      case 'key':
+        script = `node -e "
+const http = require('http');
+const ws = require('ws');
+(async () => {
+  const res = await new Promise((r,j) => http.get('http://localhost:9222/json', resp => { let d=''; resp.on('data',c=>d+=c); resp.on('end',()=>r(JSON.parse(d))); }).on('error',j));
+  const sock = new ws(res[0].webSocketDebuggerUrl);
+  await new Promise(r => sock.on('open', r));
+  const send = (m,p) => new Promise(r => { sock.send(JSON.stringify({id:Date.now(),method:m,params:p})); sock.once('message', d => r(JSON.parse(d.toString()))); });
+  await send('Input.dispatchKeyEvent', {type:'rawKeyDown',windowsVirtualKeyCode:${action.keyCode ?? 13},key:${JSON.stringify(action.key ?? 'Enter')}});
+  await send('Input.dispatchKeyEvent', {type:'keyUp',windowsVirtualKeyCode:${action.keyCode ?? 13},key:${JSON.stringify(action.key ?? 'Enter')}});
+  sock.close();
+})().catch(() => process.exit(1));
+" 2>/dev/null`;
+        break;
+      default:
+        return { success: false, error: `Unknown action type: ${action.type}` };
+    }
+
+    const proc = Bun.spawn(
+      [
+        'ssh',
+        '-o',
+        'StrictHostKeyChecking=no',
+        '-o',
+        'UserKnownHostsFile=/dev/null',
+        '-o',
+        'ConnectTimeout=5',
+        '-o',
+        'LogLevel=ERROR',
+        '-i',
+        sshKeyPath,
+        `root@${guestIp}`,
+        script,
+      ],
+      { stdout: 'pipe', stderr: 'pipe' },
+    );
+    const exitCode = await proc.exited;
+    return { success: exitCode === 0 };
+  }
+
   // Execute a browser action in a session's VM
   app.post('/v1/sessions/:id/browser/action', async (c) => {
     const id = c.req.param('id');
 
-    // Verify session is active
     const active = executor.activeSessions.get(id);
     if (!active) {
       return c.json(
         { error: { code: 'SESSION_NOT_FOUND', message: `Session ${id} not found or not running` } },
         404,
+      );
+    }
+
+    const conn = executor.getSessionConnection(id);
+    if (!conn) {
+      return c.json(
+        { error: { code: 'NOT_AVAILABLE', message: 'Session connection not available' } },
+        503,
       );
     }
 
@@ -245,25 +392,28 @@ export function createSessionApp(deps: AppDeps) {
 
     const action = parsed.data;
 
-    // Stub implementation — actual Xvfb/Chromium integration deferred
-    // In the future, this will SSH into the VM and execute browser commands
     if (action.type === 'screenshot') {
+      const image = await browserScreenshot(conn.guestIp, conn.sshKeyPath);
       return c.json({
-        success: true,
-        screenshot: {
-          image: '', // Placeholder — no Xvfb/Chromium yet
-          width: 1280,
-          height: 720,
-          timestamp: new Date().toISOString(),
-        },
+        success: !!image,
+        screenshot: image
+          ? {
+              image,
+              width: 1280,
+              height: 720,
+              timestamp: new Date().toISOString(),
+            }
+          : undefined,
+        error: image ? undefined : 'Chromium not running or screenshot failed',
       });
     }
 
-    return c.json({ success: true });
+    const result = await browserAction(conn.guestIp, conn.sshKeyPath, action);
+    return c.json(result);
   });
 
   // Take a screenshot of the session's browser
-  app.get('/v1/sessions/:id/browser/screenshot', (c) => {
+  app.get('/v1/sessions/:id/browser/screenshot', async (c) => {
     const id = c.req.param('id');
 
     const active = executor.activeSessions.get(id);
@@ -274,9 +424,19 @@ export function createSessionApp(deps: AppDeps) {
       );
     }
 
-    // Stub implementation — returns empty placeholder
+    const conn = executor.getSessionConnection(id);
+    if (!conn) {
+      return c.json({
+        image: '',
+        width: 1280,
+        height: 720,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const image = await browserScreenshot(conn.guestIp, conn.sshKeyPath);
     return c.json({
-      image: '', // Placeholder — no Xvfb/Chromium yet
+      image: image ?? '',
       width: 1280,
       height: 720,
       timestamp: new Date().toISOString(),

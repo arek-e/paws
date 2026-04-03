@@ -13,4 +13,5 @@ export type {
   ExposedPortResult,
   ExecuteOptions,
   PortExposureProvider,
+  SessionConnection,
 } from './types.js';

@@ -132,6 +132,11 @@ export function createExecutor(config: ExecutorConfig) {
     get capabilities() {
       return config.runtime.capabilities;
     },
+
+    /** Get connection info for a running session (for browser routes, port proxy, etc.) */
+    getSessionConnection(sessionId: string) {
+      return config.runtime.getSessionConnection?.(sessionId);
+    },
   };
 }
 
