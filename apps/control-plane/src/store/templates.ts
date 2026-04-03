@@ -26,6 +26,7 @@ const builtinTemplates: DaemonTemplate[] = [
       trigger: {
         type: 'webhook',
         events: ['pull_request.opened', 'pull_request.synchronize'],
+        signatureScheme: 'hmac-sha256' as const,
       },
       agent: {
         framework: 'claude-code',
@@ -81,6 +82,7 @@ const builtinTemplates: DaemonTemplate[] = [
       trigger: {
         type: 'webhook',
         events: ['push.main'],
+        signatureScheme: 'hmac-sha256' as const,
       },
       workload: {
         type: 'script',
@@ -107,6 +109,7 @@ const builtinTemplates: DaemonTemplate[] = [
       trigger: {
         type: 'webhook',
         events: ['issues.opened'],
+        signatureScheme: 'hmac-sha256' as const,
       },
       agent: {
         framework: 'claude-code',
@@ -163,6 +166,7 @@ const builtinTemplates: DaemonTemplate[] = [
       trigger: {
         type: 'webhook',
         events: ['pull_request.opened', 'pull_request.synchronize'],
+        signatureScheme: 'hmac-sha256' as const,
       },
       workload: {
         type: 'script',

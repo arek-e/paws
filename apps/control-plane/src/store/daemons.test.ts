@@ -6,7 +6,7 @@ const makeDaemonRequest = (role = 'test-daemon') => ({
   role,
   description: 'A test daemon',
   snapshot: 'test-snap',
-  trigger: { type: 'webhook' as const, events: ['push'] },
+  trigger: { type: 'webhook' as const, events: ['push'], signatureScheme: 'hmac-sha256' as const },
   workload: { type: 'script' as const, script: 'echo hi', env: {} },
 });
 
