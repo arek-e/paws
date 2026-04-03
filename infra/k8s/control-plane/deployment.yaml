@@ -57,6 +57,9 @@ spec:
                 secretKeyRef:
                   name: paws-control-plane-secret
                   key: api-key
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/paws/data
           resources:
             requests:
               cpu: '100m'
@@ -80,3 +83,6 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
+      volumes:
+        - name: data
+          emptyDir: {}
