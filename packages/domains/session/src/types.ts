@@ -65,19 +65,24 @@ export const CreateSessionResponseSchema = z.object({
 
 export type CreateSessionResponse = z.infer<typeof CreateSessionResponseSchema>;
 
-/** A port exposed from the VM */
+/**
+ * A port exposed from the session's runtime.
+ *
+ * Base fields are generic; access control fields (access, pin, shareLink)
+ * are present when a tunnel provider adds authentication.
+ */
 export const ExposedPortSchema = z.object({
-  /** Port number inside the VM */
+  /** Port number inside the runtime */
   port: z.number().int().min(1).max(65535),
   /** Public URL to access this port */
   url: z.string().url(),
   /** Human-readable label */
   label: z.string().optional(),
-  /** Access control mode used for this port */
+  /** Access control mode (provider-specific, e.g., SSO/PIN/email) */
   access: z.enum(['sso', 'pin', 'email']).optional(),
   /** Auto-generated PIN (only present when access is 'pin') */
   pin: z.string().optional(),
-  /** Time-limited shareable link (always generated) */
+  /** Time-limited shareable link */
   shareLink: z.string().url().optional(),
 });
 

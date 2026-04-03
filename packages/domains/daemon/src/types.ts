@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { AgentConfigSchema } from './agent.js';
+import { AgentConfigSchema } from '@paws/domain-agent';
 import {
   DurationMsSchema,
   IdSchema,
@@ -8,6 +8,7 @@ import {
   TimestampSchema,
 } from '@paws/domain-common';
 import { NetworkConfigSchema } from '@paws/domain-network';
+import { GovernanceSchema } from '@paws/domain-policy';
 import { ResourcesSchema, SessionStatus, WorkloadSchema } from '@paws/domain-session';
 
 /** Daemon status */
@@ -52,15 +53,6 @@ export const TriggerSchema = z.discriminatedUnion('type', [
 ]);
 
 export type Trigger = z.infer<typeof TriggerSchema>;
-
-/** Governance policy */
-export const GovernanceSchema = z.object({
-  maxActionsPerHour: z.number().int().positive().optional(),
-  requiresApproval: z.array(z.string()).default([]),
-  auditLog: z.boolean().default(true),
-});
-
-export type Governance = z.infer<typeof GovernanceSchema>;
 
 /** Daemon invocation stats */
 export const DaemonStatsSchema = z.object({

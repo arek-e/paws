@@ -5,6 +5,11 @@ import type { Result } from 'neverthrow';
 
 import { FirecrackerError, FirecrackerErrorCode } from '../errors.js';
 
+/** Firecracker-specific network allocation with TAP device */
+export interface FirecrackerAllocation extends NetworkAllocation {
+  tapDevice: string;
+}
+
 /**
  * Base network for VM subnets: 172.16.0.0/16
  * Each VM gets a /30 subnet with 4 addresses:
@@ -34,7 +39,7 @@ function offsetToOctets(offset: number): [number, number] {
 }
 
 /** Allocate a /30 subnet for the given index */
-export function allocateSubnet(index: number): Result<NetworkAllocation, FirecrackerError> {
+export function allocateSubnet(index: number): Result<FirecrackerAllocation, FirecrackerError> {
   if (!Number.isInteger(index) || index < 0 || index > MAX_SUBNET_INDEX) {
     return err(
       new FirecrackerError(
@@ -68,7 +73,7 @@ export function createIpPool(maxSlots: number = MAX_SUBNET_INDEX + 1) {
 
   return {
     /** Allocate the next available subnet */
-    allocate(): Result<NetworkAllocation, FirecrackerError> {
+    allocate(): Result<FirecrackerAllocation, FirecrackerError> {
       if (allocated.size >= maxSlots) {
         return err(
           new FirecrackerError(

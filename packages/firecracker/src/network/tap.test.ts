@@ -1,8 +1,7 @@
-import type { NetworkAllocation } from '@paws/domain-network';
-
 import { describe, expect, it } from 'vitest';
 
 import type { ExecFn } from '../types.js';
+import type { FirecrackerAllocation } from './ip-pool.js';
 
 import { createTap, deleteTap } from './tap.js';
 
@@ -20,7 +19,7 @@ function createMockExec(): {
   };
 }
 
-const testAlloc: NetworkAllocation = {
+const testAlloc: FirecrackerAllocation = {
   tapDevice: 'tap0',
   subnetIndex: 0,
   hostIp: '172.16.0.1',

@@ -1,7 +1,8 @@
+import type { AgentConfig } from '@paws/domain-agent';
 import type { NetworkConfig } from '@paws/domain-network';
+import type { Governance } from '@paws/domain-policy';
 import type { Resources, Workload } from '@paws/domain-session';
-import type { AgentConfig } from './agent.js';
-import type { CreateDaemonRequest, DaemonStatus, Governance, Trigger } from './types.js';
+import type { CreateDaemonRequest, DaemonStatus, Trigger } from './types.js';
 
 export interface StoredDaemon {
   role: string;

@@ -1,5 +1,7 @@
 import { createLogger } from '@paws/logger';
 import { createPortPool } from '@paws/firecracker';
+import { createFirecrackerRuntime } from '@paws/runtime-firecracker';
+import { createRuntimeRegistry } from '@paws/runtime';
 
 import { createCallHome } from './call-home.js';
 import { createSessionApp } from './routes.js';
@@ -77,15 +79,27 @@ const llmGateway =
       }
     : undefined;
 
-const executor = createExecutor({
+// --- Runtime setup ---
+// Create the Firecracker runtime adapter (owns all VM lifecycle)
+const firecrackerRuntime = createFirecrackerRuntime({
   snapshotDir: SNAPSHOT_DIR,
   snapshotBaseDir: SNAPSHOT_BASE_DIR,
   vmBaseDir: VM_BASE_DIR,
   sshKeyPath: SSH_KEY_PATH,
-  semaphore,
-  workerName: WORKER_NAME,
+  maxConcurrent: MAX_CONCURRENT,
   portPool,
   workerExternalUrl: WORKER_EXTERNAL_URL || undefined,
+});
+
+// Register in the runtime registry (future: support multiple runtimes)
+const runtimeRegistry = createRuntimeRegistry();
+runtimeRegistry.register(firecrackerRuntime);
+
+// Create the executor (thin wrapper around runtime)
+const executor = createExecutor({
+  runtime: runtimeRegistry.resolve(),
+  semaphore,
+  workerName: WORKER_NAME,
   llmGateway,
 });
 
@@ -159,12 +173,15 @@ if (GATEWAY_URL && API_KEY) {
 
 const portExposureStatus = WORKER_EXTERNAL_URL ? `direct (${WORKER_EXTERNAL_URL})` : 'disabled';
 
+const runtimeName = runtimeRegistry.resolve().name;
+
 console.log(`
  /\\_/\\
 ( o.o )  paws worker v${PAWS_VERSION}
  > ^ <
 
 Listening on :${PORT}
+Runtime: ${runtimeName}
 Max concurrent VMs: ${MAX_CONCURRENT}
 Max queued: ${MAX_QUEUED}
 Snapshot: ${SNAPSHOT_DIR}

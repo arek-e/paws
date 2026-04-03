@@ -1,0 +1,28 @@
+{
+  "name": "@paws/runtime-firecracker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Firecracker runtime adapter — KVM-isolated VM execution with TLS MITM credential injection",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir dist --target bun",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@paws/firecracker": "workspace:*",
+    "@paws/logger": "workspace:*",
+    "@paws/proxy": "workspace:*",
+    "@paws/runtime": "workspace:*",
+    "neverthrow": "catalog:"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

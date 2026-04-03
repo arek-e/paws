@@ -20,6 +20,15 @@ function createMockExecutor() {
     get poolStats() {
       return { allocated: 0, available: 256 };
     },
+    get capabilities() {
+      return {
+        fullLinux: true,
+        hardwareIsolation: true,
+        transparentCredentialInjection: true,
+        coldStartMs: 800,
+        maxConcurrentSessions: 5,
+      };
+    },
   };
 }
 
@@ -48,10 +57,7 @@ describe('GET /health', () => {
       queued: 0,
       available: 5,
     });
-    expect(body.pool).toMatchObject({
-      allocated: 0,
-      available: 256,
-    });
+    expect(body.runtime).toBe('firecracker');
     expect(body.snapshot).toMatchObject({
       syncEnabled: false,
       currentVersion: 0,

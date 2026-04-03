@@ -72,7 +72,7 @@ export function createSessionApp(deps: AppDeps) {
         queued: semaphore.queued,
         available: semaphore.available,
       },
-      pool: executor.poolStats,
+      runtime: executor.capabilities.fullLinux ? 'firecracker' : 'lightweight',
       snapshot: {
         syncEnabled: !!syncLoop,
         currentVersion: syncStatus?.currentVersion ?? 0,
@@ -114,6 +114,7 @@ export function createSessionApp(deps: AppDeps) {
     const sessionId = randomUUID();
 
     // Fire-and-forget — execute in background, track results
+    const sessionStartTime = Date.now();
     executor.execute(sessionId, parsed.data).then(
       (result) => {
         const status = result.exitCode === 0 ? 'completed' : 'failed';
@@ -135,7 +136,7 @@ export function createSessionApp(deps: AppDeps) {
           stdout: '',
           stderr: err instanceof Error ? err.message : String(err),
           output: undefined,
-          durationMs: Date.now() - Date.now(),
+          durationMs: Date.now() - sessionStartTime,
           completedAt: new Date().toISOString(),
         });
       },
@@ -156,10 +157,7 @@ export function createSessionApp(deps: AppDeps) {
         status: 'running',
         startedAt: active.startedAt.toISOString(),
         worker: workerName,
-        exposedPorts: active.inboundPorts?.map((p) => ({
-          port: p.guestPort,
-          hostPort: p.hostPort,
-        })),
+        exposedPorts: active.exposedPorts,
       });
     }
 

@@ -1,9 +1,8 @@
-import type { NetworkAllocation } from '@paws/domain-network';
-
 import { ResultAsync } from 'neverthrow';
 
 import { FirecrackerError, FirecrackerErrorCode } from '../errors.js';
 import type { ExecFn } from '../types.js';
+import type { FirecrackerAllocation } from './ip-pool.js';
 
 import { defaultExec } from './exec.js';
 
@@ -25,7 +24,7 @@ const DEFAULT_HTTPS_PORT = 8443;
  * - Drop everything else from this TAP
  */
 export function setupIptables(
-  alloc: NetworkAllocation,
+  alloc: FirecrackerAllocation,
   config: IptablesConfig = {},
   options: { exec?: ExecFn } = {},
 ): ResultAsync<void, FirecrackerError> {
@@ -118,7 +117,7 @@ export function setupIptables(
  * i.e., traffic originating FROM the VM, not traffic destined TO it).
  */
 export function setupInboundPort(
-  alloc: NetworkAllocation,
+  alloc: FirecrackerAllocation,
   hostPort: number,
   guestPort: number,
   options: { exec?: ExecFn } = {},
@@ -170,7 +169,7 @@ export function setupInboundPort(
  * Tear down an inbound port forwarding rule.
  */
 export function teardownInboundPort(
-  alloc: NetworkAllocation,
+  alloc: FirecrackerAllocation,
   hostPort: number,
   guestPort: number,
   options: { exec?: ExecFn } = {},
@@ -221,7 +220,7 @@ export function teardownInboundPort(
  * Uses -D (delete) to remove the exact rules that were added.
  */
 export function teardownIptables(
-  alloc: NetworkAllocation,
+  alloc: FirecrackerAllocation,
   config: IptablesConfig = {},
   options: { exec?: ExecFn } = {},
 ): ResultAsync<void, FirecrackerError> {

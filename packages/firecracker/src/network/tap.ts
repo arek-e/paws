@@ -1,15 +1,14 @@
-import type { NetworkAllocation } from '@paws/domain-network';
-
 import { ResultAsync } from 'neverthrow';
 
 import { FirecrackerError, FirecrackerErrorCode } from '../errors.js';
 import type { ExecFn } from '../types.js';
+import type { FirecrackerAllocation } from './ip-pool.js';
 
 import { defaultExec } from './exec.js';
 
 /** Create a TAP device and configure its IP address */
 export function createTap(
-  alloc: NetworkAllocation,
+  alloc: FirecrackerAllocation,
   options: { exec?: ExecFn } = {},
 ): ResultAsync<void, FirecrackerError> {
   const exec = options.exec ?? defaultExec;

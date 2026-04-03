@@ -1,0 +1,10 @@
+{
+  "extends": "../../../packages/typescript-config/library.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": []
+  },
+  "include": ["src"]
+}
