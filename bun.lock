@@ -158,6 +158,7 @@
         "react": "catalog:",
       },
       "devDependencies": {
+        "@types/react": "^19.0.0",
         "neverthrow": "catalog:",
         "vitest": "catalog:",
       },
@@ -412,6 +413,7 @@
       "name": "@paws/sdk",
       "version": "0.1.0",
       "dependencies": {
+        "@paws/domain-common": "workspace:*",
         "@paws/domain-daemon": "workspace:*",
         "@paws/domain-fleet": "workspace:*",
         "@paws/domain-session": "workspace:*",

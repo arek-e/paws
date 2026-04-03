@@ -1381,6 +1381,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
         resources: src.resources,
         timeoutMs: 600_000,
         network: fullDaemon?.network,
+        stateVolumePath: `/var/lib/paws/state/${daemon.role}`,
         metadata: {
           triggerType: 'github',
           eventType: event.type,

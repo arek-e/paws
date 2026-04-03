@@ -27,6 +27,7 @@
     "react": "catalog:"
   },
   "devDependencies": {
+    "@types/react": "catalog:",
     "neverthrow": "catalog:",
     "vitest": "catalog:"
   }

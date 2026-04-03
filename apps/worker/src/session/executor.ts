@@ -165,6 +165,7 @@ function toRuntimeRequest(request: CreateSessionRequest): RuntimeSessionRequest 
           })),
         }
       : {}),
+    ...(request.stateVolumePath ? { stateVolumePath: request.stateVolumePath } : {}),
   };
 }
 

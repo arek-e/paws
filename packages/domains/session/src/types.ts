@@ -51,6 +51,8 @@ export const CreateSessionRequestSchema = z.object({
   browser: BrowserConfigSchema.optional(),
   callbackUrl: z.string().url().optional(),
   metadata: MetadataSchema.optional(),
+  /** Host path to persistent state volume (set by control plane for daemon sessions) */
+  stateVolumePath: z.string().optional(),
 });
 
 export type CreateSessionRequest = z.infer<typeof CreateSessionRequestSchema>;
