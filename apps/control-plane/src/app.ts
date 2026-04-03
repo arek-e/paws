@@ -1541,7 +1541,12 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     const body = c.req.valid('json');
     if (snapshotConfigStore.get(body.id)) {
       return c.json(
-        { error: { code: 'CONFLICT', message: `Snapshot config '${body.id}' already exists` } },
+        {
+          error: {
+            code: 'CONFLICT' as const,
+            message: `Snapshot config '${body.id}' already exists`,
+          },
+        },
         409,
       );
     }

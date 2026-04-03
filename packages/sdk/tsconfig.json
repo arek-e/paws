@@ -5,5 +5,11 @@
     "rootDir": "src"
   },
   "include": ["src"],
-  "references": [{ "path": "../domains/common" }]
+  "references": [
+    { "path": "../domains/common" },
+    { "path": "../domains/daemon" },
+    { "path": "../domains/fleet" },
+    { "path": "../domains/session" },
+    { "path": "../domains/snapshot" }
+  ]
 }

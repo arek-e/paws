@@ -2,7 +2,7 @@
   "compilerOptions": {
     "types": ["@types/bun"],
     "target": "ESNext",
-    "module": "ESNext",
+    "module": "Preserve",
     "moduleResolution": "bundler",
     "esModuleInterop": true,
     "strict": true,

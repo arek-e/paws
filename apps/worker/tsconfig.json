@@ -6,9 +6,16 @@
   },
   "include": ["src"],
   "references": [
+    { "path": "../../packages/domains/browser" },
+    { "path": "../../packages/domains/mcp" },
+    { "path": "../../packages/domains/network" },
+    { "path": "../../packages/domains/session" },
+    { "path": "../../packages/domains/snapshot" },
     { "path": "../../packages/firecracker" },
     { "path": "../../packages/logger" },
     { "path": "../../packages/proxy" },
+    { "path": "../../packages/runtime" },
+    { "path": "../../packages/runtime-firecracker" },
     { "path": "../../packages/snapshot-store" }
   ]
 }

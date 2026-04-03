@@ -8,5 +8,11 @@
     }
   },
   "include": ["src"],
-  "references": [{ "path": "../../packages/sdk" }]
+  "references": [
+    { "path": "../../packages/domains/browser" },
+    { "path": "../../packages/domains/fleet" },
+    { "path": "../../packages/domains/session" },
+    { "path": "../../packages/domains/snapshot" },
+    { "path": "../../packages/sdk" }
+  ]
 }

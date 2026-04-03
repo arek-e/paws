@@ -26,8 +26,6 @@
     "clsx": "catalog:",
     "cmdk": "^1.1.1",
     "lucide-react": "catalog:",
-    "next-themes": "^0.4.6",
-    "radix-ui": "^1.4.3",
     "react": "catalog:",
     "react-dom": "catalog:",
     "shadcn": "catalog:",

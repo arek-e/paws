@@ -14,12 +14,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@octokit/rest": "^22.0.0",
-    "jose": "^6.0.11",
-    "zod": "catalog:"
+    "jose": "^6.0.11"
   },
   "devDependencies": {
-    "bun-types": "catalog:",
     "vitest": "catalog:"
   }
 }

@@ -19,7 +19,6 @@
     "neverthrow": "catalog:"
   },
   "devDependencies": {
-    "bun-types": "catalog:",
     "vitest": "catalog:"
   }
 }
