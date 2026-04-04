@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { createLogger } from '@paws/logger';
+import { tracingMiddleware } from '@paws/telemetry';
 import type { Hono } from 'hono';
 import {
   verifyWebhookSignature,
@@ -263,6 +264,9 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   // If OIDC is configured, init the middleware with env vars so @hono/oidc-auth
   // can discover the provider and validate sessions.
   const app = new OpenAPIHono();
+
+  // --- Distributed tracing (before all other middleware) ---
+  app.use('*', tracingMiddleware('control-plane'));
 
   if (deps.oidc) {
     const { initOidcAuthMiddleware } = await import('@hono/oidc-auth');

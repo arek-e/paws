@@ -1,4 +1,4 @@
-# Grafana datasource provisioning — auto-connects to VictoriaMetrics.
+# Grafana datasource provisioning — metrics, logs, and traces.
 apiVersion: 1
 
 datasources:
@@ -15,3 +15,34 @@ datasources:
     url: http://loki:3100
     isDefault: false
     editable: false
+    jsonData:
+      derivedFields:
+        - datasourceUid: tempo
+          matcherRegex: '"traceId":"([a-f0-9]+)"'
+          name: TraceID
+          url: '$${__value.raw}'
+          urlDisplayLabel: View Trace
+
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    isDefault: false
+    editable: false
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki
+        filterByTraceID: true
+        filterBySpanID: false
+        tags:
+          - key: service.name
+            value: compose_service
+      tracesToMetrics:
+        datasourceUid: VictoriaMetrics
+      serviceMap:
+        datasourceUid: VictoriaMetrics
+      nodeGraph:
+        enabled: true
+      lokiSearch:
+        datasourceUid: loki

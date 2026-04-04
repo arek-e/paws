@@ -1,5 +1,14 @@
-import { createLogger } from '@paws/logger';
+import { createLogger, setGlobalLogEnricher } from '@paws/logger';
+import { initTracing, activeTraceId, activeSpanId } from '@paws/telemetry';
 import { createPortPool } from '@paws/firecracker';
+
+// --- OpenTelemetry tracing (must init before Hono app) ---
+initTracing({ serviceName: 'worker' });
+setGlobalLogEnricher(() => {
+  const traceId = activeTraceId();
+  const spanId = activeSpanId();
+  return traceId ? { traceId, spanId } : {};
+});
 import { createFirecrackerRuntime } from '@paws/runtime-firecracker';
 import { createRuntimeRegistry } from '@paws/runtime';
 
