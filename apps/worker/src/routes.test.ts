@@ -14,6 +14,7 @@ function createMockExecutor() {
       output: undefined,
       durationMs: 100,
     }),
+    getSessionConnection: vi.fn().mockReturnValue(undefined),
     get activeSessions() {
       return activeSessions;
     },
@@ -190,5 +191,49 @@ describe('GET /v1/sessions/:id', () => {
     expect(body.sessionId).toBe(sessionId);
     expect(body.status).toBe('running');
     expect(body.worker).toBe('test-worker');
+  });
+});
+
+describe('GET /v1/sessions/:id/health/:port', () => {
+  test('returns 404 when session not found', async () => {
+    const { app } = createApp();
+    const res = await app.request('/v1/sessions/unknown-id/health/3000');
+    expect(res.status).toBe(404);
+
+    const body = await res.json();
+    expect(body.error.code).toBe('SESSION_NOT_FOUND');
+  });
+
+  test('returns 400 for invalid port', async () => {
+    const { app } = createApp();
+    const res = await app.request('/v1/sessions/some-id/health/0');
+    expect(res.status).toBe(400);
+
+    const body = await res.json();
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('returns 400 for non-numeric port', async () => {
+    const { app } = createApp();
+    const res = await app.request('/v1/sessions/some-id/health/abc');
+    expect(res.status).toBe(400);
+
+    const body = await res.json();
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('returns ready false when TCP connect fails', async () => {
+    const { app, executor } = createApp();
+    executor.getSessionConnection.mockReturnValue({
+      guestIp: '127.0.0.1',
+      sshKeyPath: '/tmp/fake-key',
+    });
+
+    // Use a port that is almost certainly not listening
+    const res = await app.request('/v1/sessions/test-session/health/19999');
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    expect(body.ready).toBe(false);
   });
 });
