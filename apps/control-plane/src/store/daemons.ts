@@ -15,6 +15,7 @@ export interface StoredDaemon {
   status: DaemonStatus;
   snapshot: string;
   trigger: Trigger;
+  workspace?: string | undefined;
   workload?: Workload | undefined;
   agent?: AgentConfig | undefined;
   resources?: Resources | undefined;
@@ -51,6 +52,7 @@ export function createDaemonStore(): DaemonStore {
         status: 'active',
         snapshot: request.snapshot,
         trigger: request.trigger,
+        workspace: request.workspace,
         workload: request.workload,
         agent: request.agent,
         resources: request.resources,
@@ -126,6 +128,7 @@ function rowToStoredDaemon(row: DaemonRow): StoredDaemon {
     status: row.status as DaemonStatus,
     snapshot: row.snapshot,
     trigger: row.trigger as Trigger,
+    workspace: (row as { workspace?: string | null }).workspace ?? undefined,
     workload: (row.workload as Workload) ?? undefined,
     agent: (row.agent as AgentConfig) ?? undefined,
     resources: (row.resources as Resources) ?? undefined,
@@ -154,6 +157,7 @@ export function createSqliteDaemonStore(db: PawsDatabase): DaemonStore {
           status: 'active',
           snapshot: request.snapshot,
           trigger: request.trigger,
+          workspace: request.workspace ?? null,
           workload: request.workload ?? null,
           agent: request.agent ?? null,
           resources: request.resources ?? null,
@@ -183,6 +187,7 @@ export function createSqliteDaemonStore(db: PawsDatabase): DaemonStore {
       if (patch.status !== undefined) values['status'] = patch.status;
       if (patch.snapshot !== undefined) values['snapshot'] = patch.snapshot;
       if (patch.trigger !== undefined) values['trigger'] = patch.trigger;
+      if (patch.workspace !== undefined) values['workspace'] = patch.workspace;
       if (patch.workload !== undefined) values['workload'] = patch.workload;
       if (patch.agent !== undefined) values['agent'] = patch.agent;
       if (patch.resources !== undefined) values['resources'] = patch.resources;
