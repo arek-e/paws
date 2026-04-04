@@ -27,26 +27,22 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   async function checkAuth() {
     // Check setup status
+    // Check OIDC session first (before setup status, to avoid redirect loops)
+    let isOidcAuthenticated = false;
     try {
-      const setupRes = await fetch('/v1/setup/status');
-      if (setupRes.ok) {
-        const data = (await setupRes.json()) as SetupStatus;
-        if (data.oidcAvailable) setOidcAvailable(true);
-        if (data.needsAccount) {
-          // If OIDC is available, skip local account creation — go straight to SSO
-          if (data.oidcAvailable) {
-            window.location.href = '/auth/login';
-            return;
-          }
-          setMode('create-account');
+      const meRes = await fetch('/auth/me', { credentials: 'include' });
+      if (meRes.ok) {
+        const data = (await meRes.json()) as { authenticated: boolean };
+        if (data.authenticated) {
+          setMode('authenticated');
           return;
         }
       }
     } catch {
-      // Endpoint not available
+      // No OIDC session
     }
 
-    // Check existing session cookie
+    // Check password session cookie
     try {
       const sessionRes = await fetch('/auth/session', { credentials: 'include' });
       if (sessionRes.ok) {
@@ -60,21 +56,24 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       // No session
     }
 
-    // Check OIDC session
-    if (oidcAvailable) {
-      try {
-        const res = await fetch('/auth/me', { credentials: 'include' });
-        if (res.ok) {
-          const data = (await res.json()) as { authenticated: boolean };
-          if (data.authenticated) {
-            setSessionMode(true);
-            setMode('authenticated');
-            return;
-          }
+    // Not authenticated — check if OIDC is available and redirect to SSO
+    try {
+      const setupRes = await fetch('/v1/setup/status');
+      if (setupRes.ok) {
+        const data = (await setupRes.json()) as SetupStatus;
+        if (data.oidcAvailable) {
+          setOidcAvailable(true);
+          // Redirect to SSO login (works for both first-run and returning users)
+          window.location.href = '/auth/login';
+          return;
         }
-      } catch {
-        // OIDC not working
+        if (data.needsAccount) {
+          setMode('create-account');
+          return;
+        }
       }
+    } catch {
+      // Endpoint not available
     }
 
     setMode('login');
