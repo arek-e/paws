@@ -50,6 +50,7 @@ services:
       WORKER_URL: '${WORKER_URL:-}'
       DASHBOARD_DIR: '/app/apps/dashboard/dist'
       PAWS_VERSION: '${PAWS_VERSION:-0.5.2}'
+      DOMAIN: '${DOMAIN:-}'
       # OIDC (configured when domain is set; on bare IP, use API key auth only)
       OIDC_ISSUER: '${OIDC_ISSUER:-}'
       OIDC_CLIENT_ID: '${OIDC_CLIENT_ID:-paws-control-plane}'

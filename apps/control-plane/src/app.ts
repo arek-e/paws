@@ -1162,7 +1162,11 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
   // --- GitHub App manifest flow (setup) ---
 
-  const externalUrl = deps.oidc?.externalUrl ?? `http://localhost:${process.env['PORT'] ?? 4000}`;
+  // Public URL for GitHub webhooks and callbacks — use DOMAIN env if set, fall back to OIDC URL
+  const domain = process.env['DOMAIN'];
+  const externalUrl = domain
+    ? `https://${domain}`
+    : (deps.oidc?.externalUrl ?? `http://localhost:${process.env['PORT'] ?? 4000}`);
 
   // GET /setup/github/manifest — returns the manifest JSON for the dashboard form
   app.get('/setup/github/manifest', (c) => {
