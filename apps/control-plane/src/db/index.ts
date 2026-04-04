@@ -155,6 +155,13 @@ export function createDatabase(dbPath: string) {
         scopes TEXT,
         expires_at INTEGER NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS worker_credentials (
+        worker_id TEXT PRIMARY KEY,
+        api_key TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        enrolled_by TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
     `);
     log.info('Created database tables');
   }

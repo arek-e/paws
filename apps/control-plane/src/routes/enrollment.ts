@@ -1,8 +1,10 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { randomUUID } from 'node:crypto';
+import { eq } from 'drizzle-orm';
 import { ErrorResponseSchema } from '@paws/domain-common';
 import { createLogger } from '@paws/logger';
+import { workerCredentials as workerCredentialsTable } from '../db/schema.js';
 
 const log = createLogger('enrollment');
 
@@ -100,6 +102,7 @@ export interface WorkerCredentialStore {
   revoke(workerId: string): boolean;
 }
 
+/** In-memory credential store (for testing / no-DB mode) */
 export function createWorkerCredentialStore(): WorkerCredentialStore {
   const credentials = new Map<string, WorkerCredential>();
   const byApiKey = new Map<string, WorkerCredential>();
@@ -124,6 +127,66 @@ export function createWorkerCredentialStore(): WorkerCredentialStore {
       credentials.delete(workerId);
       byApiKey.delete(cred.apiKey);
       log.info('Revoked worker credential', { workerId, name: cred.name });
+      return true;
+    },
+  };
+}
+
+/** SQLite-backed credential store (persists across pod restarts) */
+export function createSqliteWorkerCredentialStore(
+  db: import('../db/index.js').PawsDatabase,
+): WorkerCredentialStore {
+  const table = workerCredentialsTable;
+
+  return {
+    add(cred) {
+      db.insert(table)
+        .values({
+          workerId: cred.workerId,
+          apiKey: cred.apiKey,
+          name: cred.name,
+          enrolledBy: cred.enrolledBy,
+          createdAt: cred.createdAt,
+        })
+        .onConflictDoUpdate({
+          target: table.workerId,
+          set: { apiKey: cred.apiKey, name: cred.name },
+        })
+        .run();
+    },
+
+    getByApiKey(apiKey) {
+      const row = db.select().from(table).where(eq(table.apiKey, apiKey)).get();
+      if (!row) return undefined;
+      return {
+        workerId: row.workerId,
+        apiKey: row.apiKey,
+        name: row.name,
+        enrolledBy: row.enrolledBy,
+        createdAt: row.createdAt,
+      };
+    },
+
+    list() {
+      return db
+        .select()
+        .from(table)
+        .orderBy(table.createdAt)
+        .all()
+        .map((row) => ({
+          workerId: row.workerId,
+          apiKey: row.apiKey,
+          name: row.name,
+          enrolledBy: row.enrolledBy,
+          createdAt: row.createdAt,
+        }));
+    },
+
+    revoke(workerId) {
+      const exists = db.select().from(table).where(eq(table.workerId, workerId)).get();
+      if (!exists) return false;
+      db.delete(table).where(eq(table.workerId, workerId)).run();
+      log.info('Revoked worker credential', { workerId });
       return true;
     },
   };

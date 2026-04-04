@@ -79,6 +79,7 @@ import {
   createEnrollmentRoutes,
   createEnrollmentStore,
   createWorkerCredentialStore,
+  createSqliteWorkerCredentialStore,
 } from './routes/enrollment.js';
 import { createServerRoutes } from './routes/servers.js';
 import { createSqliteDaemonStore } from './store/daemons.js';
@@ -1915,7 +1916,9 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
   // --- Worker enrollment (one-time token → permanent API key) ---
 
   const enrollmentStore = createEnrollmentStore();
-  const workerCredentialStore = createWorkerCredentialStore();
+  const workerCredentialStore = deps.db
+    ? createSqliteWorkerCredentialStore(deps.db)
+    : createWorkerCredentialStore();
   const enrollmentRoutes = createEnrollmentRoutes({
     enrollmentStore,
     workerCredentialStore,

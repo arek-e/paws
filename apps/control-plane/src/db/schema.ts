@@ -142,3 +142,11 @@ export const oauthTokens = sqliteTable('oauth_tokens', {
   scopes: text('scopes'),
   expiresAt: integer('expires_at').notNull(),
 });
+
+export const workerCredentials = sqliteTable('worker_credentials', {
+  workerId: text('worker_id').primaryKey(),
+  apiKey: text('api_key').notNull().unique(),
+  name: text('name').notNull(),
+  enrolledBy: text('enrolled_by').notNull(),
+  createdAt: integer('created_at').notNull(),
+});
