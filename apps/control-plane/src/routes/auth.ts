@@ -6,11 +6,16 @@ import { createLogger } from '@paws/logger';
 
 const log = createLogger('auth');
 
+export interface AuthRouteDeps {
+  hasAdmin: () => boolean;
+  promoteToAdmin: (email: string) => void;
+  isAdmin: (email: string) => boolean;
+}
+
 /** Auth routes for OIDC login flow (browser-based, not OpenAPI) */
-export function createAuthRoutes() {
+export function createAuthRoutes(adminDeps?: AuthRouteDeps) {
   const app = new Hono();
 
-  // Login: clear stale cookies, then oidcAuthMiddleware redirects to Dex
   app.use('/auth/login', async (c, next) => {
     deleteCookie(c, 'oidc-auth', { path: '/' });
     await next();
@@ -20,64 +25,57 @@ export function createAuthRoutes() {
     '/auth/login',
     async (c, next) => {
       await next();
-      // After oidcAuthMiddleware sets the continue cookie to /auth/login,
-      // override it to point to the dashboard root instead
-      setCookie(c, 'continue', '/', {
-        path: '/auth/callback',
-        httpOnly: true,
-        secure: true,
-      });
+      setCookie(c, 'continue', '/', { path: '/auth/callback', httpOnly: true, secure: true });
     },
     oidcAuthMiddleware(),
-    (c) => {
-      return c.redirect('/');
-    },
+    (c) => c.redirect('/'),
   );
 
-  // Callback: process the code exchange directly (don't use oidcAuthMiddleware
-  // here — behind a reverse proxy, the origin mismatch causes it to start a
-  // new auth flow instead of processing the callback)
   app.get('/auth/callback', async (c) => {
     try {
-      return await processOAuthCallback(c);
+      const response = await processOAuthCallback(c);
+      if (adminDeps && !adminDeps.hasAdmin()) {
+        try {
+          const auth = await getAuth(c);
+          if (auth?.email) {
+            adminDeps.promoteToAdmin(auth.email);
+            log.info('First OIDC user promoted to admin', { email: auth.email });
+          }
+        } catch { /* auth not ready yet */ }
+      }
+      return response;
     } catch (err) {
       log.error('Callback error', { error: String(err) });
       return c.redirect('/auth/login');
     }
   });
 
-  // Logout
   app.get('/auth/logout', async (c) => {
-    try {
-      await revokeSession(c);
-    } catch {
-      /* ignore */
-    }
+    try { await revokeSession(c); } catch { /* ignore */ }
     deleteCookie(c, 'oidc-auth', { path: '/' });
     return c.redirect('/');
   });
 
   app.post('/auth/logout', async (c) => {
-    try {
-      await revokeSession(c);
-    } catch {
-      /* ignore */
-    }
+    try { await revokeSession(c); } catch { /* ignore */ }
     deleteCookie(c, 'oidc-auth', { path: '/' });
     return c.redirect('/');
   });
 
-  // Current user info
   app.get('/auth/me', async (c) => {
     try {
       const auth = await getAuth(c);
-      if (!auth) {
-        return c.json({ authenticated: false }, 401);
+      if (!auth) return c.json({ authenticated: false }, 401);
+      const email = auth.email ?? '';
+      if (adminDeps && email && !adminDeps.hasAdmin()) {
+        adminDeps.promoteToAdmin(email);
+        log.info('First OIDC user promoted to admin', { email });
       }
       return c.json({
         authenticated: true,
         email: auth.email,
         sub: auth.sub,
+        isAdmin: adminDeps ? adminDeps.isAdmin(email) : false,
       });
     } catch {
       return c.json({ authenticated: false }, 401);
