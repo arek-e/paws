@@ -122,6 +122,9 @@ const Setup = lazy(() => import('./pages/Setup.js').then((m) => ({ default: m.Se
 const Snapshots = lazy(() =>
   import('./pages/Snapshots.js').then((m) => ({ default: m.Snapshots })),
 );
+const Observability = lazy(() =>
+  import('./pages/Observability.js').then((m) => ({ default: m.Observability })),
+);
 const Templates = lazy(() =>
   import('./pages/Templates.js').then((m) => ({ default: m.Templates })),
 );
@@ -229,6 +232,12 @@ const mcpRoute = createRoute({
   component: lazyPage(McpServers, <CardGridSkeleton />),
 });
 
+const observabilityRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/observability',
+  component: lazyPage(Observability, <DashboardSkeleton />),
+});
+
 const auditRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/audit',
@@ -249,6 +258,7 @@ const routeTree = rootRoute.addChildren([
     sessionDetailRoute,
     integrationsRoute,
     mcpRoute,
+    observabilityRoute,
     auditRoute,
   ]),
 ]);
