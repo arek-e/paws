@@ -178,6 +178,51 @@ export function createSessionApp(deps: AppDeps) {
     );
   });
 
+  // Port readiness health check — TCP probe a port inside a running VM
+  app.get('/v1/sessions/:id/health/:port', async (c) => {
+    const id = c.req.param('id');
+    const port = Number(c.req.param('port'));
+
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      return c.json(
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Port must be an integer between 1 and 65535',
+          },
+        },
+        400,
+      );
+    }
+
+    const conn = executor.getSessionConnection(id);
+    if (!conn) {
+      return c.json(
+        { error: { code: 'SESSION_NOT_FOUND', message: `Session ${id} not found or not running` } },
+        404,
+      );
+    }
+
+    try {
+      const socket = await Bun.connect({
+        hostname: conn.guestIp,
+        port,
+        socket: {
+          data() {},
+          open(s) {
+            s.end();
+          },
+          error() {},
+          connectError() {},
+        },
+      });
+      socket.end();
+      return c.json({ ready: true });
+    } catch {
+      return c.json({ ready: false });
+    }
+  });
+
   // --- Checkpoint / Rollback ---
 
   // Create a checkpoint (snapshot of the running VM)
