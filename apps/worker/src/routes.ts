@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { Hono } from 'hono';
 import { createLogger } from '@paws/logger';
+import { tracingMiddleware } from '@paws/telemetry';
 import { BrowserActionSchema } from '@paws/domain-browser';
 import { SnapshotBuildRequestSchema } from '@paws/domain-snapshot';
 import { CreateSessionRequestSchema } from '@paws/domain-session';
@@ -28,6 +29,7 @@ const startTime = Date.now();
 /** Create the Hono app with all worker routes */
 export function createSessionApp(deps: AppDeps) {
   const app = new Hono();
+  app.use('*', tracingMiddleware('worker'));
   const { executor, semaphore, workerName, syncLoop } = deps;
   const metrics = createWorkerMetrics({ semaphore, executor, workerName });
   const sessionResults = new Map<

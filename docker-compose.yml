@@ -57,8 +57,9 @@ services:
       OIDC_REDIRECT_URI: '${OIDC_REDIRECT_URI:-}'
       OIDC_AUTH_EXTERNAL_URL: '${OIDC_AUTH_EXTERNAL_URL:-}'
       AUTH_SECRET: '${AUTH_SECRET:-change-me-to-a-random-32-char-string}'
-      # Metrics
+      # Metrics + Tracing
       VICTORIAMETRICS_URL: 'http://victoriametrics:8428'
+      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://tempo:4318'
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/health']
       interval: 15s
@@ -96,11 +97,30 @@ services:
     volumes:
       - vm-data:/victoria-metrics-data
       - ./infra/victoriametrics/scrape.compose.yml:/etc/victoria-metrics/scrape.yml:ro
+      - ./infra/victoriametrics/alerts.yml:/etc/victoria-metrics/alerts.yml:ro
     command:
       - '--storageDataPath=/victoria-metrics-data'
       - '--retentionPeriod=30d'
       - '--promscrape.config=/etc/victoria-metrics/scrape.yml'
+      - '--rule=/etc/victoria-metrics/alerts.yml'
       - '--httpListenAddr=:8428'
+
+  # ── Tempo (Distributed Tracing) ───────────────────────────────────────
+  tempo:
+    image: grafana/tempo:2.7.2
+    container_name: paws-tempo
+    restart: unless-stopped
+    networks:
+      - paws
+    expose:
+      - '3200' # Tempo HTTP API
+      - '4317' # OTLP gRPC
+      - '4318' # OTLP HTTP
+    volumes:
+      - tempo-data:/var/tempo
+      - ./infra/tempo/tempo-config.yml:/etc/tempo/config.yml:ro
+    command:
+      - '-config.file=/etc/tempo/config.yml'
 
   # ── Loki (Log Aggregation) ─────────────────────────────────────────────
   loki:
@@ -159,4 +179,5 @@ volumes:
   gateway-data:
   vm-data:
   loki-data:
+  tempo-data:
   grafana-data:

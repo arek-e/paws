@@ -24,6 +24,7 @@
     { "path": "packages/proxy" },
     { "path": "packages/snapshot-store" },
     { "path": "packages/firecracker" },
+    { "path": "packages/telemetry" },
 
     { "path": "packages/sdk" },
     { "path": "providers/hetzner-cloud" },

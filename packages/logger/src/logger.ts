@@ -4,6 +4,9 @@
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+/** Pluggable enricher — called on every log emit to add dynamic fields (e.g. trace IDs). */
+export type LogEnricher = () => Record<string, unknown>;
+
 export interface Logger {
   debug(msg: string, ctx?: Record<string, unknown>): void;
   info(msg: string, ctx?: Record<string, unknown>): void;
@@ -35,22 +38,29 @@ function resolveLogLevel(): LogLevel {
  * @param baseContext - Extra fields merged into every log entry
  * @param writer - Override where output goes (default: `process.stdout.write`).
  *                 Exposed for testing — production callers should omit this.
+ * @param enricher - Called on every emit to add dynamic fields (e.g. trace IDs).
+ *                   Set via `setGlobalLogEnricher()` for trace correlation.
  */
 export function createLogger(
   component: string,
   baseContext: Record<string, unknown> = {},
   writer: (line: string) => void = (line) => process.stdout.write(line),
+  enricher?: LogEnricher,
 ): Logger {
   const minLevel = resolveLogLevel();
+  const enrich = enricher ?? globalEnricher;
 
   function emit(level: LogLevel, msg: string, ctx?: Record<string, unknown>): void {
     if (LEVEL_ORDER[level] < LEVEL_ORDER[minLevel]) return;
+
+    const traceFields = enrich ? enrich() : {};
 
     const entry = {
       ts: new Date().toISOString(),
       level,
       component,
       msg,
+      ...traceFields,
       ...baseContext,
       ...ctx,
     };
@@ -64,7 +74,21 @@ export function createLogger(
     warn: (msg, ctx) => emit('warn', msg, ctx),
     error: (msg, ctx) => emit('error', msg, ctx),
     child(extra) {
-      return createLogger(component, { ...baseContext, ...extra }, writer);
+      return createLogger(component, { ...baseContext, ...extra }, writer, enrich);
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Global enricher — set once at startup for trace ID correlation
+// ---------------------------------------------------------------------------
+
+let globalEnricher: LogEnricher | undefined;
+
+/**
+ * Set a global log enricher that runs on every log emit.
+ * Call this once at startup after initializing tracing.
+ */
+export function setGlobalLogEnricher(enricher: LogEnricher): void {
+  globalEnricher = enricher;
 }

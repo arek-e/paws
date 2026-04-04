@@ -1,4 +1,5 @@
 import type { CreateSessionRequest } from '@paws/domain-session';
+import { injectTraceHeaders } from '@paws/telemetry';
 
 export interface WorkerHealth {
   status: string;
@@ -39,21 +40,25 @@ export interface WorkerClient {
 export function createWorkerClient(baseUrl: string): WorkerClient {
   return {
     async health() {
-      const res = await fetch(`${baseUrl}/health`);
+      const res = await fetch(`${baseUrl}/health`, {
+        headers: injectTraceHeaders(),
+      });
       return (await res.json()) as WorkerHealth;
     },
 
     async createSession(sessionId, request) {
       const res = await fetch(`${baseUrl}/v1/sessions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: injectTraceHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ ...request, sessionId }),
       });
       return (await res.json()) as { sessionId: string; status: string };
     },
 
     async getSession(sessionId) {
-      const res = await fetch(`${baseUrl}/v1/sessions/${sessionId}`);
+      const res = await fetch(`${baseUrl}/v1/sessions/${sessionId}`, {
+        headers: injectTraceHeaders(),
+      });
       if (res.status === 404) return undefined;
       return (await res.json()) as WorkerSessionResult;
     },
@@ -61,7 +66,7 @@ export function createWorkerClient(baseUrl: string): WorkerClient {
     async buildSnapshot(jobId, snapshotId, config) {
       await fetch(`${baseUrl}/v1/snapshots/${snapshotId}/build`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: injectTraceHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ jobId, ...config }),
       });
     },

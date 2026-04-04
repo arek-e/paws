@@ -22,6 +22,7 @@
     { "path": "../../packages/logger" },
     { "path": "../../packages/providers" },
     { "path": "../../packages/provisioner" },
+    { "path": "../../packages/telemetry" },
     { "path": "../../providers/aws-ec2" },
     { "path": "../../providers/hetzner-cloud" }
   ]

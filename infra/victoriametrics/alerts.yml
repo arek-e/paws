@@ -1,0 +1,87 @@
+groups:
+  - name: paws-availability
+    interval: 30s
+    rules:
+      - alert: WorkerDown
+        expr: paws_workers_healthy == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: No healthy workers available
+          description: All workers have been unhealthy for more than 2 minutes. No sessions can be scheduled.
+
+      - alert: WorkerDegraded
+        expr: paws_workers_healthy < paws_workers_total
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: '{{ $value }} of {{ with printf `paws_workers_total{instance="%s"}` $labels.instance }}{{ . | query | first | value }}{{ end }} workers unhealthy'
+          description: One or more workers have been unhealthy for 5+ minutes.
+
+      - alert: ControlPlaneDown
+        expr: up{job="paws-control-plane"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Control plane is unreachable
+          description: VictoriaMetrics cannot scrape the control plane metrics endpoint.
+
+  - name: paws-sessions
+    interval: 30s
+    rules:
+      - alert: HighSessionFailureRate
+        expr: |
+          (
+            rate(paws_sessions_total{status="failed"}[5m])
+            / on() clamp_min(rate(paws_sessions_total[5m]), 0.001)
+          ) > 0.25
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Session failure rate above 25%
+          description: More than 25% of sessions have been failing over the last 5 minutes.
+
+      - alert: SessionQueueBacklog
+        expr: paws_worker_sessions_queued > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Worker {{ $labels.worker }} has {{ $value }} queued sessions'
+          description: Sessions are backing up in the queue, which may indicate insufficient capacity.
+
+      - alert: FleetCapacityExhausted
+        expr: (paws_fleet_capacity_used / clamp_min(paws_fleet_capacity_total, 1)) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Fleet capacity above 90%
+          description: 'Fleet utilization is {{ $value | humanizePercentage }}. Consider scaling up.'
+
+  - name: paws-latency
+    interval: 30s
+    rules:
+      - alert: HighAPILatency
+        expr: |
+          histogram_quantile(0.95, rate(paws_http_request_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: API p95 latency above 5s
+          description: The 95th percentile HTTP request latency has exceeded 5 seconds for 5+ minutes.
+
+      - alert: HighSessionDuration
+        expr: |
+          histogram_quantile(0.95, rate(paws_session_duration_seconds_bucket[15m])) > 300
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Session p95 duration above 5 minutes
+          description: The 95th percentile session duration has exceeded 5 minutes for 15+ minutes.

@@ -16,6 +16,7 @@
     { "path": "../../packages/proxy" },
     { "path": "../../packages/runtime" },
     { "path": "../../packages/runtime-firecracker" },
-    { "path": "../../packages/snapshot-store" }
+    { "path": "../../packages/snapshot-store" },
+    { "path": "../../packages/telemetry" }
   ]
 }

@@ -1,2 +1,2 @@
-export { createLogger } from './logger.js';
-export type { Logger, LogLevel } from './logger.js';
+export { createLogger, setGlobalLogEnricher } from './logger.js';
+export type { Logger, LogLevel, LogEnricher } from './logger.js';

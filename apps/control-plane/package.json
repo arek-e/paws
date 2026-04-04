@@ -39,6 +39,7 @@
     "@paws/provider-hetzner-cloud": "workspace:*",
     "@paws/providers": "workspace:*",
     "@paws/provisioner": "workspace:*",
+    "@paws/telemetry": "workspace:*",
     "better-sqlite3": "catalog:",
     "drizzle-orm": "catalog:",
     "hono": "catalog:",

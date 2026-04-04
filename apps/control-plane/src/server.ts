@@ -1,10 +1,21 @@
 import { createBunWebSocket } from 'hono/bun';
 
+import { initTracing, activeTraceId, activeSpanId } from '@paws/telemetry';
+import { setGlobalLogEnricher } from '@paws/logger';
+
 import { createControlPlaneApp } from './app.js';
 import { createK8sDiscovery } from './discovery/k8s.js';
 import { createWorkerRegistry } from './discovery/registry.js';
 import { createStaticDiscovery } from './discovery/static.js';
 import { createDatabase } from './db/index.js';
+
+// --- OpenTelemetry tracing (must init before Hono app) ---
+initTracing({ serviceName: 'control-plane' });
+setGlobalLogEnricher(() => {
+  const traceId = activeTraceId();
+  const spanId = activeSpanId();
+  return traceId ? { traceId, spanId } : {};
+});
 
 const PORT = parseInt(process.env['PORT'] ?? '4000', 10);
 const API_KEY = process.env['API_KEY'] ?? 'paws-dev-key';
