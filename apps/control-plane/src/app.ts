@@ -11,6 +11,7 @@ import {
   matchDaemon,
   createGitHubAuth,
   postComment,
+  updateComment,
   buildManifest,
   exchangeManifestCode,
   saveCredentials,
@@ -1411,7 +1412,35 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       // Dispatch to worker
       dispatchSession(discovery, legacyWorkerClient, sessionStore, sessionId, sessionRequest);
 
+      // Post initial PR comment for pull_request events
+      let prCommentId: number | undefined;
+      if (event.type === 'pull_request') {
+        const daemonRole = daemon.role;
+        const initialBody = [
+          `### 🐾 paws — ${daemonRole}`,
+          '',
+          '**Status:** ⏳ Running...',
+          '',
+          '---',
+          `*[View session](/sessions/${sessionId})*`,
+        ].join('\n');
+
+        prCommentId = await postComment(
+          { auth: githubAuth },
+          event.installationId,
+          event.issueUrl,
+          initialBody,
+        ).catch((err) => {
+          createLogger('github').error('Failed to post initial PR comment', {
+            sessionId,
+            error: String(err),
+          });
+          return undefined;
+        });
+      }
+
       // Listen for completion to post results back
+      const startTime = Date.now();
       const resultListener = (
         updatedId: string,
         session: import('./store/sessions.js').StoredSession,
@@ -1422,6 +1451,57 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
         sessionEvents.off('update', resultListener);
 
+        // For PR events, update the existing comment
+        if (event.type === 'pull_request' && prCommentId) {
+          const durationSec = Math.round((Date.now() - startTime) / 1000);
+          const repoParts = event.repo.split('/');
+          const owner = repoParts[0] ?? '';
+          const repo = repoParts[1] ?? '';
+          const daemonRole = daemon.role;
+          let body: string;
+
+          if (session.status === 'completed') {
+            const output =
+              (session.output as string) ?? session.stdout ?? 'Agent completed with no output.';
+            body = [
+              `### 🐾 paws — ${daemonRole}`,
+              '',
+              `**Status:** ✅ Completed in ${durationSec}s`,
+              '',
+              output,
+              '',
+              '---',
+              `*[View session](/sessions/${sessionId})*`,
+            ].join('\n');
+          } else {
+            const reason = session.stderr ?? session.status;
+            body = [
+              `### 🐾 paws — ${daemonRole}`,
+              '',
+              `**Status:** ❌ Failed (${reason})`,
+              '',
+              '---',
+              `*[View session](/sessions/${sessionId})*`,
+            ].join('\n');
+          }
+
+          updateComment(
+            { auth: githubAuth },
+            event.installationId,
+            owner,
+            repo,
+            prCommentId,
+            body,
+          ).catch((err: unknown) => {
+            createLogger('github').error('Failed to update PR comment', {
+              sessionId,
+              error: String(err),
+            });
+          });
+          return;
+        }
+
+        // For mentions, post a new comment with results
         const resultBody =
           session.status === 'completed'
             ? ((session.output as string) ?? session.stdout ?? 'Agent completed with no output.')

@@ -3,7 +3,7 @@ export { createGitHubAuth } from './github-auth.js';
 export type { GitHubAuth } from './github-auth.js';
 export { matchDaemon } from './router.js';
 export type { MatchResult } from './router.js';
-export { postComment } from './callback.js';
+export { postComment, updateComment } from './callback.js';
 export type { CallbackDeps } from './callback.js';
 export type { GitHubEvent, GitHubAppConfig, GitHubDaemon } from './types.js';
 export {
