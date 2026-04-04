@@ -345,6 +345,7 @@
       "name": "@paws/proxy",
       "version": "0.1.0",
       "dependencies": {
+        "@paws/logger": "workspace:*",
         "neverthrow": "catalog:",
       },
       "devDependencies": {

@@ -20,6 +20,8 @@ export interface ProxyConfig {
   domains: Record<string, DomainEntry>;
   /** PEM-encoded CA cert + key for TLS MITM; auto-generated if omitted */
   ca?: { cert: string; key: string };
+  /** Session ID for audit log correlation */
+  sessionId?: string;
 }
 
 /** Handle to a running proxy instance */
