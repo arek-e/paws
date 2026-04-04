@@ -74,6 +74,11 @@ import { registerWorkerWebSocket } from './routes/worker-ws.js';
 import { healthRoute } from './routes/health.js';
 import { createMcpRoutes } from './routes/mcp.js';
 import { createExposeRoutes } from './routes/expose.js';
+import {
+  createEnrollmentRoutes,
+  createEnrollmentStore,
+  createWorkerCredentialStore,
+} from './routes/enrollment.js';
 import { createServerRoutes } from './routes/servers.js';
 import { createSqliteDaemonStore } from './store/daemons.js';
 import { createTemplateStore } from './store/templates.js';
