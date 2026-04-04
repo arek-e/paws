@@ -1934,6 +1934,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       registerWorkerWebSocket(app as unknown as Hono, deps.upgradeWebSocket, {
         apiKey: deps.apiKey,
         registry: deps.workerRegistry,
+        validateWorkerKey: (key) => workerCredentialStore.getByApiKey(key) !== undefined,
       });
     }
 

@@ -9,9 +9,10 @@ export function registerWorkerWebSocket(
   opts: {
     apiKey: string;
     registry: WorkerRegistry;
+    validateWorkerKey?: (key: string) => boolean;
   },
 ) {
-  const { apiKey, registry } = opts;
+  const { apiKey, registry, validateWorkerKey } = opts;
 
   app.get(
     '/v1/workers/register',
@@ -22,7 +23,9 @@ export function registerWorkerWebSocket(
 
       return {
         onOpen(_evt, ws) {
-          if (token !== apiKey) {
+          const isAdmin = token === apiKey;
+          const isWorker = !!token?.startsWith('paws-worker-') && !!validateWorkerKey?.(token);
+          if (!isAdmin && !isWorker) {
             ws.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
             ws.close(4001, 'Unauthorized');
             return;
