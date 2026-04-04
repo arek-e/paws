@@ -37,6 +37,7 @@
         "@paws/domain-policy": "workspace:*",
         "@paws/domain-session": "workspace:*",
         "@paws/domain-snapshot": "workspace:*",
+        "@paws/domain-workspace": "workspace:*",
         "@paws/integrations": "workspace:*",
         "@paws/logger": "workspace:*",
         "@paws/provider-aws-ec2": "workspace:*",
