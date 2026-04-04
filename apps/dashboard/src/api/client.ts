@@ -75,6 +75,43 @@ export async function getDaemons(): Promise<{ daemons: unknown[] }> {
   return result.value as { daemons: unknown[] };
 }
 
+export async function getDaemonDetail(role: string): Promise<{
+  role: string;
+  description: string;
+  status: 'active' | 'paused' | 'stopped';
+  trigger: Record<string, unknown> & { type: string };
+  stats: Record<string, unknown>;
+}> {
+  const result = await getClient().daemons.get(role);
+  if (result.isErr()) throw result.error;
+  return result.value as ReturnType<typeof getDaemonDetail> extends Promise<infer T> ? T : never;
+}
+
+export async function createDaemon(request: Record<string, unknown>): Promise<unknown> {
+  const result = await getClient().daemons.create(
+    request as Parameters<PawsClient['daemons']['create']>[0],
+  );
+  if (result.isErr()) throw result.error;
+  return result.value;
+}
+
+export async function updateDaemon(
+  role: string,
+  request: Record<string, unknown>,
+): Promise<unknown> {
+  const result = await getClient().daemons.update(
+    role,
+    request as Parameters<PawsClient['daemons']['update']>[1],
+  );
+  if (result.isErr()) throw result.error;
+  return result.value;
+}
+
+export async function deleteDaemon(role: string): Promise<void> {
+  const result = await getClient().daemons.delete(role);
+  if (result.isErr()) throw result.error;
+}
+
 // --- Snapshot Configs ---
 
 function apiKeyHeaders(): Record<string, string> {

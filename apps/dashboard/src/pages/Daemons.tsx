@@ -1,11 +1,25 @@
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
+import { toast } from 'sonner';
+import { Pencil, Trash2 } from 'lucide-react';
 
-import { getDaemons } from '../api/client.js';
+import { deleteDaemon, getDaemons } from '../api/client.js';
+import { DaemonForm } from '../components/DaemonForm.js';
 import { RelativeTime } from '../components/RelativeTime.js';
 import { StatusBadge } from '../components/StatusBadge.js';
 import { Alert, AlertDescription } from '../components/ui/alert.js';
 import { Badge } from '../components/ui/badge.js';
+import { Button } from '../components/ui/button.js';
 import { Card, CardContent } from '../components/ui/card.js';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog.js';
 import { Skeleton } from '../components/ui/skeleton.js';
 import { usePolling } from '../hooks/usePolling.js';
 
@@ -31,11 +45,13 @@ function TriggerBadge({ trigger }: { trigger: Daemon['trigger'] }) {
     webhook: 'bg-blue-400/10 text-blue-400 border-blue-400/20',
     schedule: 'bg-purple-400/10 text-purple-400 border-purple-400/20',
     watch: 'bg-amber-400/10 text-amber-400 border-amber-400/20',
+    github: 'bg-zinc-400/10 text-zinc-300 border-zinc-400/20',
   };
   const labels: Record<string, string> = {
     webhook: trigger.events?.join(', ') ?? 'webhook',
     schedule: trigger.cron ?? 'schedule',
     watch: 'watch',
+    github: 'github',
   };
 
   return (
@@ -50,12 +66,52 @@ function TriggerBadge({ trigger }: { trigger: Daemon['trigger'] }) {
 
 export function Daemons() {
   const daemons = usePolling(getDaemons, 5000);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editRole, setEditRole] = useState<string | undefined>(undefined);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  function handleCreate() {
+    setEditRole(undefined);
+    setFormOpen(true);
+  }
+
+  function handleEdit(role: string) {
+    setEditRole(role);
+    setFormOpen(true);
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteDaemon(deleteTarget);
+      toast.success(`Daemon "${deleteTarget}" deleted`);
+      setDeleteTarget(null);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(message);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Daemons</h1>
-        <p className="text-xs text-zinc-500">Persistent agent roles that respond to triggers</p>
+        <div className="flex items-center gap-3">
+          <p className="text-xs text-zinc-500 hidden sm:block">
+            Persistent agent roles that respond to triggers
+          </p>
+          <Button
+            size="sm"
+            onClick={handleCreate}
+            className="bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 hover:bg-emerald-400/20"
+          >
+            Create Daemon
+          </Button>
+        </div>
       </div>
 
       {daemons.loading ? (
@@ -78,7 +134,25 @@ export function Daemons() {
                     <h3 className="text-sm font-semibold text-zinc-100">{d.role}</h3>
                     <StatusBadge status={d.status} />
                   </div>
-                  <TriggerBadge trigger={d.trigger} />
+                  <div className="flex items-center gap-2">
+                    <TriggerBadge trigger={d.trigger} />
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => handleEdit(d.role)}
+                      className="text-zinc-500 hover:text-zinc-300"
+                    >
+                      <Pencil className="size-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setDeleteTarget(d.role)}
+                      className="text-zinc-500 hover:text-red-400"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
                 </div>
                 {d.description && <p className="text-xs text-zinc-400 mb-3">{d.description}</p>}
                 {d.network?.expose && d.network.expose.length > 0 && (
@@ -125,11 +199,46 @@ export function Daemons() {
               <Link to="/templates" className="text-emerald-400 hover:text-emerald-300">
                 Browse templates
               </Link>{' '}
-              or create a daemon with <code className="text-zinc-500">POST /v1/daemons</code>
+              or{' '}
+              <button
+                type="button"
+                onClick={handleCreate}
+                className="text-emerald-400 hover:text-emerald-300"
+              >
+                create a daemon
+              </button>
             </p>
           </CardContent>
         </Card>
       )}
+
+      {/* Create/Edit form */}
+      <DaemonForm
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        editRole={editRole}
+        onSaved={() => {
+          // Polling will pick up changes
+        }}
+      />
+
+      {/* Delete confirmation */}
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Daemon</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete daemon "{deleteTarget}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
