@@ -25,6 +25,7 @@ export const daemons = sqliteTable('daemons', {
   status: text('status').notNull().default('active'),
   snapshot: text('snapshot').notNull(),
   trigger: text('trigger', { mode: 'json' }).notNull(),
+  workspace: text('workspace'),
   workload: text('workload', { mode: 'json' }),
   agent: text('agent', { mode: 'json' }),
   resources: text('resources', { mode: 'json' }),

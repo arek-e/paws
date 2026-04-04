@@ -64,7 +64,7 @@ export const UpdateWorkspaceRequestSchema = z
     repos: z.array(WorkspaceRepoSchema).min(1).optional(),
     settings: WorkspaceSettingsSchema.optional(),
   })
-  .refine((data) => Object.keys(data).length > 0, {
+  .refine((data) => Object.values(data).some((v) => v !== undefined), {
     message: 'At least one field must be provided',
   });
 

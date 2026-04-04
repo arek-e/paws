@@ -42,10 +42,15 @@ export function createProxy(config: ProxyConfig): ProxyInstance {
     const hostname = url.hostname;
 
     if (!matchesDomain(hostname, allowlist)) {
+      const durationMs = Math.round(performance.now() - startTime);
       log.warn('domain blocked', {
         domain: hostname,
         method: req.method,
         path: url.pathname,
+        statusCode: 403,
+        durationMs,
+        credentialsInjected: false,
+        protocol,
       });
       return new Response('Blocked by network policy', { status: 403 });
     }
@@ -108,6 +113,7 @@ export function createProxy(config: ProxyConfig): ProxyInstance {
           domain: hostname,
           method: req.method,
           path: url.pathname,
+          statusCode: 502,
           durationMs,
           credentialsInjected,
           protocol,
@@ -153,7 +159,7 @@ export function createProxy(config: ProxyConfig): ProxyInstance {
       log.info('proxy started', {
         host: config.listen.host,
         httpPort: actualHttpPort,
-        httpsPort: caCert ? config.listen.port + 1 : null,
+        httpsPort: caCert && caKey ? config.listen.port + 1 : null,
         allowlistedDomains: allowlist.length,
       });
     },
