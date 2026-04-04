@@ -87,6 +87,8 @@ export const CreateDaemonRequestSchema = z
     description: z.string().default(''),
     snapshot: NonEmptyStringSchema,
     trigger: TriggerSchema,
+    /** Workspace this daemon belongs to */
+    workspace: z.string().optional(),
     /** Workload script — required unless agent is configured */
     workload: WorkloadSchema.optional(),
     /** Agent framework config — auto-generates the workload script */
@@ -120,6 +122,7 @@ export const DaemonListItemSchema = z.object({
   status: DaemonStatus,
   trigger: TriggerSchema,
   stats: DaemonStatsSchema,
+  workspace: z.string().optional(),
 });
 
 export type DaemonListItem = z.infer<typeof DaemonListItemSchema>;

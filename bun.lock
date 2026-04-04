@@ -293,6 +293,18 @@
         "vitest": "catalog:",
       },
     },
+    "packages/domains/workspace": {
+      "name": "@paws/domain-workspace",
+      "version": "0.1.0",
+      "dependencies": {
+        "@hono/zod-openapi": "catalog:",
+        "@paws/domain-common": "workspace:*",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "vitest": "catalog:",
+      },
+    },
     "packages/firecracker": {
       "name": "@paws/firecracker",
       "version": "0.1.0",
@@ -1129,6 +1141,8 @@
     "@paws/domain-session": ["@paws/domain-session@workspace:packages/domains/session"],
 
     "@paws/domain-snapshot": ["@paws/domain-snapshot@workspace:packages/domains/snapshot"],
+
+    "@paws/domain-workspace": ["@paws/domain-workspace@workspace:packages/domains/workspace"],
 
     "@paws/firecracker": ["@paws/firecracker@workspace:packages/firecracker"],
 
