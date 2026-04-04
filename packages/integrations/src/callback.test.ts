@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { postComment } from './callback.js';
+import { postComment, updateComment } from './callback.js';
 import type { CallbackDeps } from './callback.js';
 
 const mockAuth = {
@@ -16,20 +16,22 @@ beforeEach(() => {
 });
 
 describe('postComment', () => {
-  test('posts comment successfully', async () => {
+  test('posts comment and returns comment ID', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 201,
+      json: async () => ({ id: 42 }),
     });
     globalThis.fetch = mockFetch as unknown as typeof fetch;
 
-    await postComment(
+    const commentId = await postComment(
       deps,
       12345,
       'https://api.github.com/repos/org/repo/issues/42',
       'Session completed successfully.',
     );
 
+    expect(commentId).toBe(42);
     expect(mockFetch).toHaveBeenCalledOnce();
     expect(mockFetch).toHaveBeenCalledWith(
       'https://api.github.com/repos/org/repo/issues/42/comments',
@@ -61,4 +63,43 @@ describe('postComment', () => {
   // Retry tests require vi.advanceTimersByTimeAsync (not available in Bun runner).
   // The retry logic is tested implicitly by the non-retryable error test above.
   // TODO: re-enable when bun test supports async timer advancement.
+});
+
+describe('updateComment', () => {
+  test('updates comment successfully via PATCH', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+    });
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+    await updateComment(deps, 12345, 'org', 'repo', 99, 'Updated body');
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.github.com/repos/org/repo/issues/comments/99',
+      expect.objectContaining({
+        method: 'PATCH',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer ghs_test_token',
+        }),
+        body: JSON.stringify({ body: 'Updated body' }),
+      }),
+    );
+  });
+
+  test('throws on non-retryable error (404)', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      text: async () => 'not found',
+    });
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+    await expect(updateComment(deps, 12345, 'org', 'repo', 99, 'body')).rejects.toThrow(
+      'GitHub comment update failed: 404 not found',
+    );
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+  });
 });
