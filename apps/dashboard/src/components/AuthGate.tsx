@@ -33,6 +33,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         const data = (await setupRes.json()) as SetupStatus;
         if (data.oidcAvailable) setOidcAvailable(true);
         if (data.needsAccount) {
+          // If OIDC is available, skip local account creation — go straight to SSO
+          if (data.oidcAvailable) {
+            window.location.href = '/auth/login';
+            return;
+          }
           setMode('create-account');
           return;
         }
