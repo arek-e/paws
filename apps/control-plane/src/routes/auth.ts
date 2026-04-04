@@ -41,7 +41,9 @@ export function createAuthRoutes(adminDeps?: AuthRouteDeps) {
             adminDeps.promoteToAdmin(auth.email);
             log.info('First OIDC user promoted to admin', { email: auth.email });
           }
-        } catch { /* auth not ready yet */ }
+        } catch {
+          /* auth not ready yet */
+        }
       }
       return response;
     } catch (err) {
@@ -51,13 +53,21 @@ export function createAuthRoutes(adminDeps?: AuthRouteDeps) {
   });
 
   app.get('/auth/logout', async (c) => {
-    try { await revokeSession(c); } catch { /* ignore */ }
+    try {
+      await revokeSession(c);
+    } catch {
+      /* ignore */
+    }
     deleteCookie(c, 'oidc-auth', { path: '/' });
     return c.redirect('/');
   });
 
   app.post('/auth/logout', async (c) => {
-    try { await revokeSession(c); } catch { /* ignore */ }
+    try {
+      await revokeSession(c);
+    } catch {
+      /* ignore */
+    }
     deleteCookie(c, 'oidc-auth', { path: '/' });
     return c.redirect('/');
   });
