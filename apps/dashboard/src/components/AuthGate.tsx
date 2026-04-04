@@ -4,8 +4,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-import { setSessionMode } from '../api/client.js';
-
 type AuthMode = 'loading' | 'authenticated' | 'create-account' | 'login';
 
 interface SetupStatus {
@@ -28,7 +26,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   async function checkAuth() {
     // Check setup status
     // Check OIDC session first (before setup status, to avoid redirect loops)
-    let isOidcAuthenticated = false;
     try {
       const meRes = await fetch('/auth/me', { credentials: 'include' });
       if (meRes.ok) {
