@@ -10,6 +10,7 @@ export interface StoredDaemon {
   status: DaemonStatus;
   snapshot: string;
   trigger: Trigger;
+  workspace?: string | undefined;
   workload?: Workload | undefined;
   agent?: AgentConfig | undefined;
   resources?: Resources | undefined;
@@ -46,6 +47,7 @@ export function createDaemonStore(): DaemonStore {
         status: 'active',
         snapshot: request.snapshot,
         trigger: request.trigger,
+        workspace: request.workspace,
         workload: request.workload,
         agent: request.agent,
         resources: request.resources,

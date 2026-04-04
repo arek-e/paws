@@ -14,6 +14,7 @@
     { "path": "packages/domains/agent" },
     { "path": "packages/domains/credential" },
     { "path": "packages/domains/policy" },
+    { "path": "packages/domains/workspace" },
     { "path": "packages/runtime" },
     { "path": "packages/runtime-firecracker" },
     { "path": "packages/logger" },
