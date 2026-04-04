@@ -21,12 +21,12 @@ function DashboardSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-7 w-48" />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-divider rounded-lg overflow-hidden">
         {Array.from({ length: 4 }, (_, i) => (
-          <Skeleton key={i} className="h-20" />
+          <div key={i} className="h-20 skeleton-shimmer" style={{ animationDelay: `${i * 80}ms` }} />
         ))}
       </div>
-      <Skeleton className="h-64" />
+      <div className="h-64 rounded-lg skeleton-shimmer" style={{ animationDelay: '120ms' }} />
     </div>
   );
 }
@@ -36,9 +36,9 @@ function TableSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-7 w-48" />
-      <div className="space-y-2">
+      <div className="space-y-px bg-divider rounded-lg overflow-hidden">
         {Array.from({ length: 6 }, (_, i) => (
-          <Skeleton key={i} className="h-10" />
+          <div key={i} className="h-10 skeleton-shimmer" style={{ animationDelay: `${i * 60}ms` }} />
         ))}
       </div>
     </div>
@@ -50,9 +50,9 @@ function CardGridSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-7 w-48" />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-divider rounded-lg overflow-hidden">
         {Array.from({ length: 4 }, (_, i) => (
-          <Skeleton key={i} className="h-32" />
+          <div key={i} className="h-32 skeleton-shimmer" style={{ animationDelay: `${i * 80}ms` }} />
         ))}
       </div>
     </div>
@@ -63,7 +63,7 @@ function CardGridSkeleton() {
 function FullScreenSkeleton() {
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <Skeleton className="h-96 w-full max-w-lg" />
+      <div className="h-96 w-full max-w-lg rounded-lg skeleton-shimmer" />
     </div>
   );
 }

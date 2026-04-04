@@ -1,19 +1,16 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   BackgroundVariant,
   useNodesState,
   useEdgesState,
-  useReactFlow,
   ReactFlowProvider,
   type NodeTypes,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { Button } from '@/components/ui/button';
 import { getDaemons, getFleet, getSessions, getWorkers } from '../api/client.js';
 import { usePolling } from '../hooks/usePolling.js';
 import { useTopologyLayout } from '../components/topology/useTopologyLayout.js';
@@ -64,9 +61,6 @@ function TopologyCanvas() {
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutEdges);
-  const { fitView } = useReactFlow();
-
-  // Update nodes/edges when data changes (compare by length + IDs to avoid infinite loops)
   const nodeKey = layoutNodes.map((n) => n.id).join(',');
   const edgeKey = layoutEdges.map((e) => e.id).join(',');
   useEffect(() => {
@@ -75,19 +69,15 @@ function TopologyCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by nodeKey/edgeKey to avoid infinite loop
   }, [nodeKey, edgeKey]);
 
-  const handleFitView = useCallback(() => {
-    fitView({ padding: 0.2, duration: 300 });
-  }, [fitView]);
-
   const isEmpty = workers.length === 0 && sessions.length === 0 && daemons.length === 0;
   const isLoading = fleet.loading && workersResult.loading;
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full bg-zinc-950">
+      <div className="flex items-center justify-center h-full bg-background">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-zinc-500">Loading topology...</p>
+          <div className="w-6 h-6 border-2 border-foreground/20 border-t-foreground/60 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-xs text-muted-foreground">Loading topology...</p>
         </div>
       </div>
     );
@@ -95,32 +85,22 @@ function TopologyCanvas() {
 
   if (isEmpty && !fleet.data) {
     return (
-      <div className="flex items-center justify-center h-full bg-zinc-950">
+      <div className="flex items-center justify-center h-full bg-background">
         <div className="text-center">
-          <pre className="text-zinc-600 text-sm font-mono mb-3">
+          <pre className="text-muted-foreground/40 text-sm font-mono mb-3">
             {`  /\\_/\\
  ( -.- ) zzZ
   > ^ <`}
           </pre>
-          <p className="text-zinc-500 text-sm">No agents running.</p>
-          <p className="text-zinc-600 text-xs mt-1">Create a daemon to get started.</p>
+          <p className="text-muted-foreground text-sm">No agents running.</p>
+          <p className="text-muted-foreground/60 text-xs mt-1">Create a daemon to get started.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full w-full relative">
-      {/* Fit View button */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleFitView}
-        className="absolute top-3 right-3 z-10"
-      >
-        Fit View
-      </Button>
-
+    <div className="h-full w-full">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -133,35 +113,14 @@ function TopologyCanvas() {
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
         defaultEdgeOptions={{
-          style: { stroke: '#3f3f46' },
+          style: { stroke: 'var(--border)' },
         }}
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#27272a" />
+        <Background variant={BackgroundVariant.Dots} gap={24} size={0.8} color="var(--divider)" />
         <Controls
           showInteractive={false}
-          className="!bg-zinc-800 !border-zinc-700 !shadow-lg [&>button]:!bg-zinc-800 [&>button]:!border-zinc-700 [&>button]:!text-zinc-400 [&>button:hover]:!bg-zinc-700"
-        />
-        <MiniMap
-          className="!bg-zinc-800 !border-zinc-700"
-          nodeColor={(node) => {
-            switch (node.type) {
-              case 'controlPlane':
-                return '#34d399';
-              case 'worker':
-                return '#52525b';
-              case 'session':
-                return '#fbbf24';
-              case 'proxy':
-                return '#3f3f46';
-              case 'daemon':
-                return '#60a5fa';
-              case 'external':
-                return '#52525b';
-              default:
-                return '#3f3f46';
-            }
-          }}
-          maskColor="rgba(9, 9, 11, 0.7)"
+          position="bottom-right"
+          className="!bg-panel !border-border !shadow-sm !rounded-lg [&>button]:!bg-panel [&>button]:!border-border [&>button]:!text-muted-foreground [&>button:hover]:!bg-divider [&>button]:!rounded-md"
         />
       </ReactFlow>
     </div>
