@@ -57,6 +57,25 @@ spec:
                 secretKeyRef:
                   name: paws-control-plane-secret
                   key: api-key
+            # OIDC (Dex SSO — login with GitHub/Google via auth.tpops.dev)
+            - name: OIDC_ISSUER
+              value: 'https://auth.tpops.dev'
+            - name: OIDC_CLIENT_ID
+              value: 'paws'
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: paws-control-plane-secret
+                  key: oidc-client-secret
+            - name: OIDC_REDIRECT_URI
+              value: 'https://fleet.tpops.dev/auth/callback'
+            - name: OIDC_AUTH_EXTERNAL_URL
+              value: 'https://auth.tpops.dev'
+            - name: AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: paws-control-plane-secret
+                  key: auth-secret
           volumeMounts:
             - name: data
               mountPath: /var/lib/paws/data
