@@ -15,6 +15,7 @@ export interface StoredDaemon {
   status: DaemonStatus;
   snapshot: string;
   trigger: Trigger;
+  workspace?: string | undefined;
   workload?: Workload | undefined;
   agent?: AgentConfig | undefined;
   resources?: Resources | undefined;
