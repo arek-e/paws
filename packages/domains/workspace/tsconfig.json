@@ -6,6 +6,5 @@
     "rootDir": "src",
     "types": []
   },
-  "include": ["src"],
-  "references": [{ "path": "../common" }]
+  "include": ["src"]
 }
