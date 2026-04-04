@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 # /\_/\
-# ( o.o )  paws control plane (standalone, no dashboard)
+# ( o.o )  paws control plane + dashboard
 #  > ^ <
 
-# ── Stage 1: install ───────────────────────────────────────────────────────
+# ── Stage 1: install + build dashboard ─────────────────────────────────────
 FROM oven/bun:1.3.9-alpine AS builder
 
 WORKDIR /build
@@ -15,6 +15,9 @@ RUN apk add --no-cache python3 make g++
 COPY . .
 
 RUN bun install --frozen-lockfile || bun install
+
+# Build the dashboard (Vite React app)
+RUN cd apps/dashboard && bun run build
 
 # ── Stage 2: runner ────────────────────────────────────────────────────────
 FROM oven/bun:1.3.9-alpine AS runner
@@ -30,6 +33,7 @@ COPY --from=builder /build/node_modules ./node_modules
 COPY --from=builder /build/packages/ ./packages/
 COPY --from=builder /build/providers/ ./providers/
 COPY --from=builder /build/apps/control-plane/ ./apps/control-plane/
+COPY --from=builder /build/apps/dashboard/dist/ ./apps/dashboard/dist/
 
 USER paws
 
@@ -41,6 +45,7 @@ ENV PAWS_COMMIT=${PAWS_COMMIT}
 ENV PAWS_BUILD_DATE=${PAWS_BUILD_DATE}
 ENV PORT=4000
 ENV NODE_ENV=production
+ENV DASHBOARD_DIR=/app/apps/dashboard/dist
 
 EXPOSE 4000
 
