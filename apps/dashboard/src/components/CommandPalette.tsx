@@ -15,6 +15,7 @@ const PAGES = [
   { name: 'Fleet', path: '/fleet', group: 'Infrastructure' },
   { name: 'Servers', path: '/servers', group: 'Infrastructure' },
   { name: 'Snapshots', path: '/snapshots', group: 'Infrastructure' },
+  { name: 'Workspaces', path: '/workspaces', group: 'Agents' },
   { name: 'Daemons', path: '/daemons', group: 'Agents' },
   { name: 'Templates', path: '/templates', group: 'Agents' },
   { name: 'Sessions', path: '/sessions', group: 'Agents' },

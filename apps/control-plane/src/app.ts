@@ -3,6 +3,11 @@ import { randomUUID } from 'node:crypto';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { createLogger } from '@paws/logger';
 import { tracingMiddleware } from '@paws/telemetry';
+import {
+  createWorkspaceStore,
+  CreateWorkspaceRequestSchema,
+  type Workspace,
+} from '@paws/domain-workspace';
 import type { Hono } from 'hono';
 import {
   verifyWebhookSignature,
@@ -188,6 +193,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
     deps.sessionStore ?? (deps.db ? createSqliteSessionStore(deps.db) : createSessionStore());
   const daemonStore =
     deps.daemonStore ?? (deps.db ? createSqliteDaemonStore(deps.db) : createDaemonStore());
+  const workspaceStore = createWorkspaceStore();
   const governance = deps.governance ?? createGovernanceChecker();
   const sessionEvents = createSessionEvents();
 
@@ -958,6 +964,79 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       resourceId: role,
     });
     return c.json({ role, status: 'stopped' as const }, 200);
+  });
+
+  // --- Workspaces ---
+
+  app.post('/v1/workspaces', async (c) => {
+    const raw = await c.req.json();
+    const parsed = CreateWorkspaceRequestSchema.safeParse(raw);
+    if (!parsed.success) {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400);
+    }
+    const body = parsed.data;
+    if (workspaceStore.getByName(body.name)) {
+      return c.json(
+        {
+          error: {
+            code: 'WORKSPACE_ALREADY_EXISTS',
+            message: `Workspace '${body.name}' already exists`,
+          },
+        },
+        409,
+      );
+    }
+    const workspace = workspaceStore.create({
+      id: randomUUID(),
+      name: body.name,
+      description: body.description ?? '',
+      type: body.type,
+      repos: body.repos,
+      settings: body.settings ?? {},
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    return c.json(workspace, 201);
+  });
+
+  app.get('/v1/workspaces', (c) => {
+    return c.json({ workspaces: workspaceStore.list() }, 200);
+  });
+
+  app.get('/v1/workspaces/:id', (c) => {
+    const workspace = workspaceStore.get(c.req.param('id'));
+    if (!workspace) {
+      return c.json(
+        { error: { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' } },
+        404,
+      );
+    }
+    return c.json(workspace, 200);
+  });
+
+  app.put('/v1/workspaces/:id', async (c) => {
+    const id = c.req.param('id');
+    if (!workspaceStore.get(id)) {
+      return c.json(
+        { error: { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' } },
+        404,
+      );
+    }
+    const body = await c.req.json();
+    const updated = workspaceStore.update(id, body as Partial<Workspace>);
+    return c.json(updated, 200);
+  });
+
+  app.delete('/v1/workspaces/:id', (c) => {
+    const id = c.req.param('id');
+    if (!workspaceStore.get(id)) {
+      return c.json(
+        { error: { code: 'WORKSPACE_NOT_FOUND', message: 'Workspace not found' } },
+        404,
+      );
+    }
+    workspaceStore.delete(id);
+    return c.json({ id, deleted: true }, 200);
   });
 
   // --- Templates ---

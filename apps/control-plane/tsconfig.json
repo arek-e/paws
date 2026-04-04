@@ -18,6 +18,7 @@
     { "path": "../../packages/domains/policy" },
     { "path": "../../packages/domains/session" },
     { "path": "../../packages/domains/snapshot" },
+    { "path": "../../packages/domains/workspace" },
     { "path": "../../packages/integrations" },
     { "path": "../../packages/logger" },
     { "path": "../../packages/providers" },

@@ -549,6 +549,91 @@ export async function getSystemInfo(): Promise<SystemInfo> {
   return res.json();
 }
 
+// --- Workspaces ---
+
+export interface WorkspaceRepo {
+  name: string;
+  role?: 'primary' | 'reference';
+  branch?: string;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  description?: string;
+  type: 'monorepo' | 'multi-repo';
+  repos: WorkspaceRepo[];
+  rootDir?: string;
+  settings?: {
+    language?: string;
+    packageManager?: string;
+    testCommand?: string;
+    buildCommand?: string;
+  };
+  daemonCount?: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export async function listWorkspaces(): Promise<{ workspaces: Workspace[] }> {
+  const res = await fetch('/v1/workspaces', { headers: apiKeyHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch workspaces: ${res.status}`);
+  return res.json();
+}
+
+export async function getWorkspace(id: string): Promise<Workspace> {
+  const res = await fetch(`/v1/workspaces/${encodeURIComponent(id)}`, {
+    headers: apiKeyHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to fetch workspace: ${res.status}`);
+  return res.json();
+}
+
+export async function createWorkspace(
+  data: Omit<Workspace, 'id' | 'createdAt' | 'updatedAt' | 'daemonCount'>,
+): Promise<Workspace> {
+  const res = await fetch('/v1/workspaces', {
+    method: 'POST',
+    headers: apiKeyHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      (body as { error?: { message?: string } }).error?.message ??
+        `Failed to create workspace: ${res.status}`,
+    );
+  }
+  return res.json();
+}
+
+export async function updateWorkspace(
+  id: string,
+  data: Partial<Omit<Workspace, 'id' | 'createdAt' | 'updatedAt' | 'daemonCount'>>,
+): Promise<Workspace> {
+  const res = await fetch(`/v1/workspaces/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: apiKeyHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      (body as { error?: { message?: string } }).error?.message ??
+        `Failed to update workspace: ${res.status}`,
+    );
+  }
+  return res.json();
+}
+
+export async function deleteWorkspace(id: string): Promise<void> {
+  const res = await fetch(`/v1/workspaces/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: apiKeyHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to delete workspace: ${res.status}`);
+}
+
 // --- Cloud Connections (AWS integration) ---
 
 export interface CloudConnection {

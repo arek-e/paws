@@ -95,6 +95,7 @@ function SidebarNav({
       <SidebarLink to="/snapshots" label="Snapshots" onClick={onNavigate} collapsed={collapsed} />
 
       <SectionLabel collapsed={collapsed}>Agents</SectionLabel>
+      <SidebarLink to="/workspaces" label="Workspaces" onClick={onNavigate} collapsed={collapsed} />
       <SidebarLink to="/daemons" label="Daemons" onClick={onNavigate} collapsed={collapsed} />
       <SidebarLink to="/templates" label="Templates" onClick={onNavigate} collapsed={collapsed} />
       <SidebarLink to="/sessions" label="Sessions" onClick={onNavigate} collapsed={collapsed} />

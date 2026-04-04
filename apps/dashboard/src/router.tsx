@@ -128,6 +128,9 @@ const Observability = lazy(() =>
 const Templates = lazy(() =>
   import('./pages/Templates.js').then((m) => ({ default: m.Templates })),
 );
+const Workspaces = lazy(() =>
+  import('./pages/Workspaces.js').then((m) => ({ default: m.Workspaces })),
+);
 // Root route wraps everything in AuthGate
 const rootRoute = createRootRoute({
   component: () => (
@@ -238,6 +241,12 @@ const observabilityRoute = createRoute({
   component: lazyPage(Observability, <DashboardSkeleton />),
 });
 
+const workspacesRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/workspaces',
+  component: lazyPage(Workspaces, <CardGridSkeleton />),
+});
+
 const auditRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/audit',
@@ -256,6 +265,7 @@ const routeTree = rootRoute.addChildren([
     serversRoute,
     sessionsRoute,
     sessionDetailRoute,
+    workspacesRoute,
     integrationsRoute,
     mcpRoute,
     observabilityRoute,
