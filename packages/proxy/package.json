@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@paws/logger": "workspace:*",
     "neverthrow": "catalog:"
   },
   "devDependencies": {

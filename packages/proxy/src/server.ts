@@ -1,3 +1,6 @@
+import { createLogger } from '@paws/logger';
+import type { Logger } from '@paws/logger';
+
 import { matchesDomain, findCredentials, findDomainEntry } from './domain-match.js';
 import type { ProxyConfig, ProxyInstance } from './types.js';
 
@@ -15,6 +18,11 @@ import type { ProxyConfig, ProxyInstance } from './types.js';
 export function createProxy(config: ProxyConfig): ProxyInstance {
   const allowlist = Object.keys(config.domains);
 
+  const log: Logger = createLogger(
+    'proxy',
+    config.sessionId ? { sessionId: config.sessionId } : {},
+  );
+
   let httpServer: ReturnType<typeof Bun.serve> | undefined;
   let httpsServer: ReturnType<typeof Bun.serve> | undefined;
   let actualHttpPort = 0;
@@ -29,15 +37,22 @@ export function createProxy(config: ProxyConfig): ProxyInstance {
    * DRY helper used by both HTTP and HTTPS servers.
    */
   function forwardRequest(req: Request, protocol: 'http' | 'https'): Promise<Response> | Response {
+    const startTime = performance.now();
     const url = new URL(req.url);
     const hostname = url.hostname;
 
     if (!matchesDomain(hostname, allowlist)) {
+      log.warn('domain blocked', {
+        domain: hostname,
+        method: req.method,
+        path: url.pathname,
+      });
       return new Response('Blocked by network policy', { status: 403 });
     }
 
     const entry = findDomainEntry(hostname, config.domains);
     const creds = findCredentials(hostname, config.domains);
+    const credentialsInjected = creds != null && Object.keys(creds).length > 0;
 
     // Build upstream request with injected credentials
     const headers = new Headers(req.headers);
@@ -68,6 +83,18 @@ export function createProxy(config: ProxyConfig): ProxyInstance {
       }),
     ).then(
       (upstream) => {
+        const durationMs = Math.round(performance.now() - startTime);
+
+        log.info('request forwarded', {
+          domain: hostname,
+          method: req.method,
+          path: url.pathname,
+          statusCode: upstream.status,
+          durationMs,
+          credentialsInjected,
+          protocol,
+        });
+
         return new Response(upstream.body, {
           status: upstream.status,
           statusText: upstream.statusText,
@@ -75,6 +102,17 @@ export function createProxy(config: ProxyConfig): ProxyInstance {
         });
       },
       (_err) => {
+        const durationMs = Math.round(performance.now() - startTime);
+
+        log.error('upstream connection failed', {
+          domain: hostname,
+          method: req.method,
+          path: url.pathname,
+          durationMs,
+          credentialsInjected,
+          protocol,
+        });
+
         // Catch fetch errors to prevent credential headers from leaking in stack traces
         return new Response(`Upstream connection failed for ${hostname}`, { status: 502 });
       },
@@ -111,6 +149,13 @@ export function createProxy(config: ProxyConfig): ProxyInstance {
         });
         // httpsPort is listen.port + 1 by convention
       }
+
+      log.info('proxy started', {
+        host: config.listen.host,
+        httpPort: actualHttpPort,
+        httpsPort: caCert ? config.listen.port + 1 : null,
+        allowlistedDomains: allowlist.length,
+      });
     },
 
     async stop() {
@@ -123,6 +168,7 @@ export function createProxy(config: ProxyConfig): ProxyInstance {
         httpsServer = undefined;
       }
       started = false;
+      log.info('proxy stopped');
     },
 
     address() {
