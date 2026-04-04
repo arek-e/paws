@@ -1213,9 +1213,12 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       );
     }
 
+    // Inject workspace env vars if daemon is linked to a workspace
+    const wsEnv = injectWorkspaceEnv(workload.env, workspaceStore, daemon.workspace);
+
     const sessionRequest = {
       snapshot: daemon.snapshot,
-      workload,
+      workload: { ...workload, env: wsEnv },
       resources: daemon.resources,
       timeoutMs: 600_000,
       network: daemon.network,
@@ -1466,12 +1469,13 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
       }
 
       const prNumber = event.type === 'pull_request' ? event.prNumber : event.prNumber;
+      const enrichedEnv = injectWorkspaceEnv(envVars, workspaceStore, daemon.workspace);
       const sessionRequest = {
         snapshot: src.snapshot,
         workload: {
           type: 'script' as const,
           script: src.workload.script,
-          env: envVars,
+          env: enrichedEnv,
         },
         resources: src.resources,
         timeoutMs: 600_000,
@@ -2190,6 +2194,40 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 // ---------------------------------------------------------------------------
 // Dispatch helpers
 // ---------------------------------------------------------------------------
+
+/** Inject workspace env vars into a session's workload env. */
+function injectWorkspaceEnv(
+  env: Record<string, string>,
+  wsStore: { get(id: string): import('@paws/domain-workspace').Workspace | undefined },
+  workspaceId: string | undefined,
+): Record<string, string> {
+  if (!workspaceId) return env;
+  const ws = wsStore.get(workspaceId);
+  if (!ws) return env;
+
+  const primary = ws.repos.find((r) => r.role === 'primary') ?? ws.repos[0];
+  if (!primary) return env;
+
+  const extra: Record<string, string> = {
+    PAWS_WORKSPACE_NAME: ws.name,
+    PAWS_WORKSPACE_TYPE: ws.type,
+    PAWS_WORKSPACE_REPO: primary.repo,
+    PAWS_WORKSPACE_ROOT_DIR: primary.rootDir,
+    PAWS_WORKSPACE_BRANCH: primary.branch,
+    PAWS_CLONE_URL: `https://github.com/${primary.repo}.git`,
+  };
+
+  if (ws.type === 'multi-repo') {
+    extra['PAWS_WORKSPACE_REPOS'] = ws.repos.map((r) => r.repo).join(',');
+  }
+  if (ws.settings.language) extra['PAWS_WORKSPACE_LANGUAGE'] = ws.settings.language;
+  if (ws.settings.packageManager)
+    extra['PAWS_WORKSPACE_PACKAGE_MANAGER'] = ws.settings.packageManager;
+  if (ws.settings.testCommand) extra['PAWS_WORKSPACE_TEST_COMMAND'] = ws.settings.testCommand;
+  if (ws.settings.buildCommand) extra['PAWS_WORKSPACE_BUILD_COMMAND'] = ws.settings.buildCommand;
+
+  return { ...env, ...extra };
+}
 
 /**
  * Fire-and-forget session dispatch.

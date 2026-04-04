@@ -45,6 +45,7 @@ export interface GitHubDaemon {
     events: string[];
     command?: string;
   };
+  workspace?: string | undefined;
   snapshot: string;
   workload: { type: string; script: string; env: Record<string, string> };
   resources?: { vcpus: number; memoryMB: number };
