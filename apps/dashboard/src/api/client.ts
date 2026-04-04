@@ -387,6 +387,27 @@ export async function getAuditStats(): Promise<AuditStats> {
   return res.json();
 }
 
+// --- Cost / Observability ---
+
+export interface CostByDaemon {
+  role: string;
+  totalInvocations: number;
+  totalVcpuSeconds: number;
+  totalDurationMs: number;
+}
+
+export interface CostSummary {
+  totalVcpuSeconds: number;
+  totalSessions: number;
+  byDaemon: CostByDaemon[];
+}
+
+export async function getCostSummary(): Promise<CostSummary> {
+  const res = await fetch('/v1/fleet/cost', { headers: apiKeyHeaders() });
+  if (!res.ok) throw new Error(`Failed to fetch cost summary: ${res.status}`);
+  return res.json();
+}
+
 // --- Browser (computer-use) ---
 
 export async function takeBrowserScreenshot(sessionId: string): Promise<ScreenshotResponse> {

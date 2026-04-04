@@ -107,6 +107,12 @@ function SidebarNav({
         collapsed={collapsed}
       />
       <SidebarLink to="/mcp" label="MCP Servers" onClick={onNavigate} collapsed={collapsed} />
+      <SidebarLink
+        to="/observability"
+        label="Observability"
+        onClick={onNavigate}
+        collapsed={collapsed}
+      />
       <SidebarLink to="/audit" label="Audit Log" onClick={onNavigate} collapsed={collapsed} />
       <SidebarLink to="/settings" label="Settings" onClick={onNavigate} collapsed={collapsed} />
       <SidebarLink to="/setup" label="Setup Wizard" onClick={onNavigate} collapsed={collapsed} />
