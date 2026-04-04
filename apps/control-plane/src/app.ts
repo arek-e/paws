@@ -74,7 +74,7 @@ import { createAuthRoutes } from './routes/auth.js';
 import { registerWorkerWebSocket } from './routes/worker-ws.js';
 import { healthRoute } from './routes/health.js';
 import { createMcpRoutes } from './routes/mcp.js';
-import { createExposeRoutes } from './routes/expose.js';
+import { createExposeRoutes, generateExposedUrls } from './routes/expose.js';
 import {
   createEnrollmentRoutes,
   createEnrollmentStore,
@@ -1930,6 +1930,7 @@ export async function createControlPlaneApp(deps: ControlPlaneDeps) {
 
   const exposeRoutes = createExposeRoutes({
     sessionStore,
+    ...(deps.upgradeWebSocket ? { upgradeWebSocket: deps.upgradeWebSocket } : {}),
   });
   app.route('/', exposeRoutes);
 
@@ -2043,8 +2044,13 @@ function dispatchSession(
   sessionId: string,
   request: Parameters<WorkerClient['createSession']>[1],
 ): void {
+  // Freeze exposed port URLs at dispatch time — URLs are available immediately
+  const expose = request.network?.expose ?? [];
+  const exposedPorts = expose.length > 0 ? generateExposedUrls(sessionId, expose) : undefined;
+
   sessionStore.updateStatus(sessionId, 'running', {
     startedAt: new Date().toISOString(),
+    ...(exposedPorts ? { exposedPorts } : {}),
   });
 
   void (async () => {

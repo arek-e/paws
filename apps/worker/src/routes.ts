@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { Hono } from 'hono';
+import type { UpgradeWebSocket } from 'hono/ws';
 import { createLogger } from '@paws/logger';
 import { tracingMiddleware } from '@paws/telemetry';
 import { BrowserActionSchema } from '@paws/domain-browser';
@@ -21,6 +22,8 @@ export interface AppDeps {
   syncLoop?: SyncLoop | undefined;
   /** Config for snapshot builder (optional — needed for build endpoint) */
   snapshotBuilderConfig?: SnapshotBuilderConfig | undefined;
+  /** WebSocket upgrade function (needed for WS proxy to VMs) */
+  upgradeWebSocket?: UpgradeWebSocket | undefined;
 }
 
 const log = createLogger('routes');
@@ -551,7 +554,7 @@ const ws = require('ws');
   });
 
   // --- Inbound proxy (VM port exposure) ---
-  registerProxyRoutes(app, executor);
+  registerProxyRoutes(app, executor, deps.upgradeWebSocket);
 
   return app;
 }

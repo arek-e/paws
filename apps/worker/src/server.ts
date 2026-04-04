@@ -1,3 +1,4 @@
+import { createBunWebSocket } from 'hono/bun';
 import { createLogger, setGlobalLogEnricher } from '@paws/logger';
 import { initTracing, activeTraceId, activeSpanId } from '@paws/telemetry';
 import { createPortPool } from '@paws/firecracker';
@@ -15,6 +16,7 @@ import { createRuntimeRegistry } from '@paws/runtime';
 import { createCallHome } from './call-home.js';
 import { createSessionApp } from './routes.js';
 import { createExecutor } from './session/executor.js';
+import { createMcpGateway } from './mcp/gateway.js';
 import { createSemaphore } from './semaphore.js';
 import { createSyncLoop } from './sync/sync-loop.js';
 import type { SyncLoop } from './sync/sync-loop.js';
@@ -88,6 +90,22 @@ const llmGateway =
       }
     : undefined;
 
+// MCP gateway (optional — agentgateway for secure MCP tool access)
+const MCP_GATEWAY_ENABLED = process.env['MCP_GATEWAY_ENABLED'] === 'true';
+const MCP_GATEWAY_CONFIG_PATH =
+  process.env['MCP_GATEWAY_CONFIG_PATH'] ?? '/etc/agentgateway/config.yaml';
+const MCP_GATEWAY_PORT = parseInt(process.env['MCP_GATEWAY_PORT'] ?? '4317', 10);
+const MCP_GATEWAY_READINESS_URL =
+  process.env['MCP_GATEWAY_READINESS_URL'] ?? 'http://localhost:15020/healthz/ready';
+
+const mcpGateway = MCP_GATEWAY_ENABLED
+  ? createMcpGateway({
+      configPath: MCP_GATEWAY_CONFIG_PATH,
+      port: MCP_GATEWAY_PORT,
+      readinessUrl: MCP_GATEWAY_READINESS_URL,
+    })
+  : undefined;
+
 // --- Runtime setup ---
 // Create the Firecracker runtime adapter (owns all VM lifecycle)
 const firecrackerRuntime = createFirecrackerRuntime({
@@ -110,6 +128,7 @@ const executor = createExecutor({
   semaphore,
   workerName: WORKER_NAME,
   ...(llmGateway ? { llmGateway } : {}),
+  ...(mcpGateway ? { mcpGateway } : {}),
 });
 
 let syncLoop: SyncLoop | undefined;
@@ -136,11 +155,15 @@ if (SNAPSHOT_SYNC_ENABLED) {
   log.info('Snapshot sync enabled', { pollIntervalMs: SNAPSHOT_SYNC_INTERVAL_MS });
 }
 
+// WebSocket support for proxy routes (HMR, dev servers, terminals)
+const { upgradeWebSocket, websocket } = createBunWebSocket();
+
 const app = createSessionApp({
   executor,
   semaphore,
   workerName: WORKER_NAME,
   syncLoop,
+  upgradeWebSocket,
   snapshotBuilderConfig: {
     snapshotBaseDir: SNAPSHOT_BASE_DIR,
     outputDir: SNAPSHOT_BASE_DIR,
@@ -198,10 +221,12 @@ Worker: ${WORKER_NAME}
 Snapshot sync: ${SNAPSHOT_SYNC_ENABLED ? 'enabled' : 'disabled'}
 Port exposure: ${portExposureStatus}
 LLM gateway: ${llmGateway ? `${llmGateway.name} (${llmGateway.url})` : 'direct (set LLM_GATEWAY + LLM_GATEWAY_KEY)'}
+MCP gateway: ${mcpGateway ? `enabled (port ${MCP_GATEWAY_PORT})` : 'disabled (set MCP_GATEWAY_ENABLED=true)'}
 Call-home: ${GATEWAY_URL ? `${GATEWAY_URL}` : 'disabled (set GATEWAY_URL + API_KEY)'}
 `);
 
 export default {
   port: PORT,
   fetch: app.fetch,
+  websocket,
 };
